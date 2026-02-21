@@ -13,6 +13,14 @@ const PTY_WS_PORT = 7681;
 
 const shell = process.env.SHELL || "/bin/zsh";
 
+function generateSessionName(): string {
+	return crypto.randomUUID().slice(0, 8);
+}
+
+const tmuxSessionName = generateSessionName();
+
+let activePty: ReturnType<typeof Bun.spawn> | null = null;
+
 Bun.serve({
 	port: PTY_WS_PORT,
 	fetch(req, server) {
@@ -24,7 +32,7 @@ Bun.serve({
 			const cols = 80;
 			const rows = 24;
 
-			const proc = Bun.spawn([shell], {
+			const proc = Bun.spawn(["tmux", "new-session", "-s", tmuxSessionName], {
 				terminal: {
 					cols,
 					rows,
@@ -51,8 +59,10 @@ Bun.serve({
 			});
 
 			(ws as any).proc = proc;
+			activePty = proc;
 
 			proc.exited.then(() => {
+				if (activePty === proc) activePty = null;
 				try {
 					ws.close();
 				} catch {
@@ -153,6 +163,12 @@ ApplicationMenu.setApplicationMenu([
 		],
 	},
 	{
+		label: "Debug",
+		submenu: [
+			{ label: "tmux: Vertical Split", action: "tmux-vsplit" },
+		],
+	},
+	{
 		label: "Window",
 		submenu: [
 			{ role: "minimize" },
@@ -203,6 +219,12 @@ Electrobun.events.on("application-menu-clicked", (e) => {
 		});
 	} else if (e.data.action === "toggle-devtools") {
 		mainWindow.webview.openDevTools();
+	} else if (e.data.action === "tmux-vsplit") {
+		// Ctrl-B then | (tmux vertical split)
+		if (activePty?.terminal) {
+			activePty.terminal.write("\x02");
+			setTimeout(() => activePty?.terminal?.write("|"), 50);
+		}
 	}
 });
 
