@@ -1,31 +1,36 @@
 import { useState } from "react";
+import { useT, useLocale, ALL_LOCALES, LOCALE_LABELS } from "../i18n";
+import type { Locale } from "../i18n";
 
 type Theme = "dark" | "light";
 
 function GlobalSettings() {
+	const t = useT();
+	const [locale, setLocale] = useLocale();
+
 	const [theme, setTheme] = useState<Theme>(
 		() => (localStorage.getItem("dev3-theme") as Theme) || "dark",
 	);
 
-	function applyTheme(t: Theme) {
-		setTheme(t);
-		document.documentElement.dataset.theme = t;
-		localStorage.setItem("dev3-theme", t);
+	function applyTheme(th: Theme) {
+		setTheme(th);
+		document.documentElement.dataset.theme = th;
+		localStorage.setItem("dev3-theme", th);
 	}
 
 	return (
 		<div className="h-full w-full flex flex-col bg-base">
 			<div className="flex-1 overflow-y-auto p-7">
-				<div className="max-w-xl">
+				<div className="max-w-xl space-y-8">
 					{/* Theme */}
 					<div>
 						<label className="block text-fg text-sm font-semibold mb-3">
-							Theme
+							{t("settings.theme")}
 						</label>
 						<div className="flex gap-3">
 							<ThemeCard
-								name="Dark"
-								description="Midnight indigo"
+								name={t("settings.themeDark")}
+								description={t("settings.themeDarkDesc")}
 								active={theme === "dark"}
 								onClick={() => applyTheme("dark")}
 								preview={{
@@ -36,8 +41,8 @@ function GlobalSettings() {
 								}}
 							/>
 							<ThemeCard
-								name="Light"
-								description="Clean & bright"
+								name={t("settings.themeLight")}
+								description={t("settings.themeLightDesc")}
 								active={theme === "light"}
 								onClick={() => applyTheme("light")}
 								preview={{
@@ -47,6 +52,24 @@ function GlobalSettings() {
 									accent: "#5e9eff",
 								}}
 							/>
+						</div>
+					</div>
+
+					{/* Language */}
+					<div>
+						<label className="block text-fg text-sm font-semibold mb-3">
+							{t("settings.language")}
+						</label>
+						<div className="flex gap-3">
+							{ALL_LOCALES.map((loc) => (
+								<LanguageCard
+									key={loc}
+									locale={loc}
+									label={LOCALE_LABELS[loc]}
+									active={locale === loc}
+									onClick={() => setLocale(loc)}
+								/>
+							))}
 						</div>
 					</div>
 				</div>
@@ -106,6 +129,40 @@ function ThemeCard({
 
 			<div className="text-fg text-sm font-semibold">{name}</div>
 			<div className="text-fg-3 text-xs mt-0.5">{description}</div>
+		</button>
+	);
+}
+
+function LanguageCard({
+	locale,
+	label,
+	active,
+	onClick,
+}: {
+	locale: Locale;
+	label: string;
+	active: boolean;
+	onClick: () => void;
+}) {
+	const flags: Record<Locale, string> = {
+		en: "EN",
+		ru: "RU",
+		es: "ES",
+	};
+
+	return (
+		<button
+			onClick={onClick}
+			className={`flex-1 p-4 rounded-xl border-2 transition-all text-left ${
+				active
+					? "border-accent shadow-lg shadow-accent/10"
+					: "border-edge hover:border-edge-active"
+			}`}
+		>
+			<div className="text-2xl mb-2 font-mono text-fg-2 font-bold">
+				{flags[locale]}
+			</div>
+			<div className="text-fg text-sm font-semibold">{label}</div>
 		</button>
 	);
 }

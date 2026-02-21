@@ -117,6 +117,63 @@ Local documentation for key dependencies lives in `docs/`:
 
 **Before writing code that touches a dependency, check `docs/` first.** Read the relevant local docs or fetch remote ones as instructed. Do not guess APIs from memory — verify against the docs.
 
+## Internationalization (i18n)
+
+All user-facing strings in the renderer are localized. The i18n system lives in `src/mainview/i18n/` and supports three locales: **English** (default), **Russian**, and **Spanish**.
+
+**Strict rule: NEVER hardcode user-facing strings in components.** Always use the `t()` function from the `useT()` hook.
+
+### How it works
+
+- **`useT()`** — React hook that returns the translation function `t(key)` and `t.plural(baseKey, count)`
+- **`useLocale()`** — returns `[locale, setLocale]` for reading/changing the current language
+- **`statusKey(status)`** — maps `TaskStatus` to the corresponding translation key (e.g., `"in-progress"` → `"status.inProgress"`)
+- Translations are plain TypeScript objects in `src/mainview/i18n/translations/{en,ru,es}.ts`
+- English (`en.ts`) is the source of truth — it defines the `TranslationKey` type
+- Other locales must satisfy `TranslationRecord` (all keys from English must be present)
+- Locale is persisted in `localStorage("dev3-locale")`, same pattern as the theme
+
+### Adding a new string
+
+1. Add the key to `src/mainview/i18n/translations/en.ts`
+2. Add translations to `ru.ts` and `es.ts` (TypeScript will error if you forget)
+3. Use `t("your.key")` in the component via `useT()`
+
+### Interpolation
+
+Use `{variable}` placeholders: `t("dashboard.failedAdd", { error: String(err) })`
+
+### Pluralization
+
+Use suffix convention `_one`, `_few`, `_many`, `_other`:
+
+```ts
+// en.ts — English only needs _one and _other
+"dashboard.projectCount_one": "{count} project",
+"dashboard.projectCount_other": "{count} projects",
+
+// ru.ts — Russian needs _one, _few, _many, _other
+"dashboard.projectCount_one": "{count} проект",
+"dashboard.projectCount_few": "{count} проекта",
+"dashboard.projectCount_many": "{count} проектов",
+"dashboard.projectCount_other": "{count} проектов",
+```
+
+Call with `t.plural("dashboard.projectCount", count)`.
+
+### Adding a new locale
+
+1. Create `src/mainview/i18n/translations/{locale}.ts` with type `TranslationRecord & Record<string, string>`
+2. Add the locale to `ALL_LOCALES` and `LOCALE_LABELS` in `src/mainview/i18n/types.ts`
+3. Import and register in `src/mainview/i18n/context.tsx` (`translationSets`)
+4. Add plural rules in `src/mainview/i18n/interpolate.ts` (`getPluralForm`)
+
+### What NOT to translate
+
+- Input placeholders that are command examples (`"bun install"`, `"claude"`, `"main"`)
+- Terminal output (escape sequences written via `term.writeln()`)
+- App name in breadcrumbs (`"dev-3.0"`)
+
 ## Key config files
 
 - `electrobun.config.ts` — Electrobun app config (name, identifier, build copy rules)

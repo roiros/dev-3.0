@@ -2,6 +2,7 @@ import { useState, type Dispatch } from "react";
 import type { Project } from "../../shared/types";
 import type { AppAction, Route } from "../state";
 import { api } from "../rpc";
+import { useT } from "../i18n";
 
 interface ProjectSettingsProps {
 	projectId: string;
@@ -16,6 +17,7 @@ function ProjectSettings({
 	dispatch,
 	navigate,
 }: ProjectSettingsProps) {
+	const t = useT();
 	const project = projects.find((p) => p.id === projectId);
 
 	const [setupScript, setSetupScript] = useState(project?.setupScript || "");
@@ -30,7 +32,7 @@ function ProjectSettings({
 	if (!project) {
 		return (
 			<div className="h-full w-full flex items-center justify-center">
-				<span className="text-danger text-base">Project not found</span>
+				<span className="text-danger text-base">{t("project.notFound")}</span>
 			</div>
 		);
 	}
@@ -47,7 +49,7 @@ function ProjectSettings({
 			dispatch({ type: "updateProject", project: updated });
 			navigate({ screen: "project", projectId });
 		} catch (err) {
-			alert(`Failed to save settings: ${err}`);
+			alert(t("projectSettings.failedSave", { error: String(err) }));
 		}
 		setSaving(false);
 	}
@@ -59,10 +61,10 @@ function ProjectSettings({
 					{/* Setup Script */}
 					<div>
 						<label className="block text-fg text-sm font-semibold mb-2">
-							Setup Script
+							{t("projectSettings.setupScript")}
 						</label>
 						<p className="text-fg-3 text-sm mb-3">
-							Runs in the worktree directory after creation
+							{t("projectSettings.setupScriptDesc")}
 						</p>
 						<textarea
 							value={setupScript}
@@ -76,10 +78,10 @@ function ProjectSettings({
 					{/* Default Tmux Command */}
 					<div>
 						<label className="block text-fg text-sm font-semibold mb-2">
-							Default Command
+							{t("projectSettings.defaultCommand")}
 						</label>
 						<p className="text-fg-3 text-sm mb-3">
-							Command to run inside tmux for new tasks
+							{t("projectSettings.defaultCommandDesc")}
 						</p>
 						<input
 							type="text"
@@ -93,10 +95,10 @@ function ProjectSettings({
 					{/* Default Base Branch */}
 					<div>
 						<label className="block text-fg text-sm font-semibold mb-2">
-							Base Branch
+							{t("projectSettings.baseBranch")}
 						</label>
 						<p className="text-fg-3 text-sm mb-3">
-							Branch to create worktrees from
+							{t("projectSettings.baseBranchDesc")}
 						</p>
 						<input
 							type="text"
@@ -113,7 +115,7 @@ function ProjectSettings({
 						disabled={saving}
 						className="px-6 py-2.5 bg-accent text-white text-sm font-semibold rounded-xl hover:bg-accent-hover disabled:opacity-50 shadow-lg shadow-accent/20 transition-all active:scale-95"
 					>
-						{saving ? "Saving..." : "Save Settings"}
+						{saving ? t("projectSettings.saving") : t("projectSettings.save")}
 					</button>
 				</div>
 			</div>

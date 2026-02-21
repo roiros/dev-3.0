@@ -1,7 +1,8 @@
 import type { Dispatch } from "react";
 import type { Project, Task, TaskStatus } from "../../shared/types";
-import { ALL_STATUSES, STATUS_LABELS } from "../../shared/types";
+import { ALL_STATUSES } from "../../shared/types";
 import type { AppAction, Route } from "../state";
+import { useT, statusKey } from "../i18n";
 import KanbanColumn from "./KanbanColumn";
 
 interface KanbanBoardProps {
@@ -12,6 +13,8 @@ interface KanbanBoardProps {
 }
 
 function KanbanBoard({ project, tasks, dispatch, navigate }: KanbanBoardProps) {
+	const t = useT();
+
 	const tasksByStatus = new Map<TaskStatus, Task[]>();
 	for (const status of ALL_STATUSES) {
 		tasksByStatus.set(status, []);
@@ -26,7 +29,7 @@ function KanbanBoard({ project, tasks, dispatch, navigate }: KanbanBoardProps) {
 				<KanbanColumn
 					key={status}
 					status={status}
-					label={STATUS_LABELS[status]}
+					label={t(statusKey(status))}
 					tasks={tasksByStatus.get(status) || []}
 					project={project}
 					dispatch={dispatch}

@@ -3,6 +3,7 @@ import type { Project, Task, TaskStatus } from "../../shared/types";
 import { STATUS_COLORS } from "../../shared/types";
 import type { AppAction, Route } from "../state";
 import { api } from "../rpc";
+import { useT } from "../i18n";
 import TaskCard from "./TaskCard";
 
 interface KanbanColumnProps {
@@ -22,6 +23,7 @@ function KanbanColumn({
 	dispatch,
 	navigate,
 }: KanbanColumnProps) {
+	const t = useT();
 	const [newTitle, setNewTitle] = useState("");
 	const [adding, setAdding] = useState(false);
 	const color = STATUS_COLORS[status];
@@ -38,7 +40,7 @@ function KanbanColumn({
 			setNewTitle("");
 			setAdding(false);
 		} catch (err) {
-			alert(`Failed to create task: ${err}`);
+			alert(t("kanban.failedCreate", { error: String(err) }));
 		}
 	}
 
@@ -87,7 +89,7 @@ function KanbanColumn({
 
 				{tasks.length === 0 && !adding && (
 					<div className="text-fg-muted text-sm text-center py-8">
-						No tasks
+						{t("kanban.noTasks")}
 					</div>
 				)}
 			</div>
@@ -105,7 +107,7 @@ function KanbanColumn({
 									if (e.key === "Enter") handleCreate();
 									if (e.key === "Escape") setAdding(false);
 								}}
-								placeholder="Task title..."
+								placeholder={t("kanban.taskPlaceholder")}
 								autoFocus
 								className="w-full px-3 py-2.5 bg-elevated border border-edge-active rounded-xl text-fg text-sm placeholder-fg-muted outline-none focus:border-accent/50 transition-colors"
 							/>
@@ -114,13 +116,13 @@ function KanbanColumn({
 									onClick={handleCreate}
 									className="flex-1 px-3 py-2 bg-accent text-white text-sm font-semibold rounded-xl hover:bg-accent-hover transition-colors"
 								>
-									Add
+									{t("kanban.add")}
 								</button>
 								<button
 									onClick={() => setAdding(false)}
 									className="px-3 py-2 text-fg-3 text-sm hover:text-fg transition-colors"
 								>
-									Cancel
+									{t("kanban.cancel")}
 								</button>
 							</div>
 						</div>
@@ -129,7 +131,7 @@ function KanbanColumn({
 							onClick={() => setAdding(true)}
 							className="w-full text-fg-3 hover:text-accent text-sm font-medium text-center py-2.5 rounded-xl hover:bg-accent/10 border border-dashed border-edge hover:border-accent/30 transition-all"
 						>
-							+ New Task
+							{t("kanban.newTask")}
 						</button>
 					)}
 				</div>

@@ -1,6 +1,7 @@
 import { Fragment } from "react";
 import type { Project, Task } from "../../shared/types";
 import type { Route } from "../state";
+import { useT } from "../i18n";
 
 interface GlobalHeaderProps {
 	route: Route;
@@ -15,6 +16,7 @@ interface BreadcrumbSegment {
 }
 
 function GlobalHeader({ route, projects, tasks, navigate }: GlobalHeaderProps) {
+	const t = useT();
 	const segments: BreadcrumbSegment[] = [];
 
 	// App name — always present
@@ -47,11 +49,11 @@ function GlobalHeader({ route, projects, tasks, navigate }: GlobalHeaderProps) {
 	// Last segment — screen-specific
 	if (route.screen === "task") {
 		const task = tasks.find((t) => t.id === route.taskId);
-		segments.push({ label: task?.title || "Task" });
+		segments.push({ label: task?.title || t("header.task") });
 	} else if (route.screen === "project-settings") {
-		segments.push({ label: "Settings" });
+		segments.push({ label: t("header.settings") });
 	} else if (route.screen === "settings") {
-		segments.push({ label: "Settings" });
+		segments.push({ label: t("header.settings") });
 	}
 
 	return (
@@ -93,7 +95,7 @@ function GlobalHeader({ route, projects, tasks, navigate }: GlobalHeaderProps) {
 							})
 						}
 						className="text-fg-3 hover:text-fg transition-colors p-1.5 rounded-lg hover:bg-elevated"
-						title="Project Settings"
+						title={t("header.projectSettings")}
 					>
 						<svg
 							className="w-4 h-4"
@@ -122,7 +124,7 @@ function GlobalHeader({ route, projects, tasks, navigate }: GlobalHeaderProps) {
 					<button
 						onClick={() => navigate({ screen: "settings" })}
 						className="text-fg-3 hover:text-fg transition-colors p-1.5 rounded-lg hover:bg-elevated"
-						title="Settings"
+						title={t("header.settings")}
 					>
 						<svg
 							className="w-4 h-4"

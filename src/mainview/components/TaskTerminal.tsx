@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { Task } from "../../shared/types";
 import type { Route } from "../state";
 import { api } from "../rpc";
+import { useT } from "../i18n";
 import TerminalView from "../TerminalView";
 
 interface TaskTerminalProps {
@@ -12,6 +13,7 @@ interface TaskTerminalProps {
 }
 
 function TaskTerminal({ taskId }: TaskTerminalProps) {
+	const t = useT();
 	const [ptyUrl, setPtyUrl] = useState<string | null>(null);
 
 	useEffect(() => {
@@ -33,7 +35,7 @@ function TaskTerminal({ taskId }: TaskTerminalProps) {
 				<div className="flex items-center justify-center h-full">
 					<div className="flex items-center gap-3">
 						<div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-						<span className="text-fg-3 text-sm">Connecting...</span>
+						<span className="text-fg-3 text-sm">{t("terminal.connecting")}</span>
 					</div>
 				</div>
 			)}

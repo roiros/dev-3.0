@@ -1,0 +1,1 @@
+Added a custom i18n system with English, Russian, and Spanish support. All ~45 hardcoded UI strings in 10 components are now localized via `useT()` hook. Includes interpolation, pluralization (with full Russian plural forms), locale persistence in localStorage, and a language switcher in global settings.

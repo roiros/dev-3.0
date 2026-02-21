@@ -2,6 +2,7 @@ import type { Dispatch } from "react";
 import type { Project } from "../../shared/types";
 import type { AppAction, Route } from "../state";
 import { api } from "../rpc";
+import { useT } from "../i18n";
 
 interface DashboardProps {
 	projects: Project[];
@@ -10,6 +11,8 @@ interface DashboardProps {
 }
 
 function Dashboard({ projects, dispatch, navigate }: DashboardProps) {
+	const t = useT();
+
 	async function handleAddProject() {
 		try {
 			const folder = await api.request.pickFolder();
@@ -24,17 +27,17 @@ function Dashboard({ projects, dispatch, navigate }: DashboardProps) {
 				alert(result.error);
 			}
 		} catch (err) {
-			alert(`Failed to add project: ${err}`);
+			alert(t("dashboard.failedAdd", { error: String(err) }));
 		}
 	}
 
 	async function handleRemoveProject(projectId: string) {
-		if (!confirm("Remove this project from the list?")) return;
+		if (!confirm(t("dashboard.confirmRemove"))) return;
 		try {
 			await api.request.removeProject({ projectId });
 			dispatch({ type: "removeProject", projectId });
 		} catch (err) {
-			alert(`Failed to remove project: ${err}`);
+			alert(t("dashboard.failedRemove", { error: String(err) }));
 		}
 	}
 
@@ -59,30 +62,29 @@ function Dashboard({ projects, dispatch, navigate }: DashboardProps) {
 							</svg>
 						</div>
 						<p className="text-fg-2 text-lg font-medium mb-1">
-							No projects yet
+							{t("dashboard.noProjects")}
 						</p>
 						<p className="text-fg-3 text-sm mb-5">
-							Add a git repository to get started
+							{t("dashboard.noProjectsHint")}
 						</p>
 						<button
 							onClick={handleAddProject}
 							className="px-5 py-2 bg-accent text-white text-sm font-semibold rounded-xl hover:bg-accent-hover shadow-lg shadow-accent/20 transition-all active:scale-95"
 						>
-							Add Project
+							{t("dashboard.addProject")}
 						</button>
 					</div>
 				) : (
 					<div className="max-w-3xl mx-auto">
 						<div className="flex items-center justify-between mb-5">
 							<span className="text-fg-2 text-sm font-medium">
-								{projects.length}{" "}
-								{projects.length === 1 ? "project" : "projects"}
+								{t.plural("dashboard.projectCount", projects.length)}
 							</span>
 							<button
 								onClick={handleAddProject}
 								className="px-4 py-1.5 bg-accent text-white text-sm font-semibold rounded-xl hover:bg-accent-hover shadow-lg shadow-accent/20 transition-all active:scale-95"
 							>
-								Add Project
+								{t("dashboard.addProject")}
 							</button>
 						</div>
 						<div className="space-y-3">
@@ -127,7 +129,7 @@ function Dashboard({ projects, dispatch, navigate }: DashboardProps) {
 										}}
 										className="opacity-0 group-hover:opacity-100 text-fg-3 hover:text-danger text-sm font-medium transition-all px-3 py-1.5 rounded-lg hover:bg-danger/10"
 									>
-										Remove
+										{t("dashboard.remove")}
 									</button>
 									<svg
 										className="w-5 h-5 text-fg-muted group-hover:text-fg-3 transition-colors flex-shrink-0"

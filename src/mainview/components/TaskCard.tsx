@@ -1,13 +1,9 @@
 import { useState, useRef, useEffect, type Dispatch } from "react";
 import type { Project, Task, TaskStatus } from "../../shared/types";
-import {
-	ALL_STATUSES,
-	ACTIVE_STATUSES,
-	STATUS_LABELS,
-	STATUS_COLORS,
-} from "../../shared/types";
+import { ALL_STATUSES, ACTIVE_STATUSES, STATUS_COLORS } from "../../shared/types";
 import type { AppAction, Route } from "../state";
 import { api } from "../rpc";
+import { useT, statusKey } from "../i18n";
 
 interface TaskCardProps {
 	task: Task;
@@ -17,6 +13,7 @@ interface TaskCardProps {
 }
 
 function TaskCard({ task, project, dispatch, navigate }: TaskCardProps) {
+	const t = useT();
 	const [moving, setMoving] = useState(false);
 	const [menuOpen, setMenuOpen] = useState(false);
 	const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
@@ -63,14 +60,14 @@ function TaskCard({ task, project, dispatch, navigate }: TaskCardProps) {
 			});
 			dispatch({ type: "updateTask", task: updated });
 		} catch (err) {
-			alert(`Failed to move task: ${err}`);
+			alert(t("task.failedMove", { error: String(err) }));
 		}
 		setMoving(false);
 	}
 
 	async function handleDelete() {
 		setMenuOpen(false);
-		if (!confirm(`Delete task "${task.title}"?`)) return;
+		if (!confirm(t("task.confirmDelete", { title: task.title }))) return;
 		try {
 			await api.request.deleteTask({
 				taskId: task.id,
@@ -78,7 +75,7 @@ function TaskCard({ task, project, dispatch, navigate }: TaskCardProps) {
 			});
 			dispatch({ type: "removeTask", taskId: task.id });
 		} catch (err) {
-			alert(`Failed to delete task: ${err}`);
+			alert(t("task.failedDelete", { error: String(err) }));
 		}
 	}
 
@@ -120,7 +117,7 @@ function TaskCard({ task, project, dispatch, navigate }: TaskCardProps) {
 						style={{ background: color }}
 					/>
 					<span className="text-xs text-fg-2">
-						{STATUS_LABELS[task.status]}
+						{t(statusKey(task.status))}
 					</span>
 				</button>
 
@@ -131,7 +128,7 @@ function TaskCard({ task, project, dispatch, navigate }: TaskCardProps) {
 						handleDelete();
 					}}
 					className="opacity-0 group-hover:opacity-100 text-fg-muted hover:text-danger transition-all p-1 rounded-lg hover:bg-danger/10"
-					title="Delete"
+					title={t("task.delete")}
 				>
 					<svg
 						className="w-4 h-4"
@@ -158,7 +155,7 @@ function TaskCard({ task, project, dispatch, navigate }: TaskCardProps) {
 					onClick={(e) => e.stopPropagation()}
 				>
 					<div className="px-3 py-2 text-xs text-fg-3 uppercase tracking-wider font-semibold">
-						Move to
+						{t("task.moveTo")}
 					</div>
 					{ALL_STATUSES.filter((s) => s !== task.status).map((s) => (
 						<button
@@ -170,7 +167,7 @@ function TaskCard({ task, project, dispatch, navigate }: TaskCardProps) {
 								className="w-2.5 h-2.5 rounded-full flex-shrink-0"
 								style={{ background: STATUS_COLORS[s] }}
 							/>
-							{STATUS_LABELS[s]}
+							{t(statusKey(s))}
 						</button>
 					))}
 					<div className="border-t border-edge-active mt-1.5 pt-1.5">
@@ -191,7 +188,7 @@ function TaskCard({ task, project, dispatch, navigate }: TaskCardProps) {
 									d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
 								/>
 							</svg>
-							Delete
+							{t("task.delete")}
 						</button>
 					</div>
 				</div>

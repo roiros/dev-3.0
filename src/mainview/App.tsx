@@ -1,6 +1,7 @@
 import { useEffect, useCallback } from "react";
 import { useAppState, type Route } from "./state";
 import { api } from "./rpc";
+import { useT } from "./i18n";
 import GlobalHeader from "./components/GlobalHeader";
 import GlobalSettings from "./components/GlobalSettings";
 import Dashboard from "./components/Dashboard";
@@ -10,6 +11,7 @@ import ProjectSettings from "./components/ProjectSettings";
 
 function App() {
 	const [state, dispatch] = useAppState();
+	const t = useT();
 
 	const navigate = useCallback(
 		(route: Route) => dispatch({ type: "navigate", route }),
@@ -44,7 +46,7 @@ function App() {
 			<div className="h-full w-full flex items-center justify-center bg-base">
 				<div className="flex items-center gap-3">
 					<div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-					<span className="text-fg-3 text-sm">Loading...</span>
+					<span className="text-fg-3 text-sm">{t("app.loading")}</span>
 				</div>
 			</div>
 		);
