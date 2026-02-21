@@ -1,0 +1,1 @@
+Complete UI redesign: darker base background (#0f1014), color-coded Kanban columns with status accent bars, custom dropdown menus replacing native select elements, SVG icons for navigation and actions, styled scrollbars, hover-reveal delete buttons, project cards with folder icons, animated loading states. Tokyo Night palette preserved with better visual hierarchy.

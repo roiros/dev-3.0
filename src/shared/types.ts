@@ -38,6 +38,16 @@ export const STATUS_LABELS: Record<TaskStatus, string> = {
 	cancelled: "Cancelled",
 };
 
+export const STATUS_COLORS: Record<TaskStatus, string> = {
+	todo: "#565f89",
+	"in-progress": "#7aa2f7",
+	"user-questions": "#e0af68",
+	"review-by-ai": "#bb9af7",
+	"review-by-user": "#7dcfff",
+	completed: "#9ece6a",
+	cancelled: "#f7768e",
+};
+
 export interface Project {
 	id: string;
 	name: string;

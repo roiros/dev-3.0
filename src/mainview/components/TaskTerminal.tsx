@@ -27,17 +27,29 @@ function TaskTerminal({ projectId, taskId, tasks, navigate }: TaskTerminalProps)
 	}, [taskId]);
 
 	return (
-		<div className="h-full w-full flex flex-col bg-[#1a1b26]">
+		<div className="h-full w-full flex flex-col bg-[#0f1014]">
 			{/* Header */}
-			<div className="flex items-center gap-4 px-4 py-2 bg-[#16161e] border-b border-[#292e42]">
+			<div className="flex items-center gap-3 px-4 py-2 border-b border-[#1e2030]">
 				<button
 					onClick={() => navigate({ screen: "project", projectId })}
-					className="text-[#565f89] hover:text-[#c0caf5] text-sm transition-colors"
+					className="text-[#3b4261] hover:text-[#c0caf5] transition-colors p-1 rounded-md hover:bg-[#1e2030]"
 				>
-					&larr; Back to Kanban
+					<svg
+						className="w-4 h-4"
+						fill="none"
+						stroke="currentColor"
+						viewBox="0 0 24 24"
+					>
+						<path
+							strokeLinecap="round"
+							strokeLinejoin="round"
+							strokeWidth={2}
+							d="M15 19l-7-7 7-7"
+						/>
+					</svg>
 				</button>
 				{task && (
-					<span className="text-[#c0caf5] text-sm font-medium truncate">
+					<span className="text-[#a9b1d6] text-xs font-medium truncate">
 						{task.title}
 					</span>
 				)}
@@ -49,9 +61,12 @@ function TaskTerminal({ projectId, taskId, tasks, navigate }: TaskTerminalProps)
 					<TerminalView ptyUrl={ptyUrl} taskId={taskId} />
 				) : (
 					<div className="flex items-center justify-center h-full">
-						<span className="text-[#565f89] text-sm">
-							Connecting to terminal...
-						</span>
+						<div className="flex items-center gap-2">
+							<div className="w-1 h-1 rounded-full bg-[#7aa2f7] animate-pulse" />
+							<span className="text-[#3b4261] text-xs">
+								Connecting...
+							</span>
+						</div>
 					</div>
 				)}
 			</div>
