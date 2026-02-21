@@ -1,0 +1,1 @@
+Added product concept docs: extracted detailed design (navigation, Kanban columns, task/terminal lifecycle, worktree management) into concept.md with implementation status tracker. Updated AGENTS.md to reference concept.md. Rewrote README.md to reflect the actual project instead of the template boilerplate.

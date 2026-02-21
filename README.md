@@ -1,61 +1,53 @@
-# React + Tailwind + Vite Electrobun Template
+# dev-3.0
 
-A fast Electrobun desktop app template with React, Tailwind CSS, and Vite for hot module replacement (HMR).
+Terminal-centric project manager — iTerm2 meets Kanban.
 
-## Getting Started
+A desktop app for managing multiple AI coding agents (Claude Code, Gemini CLI, etc.) and other terminal tools across tasks and projects. Each task gets its own git worktree and a terminal session with tmux, so you can run dozens of agents in parallel without losing track.
+
+## Tech stack
+
+- **Runtime:** [Bun](https://bun.sh)
+- **Desktop framework:** [Electrobun](https://electrobun.dev) (not Electron)
+- **Frontend:** React 18, Tailwind CSS, Vite
+- **Terminal:** [ghostty-web](https://github.com/nichochar/ghostty-web) + native PTY via `Bun.spawn`
+
+## Quick start
 
 ```bash
-# Install dependencies
 bun install
-
-# Development with HMR (recommended)
-bun run dev
-
-# Development without HMR (build once, uses bundled assets)
-bun run dev:once
-
-# Build for production
-bun run build
-
-# Build for production release
-bun run build:prod
+bun run dev        # Vite HMR + Electrobun
 ```
 
-## How HMR Works
-
-When you run `bun run dev`:
-
-1. **Vite dev server** starts on `http://localhost:5173` with HMR enabled
-2. **Electrobun** starts and detects the running Vite server
-3. The app loads from the Vite dev server instead of bundled assets
-4. Changes to React components update instantly without full page reload
-
-When you run `bun run dev:once` (without HMR):
-
-1. Electrobun starts and loads from `views://mainview/index.html`
-2. You need to rebuild (`bun run build`) to see changes
-
-## Project Structure
+## Project structure
 
 ```
-├── src/
-│   ├── bun/
-│   │   └── index.ts        # Main process (Electrobun/Bun)
-│   └── mainview/
-│       ├── App.tsx         # React app component
-│       ├── main.tsx        # React entry point
-│       ├── index.html      # HTML template
-│       └── index.css       # Tailwind CSS
-├── electrobun.config.ts    # Electrobun configuration
-├── vite.config.ts          # Vite configuration
-├── tailwind.config.js      # Tailwind configuration
-└── package.json
+src/
+  bun/          Main process (Bun + Electrobun APIs)
+  mainview/     Renderer (React app bundled by Vite)
+docs/           Local docs for dependencies
+concept.md      Product concept & implementation status
+AGENTS.md       Instructions for AI coding agents (CLAUDE.md is a symlink)
 ```
 
-## Customizing
+## How it works
 
-- **React components**: Edit files in `src/mainview/`
-- **Tailwind theme**: Edit `tailwind.config.js`
-- **Vite settings**: Edit `vite.config.ts`
-- **Window settings**: Edit `src/bun/index.ts`
-- **App metadata**: Edit `electrobun.config.ts`
+1. You add a project (any git repo on disk).
+2. You create tasks on a Kanban board.
+3. Each task spins up an isolated git worktree + terminal with tmux.
+4. A preconfigured command (e.g., `claude`) launches automatically inside tmux.
+5. You manage all your agents and tasks from one place.
+
+See [concept.md](concept.md) for detailed design and current status.
+
+## Development
+
+```bash
+bun run dev        # HMR mode (Vite dev server + Electrobun concurrently)
+bun run dev:once   # Build once, then run
+bun run build      # Staging build
+bun run build:prod # Production build
+```
+
+## License
+
+Private.

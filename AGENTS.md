@@ -41,7 +41,11 @@ If you are in a worktree, your working directory will be different (e.g., a temp
 
 ## What is this
 
-Desktop application built with **Electrobun** (not Electron), React 18, Tailwind CSS, and Vite. Runtime is Bun.
+A **terminal-centric project manager** — iTerm2 meets Kanban. Desktop app for managing multiple AI coding agents and terminal-based tools across tasks and projects. Built with **Electrobun** (not Electron), React 18, Tailwind CSS, and Vite. Runtime is Bun. Cross-platform (macOS, Linux, Windows).
+
+Key idea: each project is a git repo, each task gets its own **git worktree** + **terminal** running inside **tmux** with a preconfigured command (e.g., `claude`).
+
+**Full product concept, design details, and implementation status tracker:** see [`concept.md`](concept.md).
 
 ## Commands
 
