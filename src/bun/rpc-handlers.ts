@@ -187,8 +187,48 @@ export const handlers = {
 	},
 
 	async getPtyUrl(params: { taskId: string }): Promise<string> {
+		log.info("→ getPtyUrl", { taskId: params.taskId });
+
+		// If no PTY session in memory, try to recreate it from persisted task data
+		if (!pty.hasSession(params.taskId)) {
+			log.info("No PTY session in memory, attempting to restore", {
+				taskId: params.taskId.slice(0, 8),
+			});
+
+			// Find the task across all projects
+			const projects = await data.loadProjects();
+			let foundTask: Task | null = null;
+			let foundProject: Project | null = null;
+			for (const project of projects) {
+				try {
+					const task = await data.getTask(project, params.taskId);
+					foundTask = task;
+					foundProject = project;
+					break;
+				} catch {
+					// task not in this project
+				}
+			}
+
+			if (foundTask && foundProject && isActive(foundTask.status) && foundTask.worktreePath) {
+				const tmuxCmd = foundProject.defaultTmuxCommand || "bash";
+				log.info("Restoring PTY session for active task", {
+					taskId: params.taskId.slice(0, 8),
+					worktreePath: foundTask.worktreePath,
+					tmuxCmd,
+				});
+				pty.createSession(params.taskId, foundTask.worktreePath, tmuxCmd);
+			} else {
+				log.warn("Cannot restore PTY session: task not active or no worktree", {
+					taskId: params.taskId.slice(0, 8),
+					status: foundTask?.status,
+					worktreePath: foundTask?.worktreePath,
+				});
+			}
+		}
+
 		const url = `ws://localhost:7681?session=${params.taskId}`;
-		log.info("→ getPtyUrl", { taskId: params.taskId, url });
+		log.info("← getPtyUrl", { url });
 		return url;
 	},
 };

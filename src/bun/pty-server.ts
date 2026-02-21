@@ -78,7 +78,7 @@ function spawnPty(session: PtySession, cols: number, rows: number): void {
 	});
 
 	const proc = Bun.spawn(
-		["tmux", "new-session", "-s", tmuxSessionName, tmuxCmd],
+		["tmux", "new-session", "-A", "-s", tmuxSessionName, tmuxCmd],
 		{
 			terminal: {
 				cols,

@@ -1,0 +1,1 @@
+Restore PTY sessions after app restart. When opening a terminal for an active task that lost its in-memory session (e.g., after restart), the app now recreates the session automatically. Also use tmux `new-session -A` to reattach to existing tmux sessions instead of failing.
