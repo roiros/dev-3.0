@@ -34,23 +34,23 @@ function ProjectView({
 
 	if (!project) {
 		return (
-			<div className="h-full w-full flex items-center justify-center bg-[#0f1014]">
-				<span className="text-[#f7768e] text-sm">Project not found</span>
+			<div className="h-full w-full flex items-center justify-center bg-[#171924]">
+				<span className="text-[#fc8181] text-base">Project not found</span>
 			</div>
 		);
 	}
 
 	return (
-		<div className="h-full w-full flex flex-col bg-[#0f1014]">
+		<div className="h-full w-full flex flex-col bg-[#171924]">
 			{/* Header */}
-			<div className="flex items-center justify-between px-5 py-3 border-b border-[#1e2030]">
-				<div className="flex items-center gap-3">
+			<div className="flex items-center justify-between px-6 py-4 border-b border-[#2a2e48]">
+				<div className="flex items-center gap-4">
 					<button
 						onClick={() => navigate({ screen: "dashboard" })}
-						className="text-[#3b4261] hover:text-[#c0caf5] transition-colors p-1 -ml-1 rounded-md hover:bg-[#1e2030]"
+						className="text-[#6b7094] hover:text-[#eceef8] transition-colors p-1.5 rounded-lg hover:bg-[#262940]"
 					>
 						<svg
-							className="w-4 h-4"
+							className="w-5 h-5"
 							fill="none"
 							stroke="currentColor"
 							viewBox="0 0 24 24"
@@ -63,7 +63,7 @@ function ProjectView({
 							/>
 						</svg>
 					</button>
-					<span className="text-[#c0caf5] font-semibold text-sm">
+					<span className="text-[#eceef8] font-bold text-lg">
 						{project.name}
 					</span>
 				</div>
@@ -71,11 +71,11 @@ function ProjectView({
 					onClick={() =>
 						navigate({ screen: "project-settings", projectId })
 					}
-					className="text-[#3b4261] hover:text-[#c0caf5] transition-colors p-1.5 rounded-md hover:bg-[#1e2030]"
+					className="text-[#6b7094] hover:text-[#eceef8] transition-colors p-2 rounded-lg hover:bg-[#262940]"
 					title="Settings"
 				>
 					<svg
-						className="w-4 h-4"
+						className="w-5 h-5"
 						fill="none"
 						stroke="currentColor"
 						viewBox="0 0 24 24"

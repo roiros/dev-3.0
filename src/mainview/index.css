@@ -11,8 +11,8 @@ html, body, #root {
 
 /* Custom scrollbars */
 ::-webkit-scrollbar {
-	width: 6px;
-	height: 6px;
+	width: 7px;
+	height: 7px;
 }
 
 ::-webkit-scrollbar-track {
@@ -20,12 +20,12 @@ html, body, #root {
 }
 
 ::-webkit-scrollbar-thumb {
-	background: #292e42;
-	border-radius: 3px;
+	background: #3d4268;
+	border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-	background: #3b4261;
+	background: #4e5380;
 }
 
 /* Font smoothing */

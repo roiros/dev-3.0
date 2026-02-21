@@ -39,13 +39,13 @@ export const STATUS_LABELS: Record<TaskStatus, string> = {
 };
 
 export const STATUS_COLORS: Record<TaskStatus, string> = {
-	todo: "#565f89",
-	"in-progress": "#7aa2f7",
-	"user-questions": "#e0af68",
-	"review-by-ai": "#bb9af7",
-	"review-by-user": "#7dcfff",
-	completed: "#9ece6a",
-	cancelled: "#f7768e",
+	todo: "#8890b5",
+	"in-progress": "#5e9eff",
+	"user-questions": "#ffb347",
+	"review-by-ai": "#a87cff",
+	"review-by-user": "#4fd1c5",
+	completed: "#68d391",
+	cancelled: "#fc8181",
 };
 
 export interface Project {

@@ -39,30 +39,30 @@ function Dashboard({ projects, dispatch, navigate }: DashboardProps) {
 	}
 
 	return (
-		<div className="h-full w-full flex flex-col bg-[#0f1014]">
+		<div className="h-full w-full flex flex-col bg-[#171924]">
 			{/* Header */}
-			<div className="flex items-center justify-between px-6 py-4 border-b border-[#1e2030]">
+			<div className="flex items-center justify-between px-7 py-5 border-b border-[#2a2e48]">
 				<div className="flex items-center gap-3">
-					<div className="w-2 h-2 rounded-full bg-[#7aa2f7]" />
-					<span className="text-[#c0caf5] font-semibold text-base tracking-tight">
+					<div className="w-3 h-3 rounded-full bg-[#5e9eff]" />
+					<span className="text-[#eceef8] font-bold text-xl tracking-tight">
 						dev-3.0
 					</span>
 				</div>
 				<button
 					onClick={handleAddProject}
-					className="px-4 py-1.5 bg-[#7aa2f7]/10 text-[#7aa2f7] text-sm font-medium rounded-lg hover:bg-[#7aa2f7]/20 border border-[#7aa2f7]/20 transition-all"
+					className="px-5 py-2 bg-[#5e9eff] text-white text-sm font-semibold rounded-xl hover:bg-[#4d8bff] shadow-lg shadow-[#5e9eff]/20 transition-all active:scale-95"
 				>
 					Add Project
 				</button>
 			</div>
 
 			{/* Content */}
-			<div className="flex-1 overflow-y-auto p-6">
+			<div className="flex-1 overflow-y-auto p-7">
 				{projects.length === 0 ? (
-					<div className="flex flex-col items-center justify-center h-full text-[#565f89]">
-						<div className="w-16 h-16 rounded-2xl bg-[#16161e] flex items-center justify-center mb-4">
+					<div className="flex flex-col items-center justify-center h-full">
+						<div className="w-20 h-20 rounded-2xl bg-[#1e2133] flex items-center justify-center mb-5">
 							<svg
-								className="w-8 h-8 text-[#3b4261]"
+								className="w-10 h-10 text-[#4e5380]"
 								fill="none"
 								stroke="currentColor"
 								viewBox="0 0 24 24"
@@ -75,24 +75,26 @@ function Dashboard({ projects, dispatch, navigate }: DashboardProps) {
 								/>
 							</svg>
 						</div>
-						<p className="text-sm font-medium mb-1">No projects yet</p>
-						<p className="text-xs text-[#3b4261]">
+						<p className="text-[#a4a8c4] text-lg font-medium mb-1">
+							No projects yet
+						</p>
+						<p className="text-[#6b7094] text-sm">
 							Add a git repository to get started
 						</p>
 					</div>
 				) : (
-					<div className="max-w-2xl mx-auto space-y-2">
+					<div className="max-w-3xl mx-auto space-y-3">
 						{projects.map((project) => (
 							<div
 								key={project.id}
-								className="group flex items-center gap-4 p-4 bg-[#16161e] rounded-xl hover:bg-[#1a1e2e] transition-all cursor-pointer"
+								className="group flex items-center gap-5 p-5 bg-[#1e2133] rounded-2xl hover:bg-[#252845] border border-[#2a2e48] hover:border-[#3d4268] transition-all cursor-pointer"
 								onClick={() =>
 									navigate({ screen: "project", projectId: project.id })
 								}
 							>
-								<div className="w-10 h-10 rounded-lg bg-[#7aa2f7]/10 flex items-center justify-center flex-shrink-0">
+								<div className="w-12 h-12 rounded-xl bg-[#5e9eff]/15 flex items-center justify-center flex-shrink-0">
 									<svg
-										className="w-5 h-5 text-[#7aa2f7]"
+										className="w-6 h-6 text-[#5e9eff]"
 										fill="none"
 										stroke="currentColor"
 										viewBox="0 0 24 24"
@@ -106,10 +108,10 @@ function Dashboard({ projects, dispatch, navigate }: DashboardProps) {
 									</svg>
 								</div>
 								<div className="min-w-0 flex-1">
-									<div className="text-[#c0caf5] font-medium text-sm truncate">
+									<div className="text-[#eceef8] font-semibold text-base truncate">
 										{project.name}
 									</div>
-									<div className="text-[#3b4261] text-xs mt-0.5 truncate font-mono">
+									<div className="text-[#6b7094] text-sm mt-1 truncate font-mono">
 										{project.path}
 									</div>
 								</div>
@@ -118,12 +120,12 @@ function Dashboard({ projects, dispatch, navigate }: DashboardProps) {
 										e.stopPropagation();
 										handleRemoveProject(project.id);
 									}}
-									className="opacity-0 group-hover:opacity-100 text-[#3b4261] hover:text-[#f7768e] text-xs transition-all px-2 py-1 rounded hover:bg-[#f7768e]/10"
+									className="opacity-0 group-hover:opacity-100 text-[#6b7094] hover:text-[#fc8181] text-sm font-medium transition-all px-3 py-1.5 rounded-lg hover:bg-[#fc8181]/10"
 								>
 									Remove
 								</button>
 								<svg
-									className="w-4 h-4 text-[#3b4261] group-hover:text-[#565f89] transition-colors flex-shrink-0"
+									className="w-5 h-5 text-[#4e5380] group-hover:text-[#6b7094] transition-colors flex-shrink-0"
 									fill="none"
 									stroke="currentColor"
 									viewBox="0 0 24 24"
@@ -131,7 +133,7 @@ function Dashboard({ projects, dispatch, navigate }: DashboardProps) {
 									<path
 										strokeLinecap="round"
 										strokeLinejoin="round"
-										strokeWidth={1.5}
+										strokeWidth={2}
 										d="M9 5l7 7-7 7"
 									/>
 								</svg>

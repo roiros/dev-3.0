@@ -47,7 +47,7 @@ function TaskCard({ task, project, dispatch, navigate }: TaskCardProps) {
 		e.stopPropagation();
 		if (!menuOpen && triggerRef.current) {
 			const rect = triggerRef.current.getBoundingClientRect();
-			setMenuPos({ top: rect.bottom + 4, left: rect.left });
+			setMenuPos({ top: rect.bottom + 6, left: rect.left });
 		}
 		setMenuOpen(!menuOpen);
 	}
@@ -94,31 +94,32 @@ function TaskCard({ task, project, dispatch, navigate }: TaskCardProps) {
 
 	return (
 		<div
-			className={`group p-2.5 bg-[#1a1b26] rounded-lg text-xs transition-all ${
+			className={`group p-3.5 bg-[#262940] rounded-xl transition-all border-l-[3px] ${
 				isActive
-					? "cursor-pointer hover:bg-[#1e2030] hover:shadow-lg hover:shadow-black/20"
+					? "cursor-pointer hover:bg-[#2e3250] hover:shadow-lg hover:shadow-black/15"
 					: "opacity-60"
 			} ${moving ? "opacity-50 pointer-events-none" : ""}`}
+			style={{ borderLeftColor: color }}
 			onClick={handleClick}
 		>
 			{/* Title */}
-			<div className="text-[#c0caf5] text-[12px] leading-relaxed break-words pr-5">
+			<div className="text-[#eceef8] text-sm leading-relaxed break-words font-medium pr-5">
 				{task.title}
 			</div>
 
 			{/* Bottom row: status badge + actions */}
-			<div className="flex items-center justify-between mt-2">
+			<div className="flex items-center justify-between mt-3">
 				<button
 					ref={triggerRef}
 					onClick={toggleMenu}
-					className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-md hover:bg-white/5 transition-colors"
+					className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-white/5 transition-colors"
 					disabled={moving}
 				>
 					<div
-						className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+						className="w-2 h-2 rounded-full flex-shrink-0"
 						style={{ background: color }}
 					/>
-					<span className="text-[10px] text-[#565f89]">
+					<span className="text-xs text-[#a4a8c4]">
 						{STATUS_LABELS[task.status]}
 					</span>
 				</button>
@@ -129,11 +130,11 @@ function TaskCard({ task, project, dispatch, navigate }: TaskCardProps) {
 						e.stopPropagation();
 						handleDelete();
 					}}
-					className="opacity-0 group-hover:opacity-100 text-[#3b4261] hover:text-[#f7768e] transition-all p-0.5 rounded hover:bg-[#f7768e]/10"
+					className="opacity-0 group-hover:opacity-100 text-[#4e5380] hover:text-[#fc8181] transition-all p-1 rounded-lg hover:bg-[#fc8181]/10"
 					title="Delete"
 				>
 					<svg
-						className="w-3 h-3"
+						className="w-4 h-4"
 						fill="none"
 						stroke="currentColor"
 						viewBox="0 0 24 24"
@@ -152,33 +153,33 @@ function TaskCard({ task, project, dispatch, navigate }: TaskCardProps) {
 			{menuOpen && (
 				<div
 					ref={menuRef}
-					className="fixed z-50 bg-[#1e2030] rounded-lg shadow-xl shadow-black/40 border border-[#292e42] py-1 min-w-[160px]"
+					className="fixed z-50 bg-[#262940] rounded-xl shadow-2xl shadow-black/40 border border-[#3d4268] py-1.5 min-w-[180px]"
 					style={{ top: menuPos.top, left: menuPos.left }}
 					onClick={(e) => e.stopPropagation()}
 				>
-					<div className="px-2.5 py-1.5 text-[10px] text-[#3b4261] uppercase tracking-wider font-medium">
+					<div className="px-3 py-2 text-xs text-[#6b7094] uppercase tracking-wider font-semibold">
 						Move to
 					</div>
 					{ALL_STATUSES.filter((s) => s !== task.status).map((s) => (
 						<button
 							key={s}
 							onClick={() => handleMove(s)}
-							className="w-full text-left px-2.5 py-1.5 text-[11px] text-[#a9b1d6] hover:bg-[#292e42] flex items-center gap-2 transition-colors"
+							className="w-full text-left px-3 py-2 text-sm text-[#a4a8c4] hover:bg-[#2e3250] hover:text-[#eceef8] flex items-center gap-2.5 transition-colors"
 						>
 							<div
-								className="w-2 h-2 rounded-full flex-shrink-0"
+								className="w-2.5 h-2.5 rounded-full flex-shrink-0"
 								style={{ background: STATUS_COLORS[s] }}
 							/>
 							{STATUS_LABELS[s]}
 						</button>
 					))}
-					<div className="border-t border-[#292e42] mt-1 pt-1">
+					<div className="border-t border-[#3d4268] mt-1.5 pt-1.5">
 						<button
 							onClick={handleDelete}
-							className="w-full text-left px-2.5 py-1.5 text-[11px] text-[#f7768e] hover:bg-[#f7768e]/10 flex items-center gap-2 transition-colors"
+							className="w-full text-left px-3 py-2 text-sm text-[#fc8181] hover:bg-[#fc8181]/10 flex items-center gap-2.5 transition-colors"
 						>
 							<svg
-								className="w-3 h-3 flex-shrink-0"
+								className="w-4 h-4 flex-shrink-0"
 								fill="none"
 								stroke="currentColor"
 								viewBox="0 0 24 24"

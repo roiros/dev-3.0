@@ -29,8 +29,8 @@ function ProjectSettings({
 
 	if (!project) {
 		return (
-			<div className="h-full w-full flex items-center justify-center bg-[#0f1014]">
-				<span className="text-[#f7768e] text-sm">Project not found</span>
+			<div className="h-full w-full flex items-center justify-center bg-[#171924]">
+				<span className="text-[#fc8181] text-base">Project not found</span>
 			</div>
 		);
 	}
@@ -53,15 +53,15 @@ function ProjectSettings({
 	}
 
 	return (
-		<div className="h-full w-full flex flex-col bg-[#0f1014]">
+		<div className="h-full w-full flex flex-col bg-[#171924]">
 			{/* Header */}
-			<div className="flex items-center gap-3 px-5 py-3 border-b border-[#1e2030]">
+			<div className="flex items-center gap-4 px-6 py-4 border-b border-[#2a2e48]">
 				<button
 					onClick={() => navigate({ screen: "project", projectId })}
-					className="text-[#3b4261] hover:text-[#c0caf5] transition-colors p-1 -ml-1 rounded-md hover:bg-[#1e2030]"
+					className="text-[#6b7094] hover:text-[#eceef8] transition-colors p-1.5 rounded-lg hover:bg-[#262940]"
 				>
 					<svg
-						className="w-4 h-4"
+						className="w-5 h-5"
 						fill="none"
 						stroke="currentColor"
 						viewBox="0 0 24 24"
@@ -74,21 +74,21 @@ function ProjectSettings({
 						/>
 					</svg>
 				</button>
-				<span className="text-[#c0caf5] font-semibold text-sm">
+				<span className="text-[#eceef8] font-bold text-lg">
 					Settings
 				</span>
-				<span className="text-[#3b4261] text-xs">{project.name}</span>
+				<span className="text-[#6b7094] text-sm">{project.name}</span>
 			</div>
 
 			{/* Form */}
-			<div className="flex-1 overflow-y-auto p-6">
-				<div className="max-w-lg space-y-6">
+			<div className="flex-1 overflow-y-auto p-7">
+				<div className="max-w-xl space-y-7">
 					{/* Setup Script */}
 					<div>
-						<label className="block text-[#a9b1d6] text-xs font-medium mb-1.5">
+						<label className="block text-[#eceef8] text-sm font-semibold mb-2">
 							Setup Script
 						</label>
-						<p className="text-[#3b4261] text-[11px] mb-2">
+						<p className="text-[#6b7094] text-sm mb-3">
 							Runs in the worktree directory after creation
 						</p>
 						<textarea
@@ -96,16 +96,16 @@ function ProjectSettings({
 							onChange={(e) => setSetupScript(e.target.value)}
 							rows={4}
 							placeholder="bun install"
-							className="w-full px-3 py-2 bg-[#13141c] border border-[#1e2030] rounded-lg text-[#c0caf5] text-xs font-mono placeholder-[#292e42] outline-none focus:border-[#7aa2f7]/30 transition-colors resize-y"
+							className="w-full px-4 py-3 bg-[#1e2133] border border-[#2a2e48] rounded-xl text-[#eceef8] text-sm font-mono placeholder-[#4e5380] outline-none focus:border-[#5e9eff]/40 transition-colors resize-y"
 						/>
 					</div>
 
 					{/* Default Tmux Command */}
 					<div>
-						<label className="block text-[#a9b1d6] text-xs font-medium mb-1.5">
+						<label className="block text-[#eceef8] text-sm font-semibold mb-2">
 							Default Command
 						</label>
-						<p className="text-[#3b4261] text-[11px] mb-2">
+						<p className="text-[#6b7094] text-sm mb-3">
 							Command to run inside tmux for new tasks
 						</p>
 						<input
@@ -113,16 +113,16 @@ function ProjectSettings({
 							value={defaultTmuxCommand}
 							onChange={(e) => setDefaultTmuxCommand(e.target.value)}
 							placeholder="claude"
-							className="w-full px-3 py-2 bg-[#13141c] border border-[#1e2030] rounded-lg text-[#c0caf5] text-xs placeholder-[#292e42] outline-none focus:border-[#7aa2f7]/30 transition-colors"
+							className="w-full px-4 py-3 bg-[#1e2133] border border-[#2a2e48] rounded-xl text-[#eceef8] text-sm placeholder-[#4e5380] outline-none focus:border-[#5e9eff]/40 transition-colors"
 						/>
 					</div>
 
 					{/* Default Base Branch */}
 					<div>
-						<label className="block text-[#a9b1d6] text-xs font-medium mb-1.5">
+						<label className="block text-[#eceef8] text-sm font-semibold mb-2">
 							Base Branch
 						</label>
-						<p className="text-[#3b4261] text-[11px] mb-2">
+						<p className="text-[#6b7094] text-sm mb-3">
 							Branch to create worktrees from
 						</p>
 						<input
@@ -130,7 +130,7 @@ function ProjectSettings({
 							value={defaultBaseBranch}
 							onChange={(e) => setDefaultBaseBranch(e.target.value)}
 							placeholder="main"
-							className="w-full px-3 py-2 bg-[#13141c] border border-[#1e2030] rounded-lg text-[#c0caf5] text-xs placeholder-[#292e42] outline-none focus:border-[#7aa2f7]/30 transition-colors"
+							className="w-full px-4 py-3 bg-[#1e2133] border border-[#2a2e48] rounded-xl text-[#eceef8] text-sm placeholder-[#4e5380] outline-none focus:border-[#5e9eff]/40 transition-colors"
 						/>
 					</div>
 
@@ -138,7 +138,7 @@ function ProjectSettings({
 					<button
 						onClick={handleSave}
 						disabled={saving}
-						className="px-5 py-2 bg-[#7aa2f7] text-[#0f1014] text-xs font-medium rounded-lg hover:bg-[#89b4fa] disabled:opacity-50 transition-colors"
+						className="px-6 py-2.5 bg-[#5e9eff] text-white text-sm font-semibold rounded-xl hover:bg-[#4d8bff] disabled:opacity-50 shadow-lg shadow-[#5e9eff]/20 transition-all active:scale-95"
 					>
 						{saving ? "Saving..." : "Save Settings"}
 					</button>

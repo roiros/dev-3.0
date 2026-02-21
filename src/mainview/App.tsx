@@ -39,10 +39,10 @@ function App() {
 
 	if (state.loading) {
 		return (
-			<div className="h-full w-full flex items-center justify-center bg-[#0f1014]">
-				<div className="flex items-center gap-2">
-					<div className="w-1.5 h-1.5 rounded-full bg-[#7aa2f7] animate-pulse" />
-					<span className="text-[#3b4261] text-xs">Loading...</span>
+			<div className="h-full w-full flex items-center justify-center bg-[#171924]">
+				<div className="flex items-center gap-3">
+					<div className="w-2 h-2 rounded-full bg-[#5e9eff] animate-pulse" />
+					<span className="text-[#6b7094] text-sm">Loading...</span>
 				</div>
 			</div>
 		);
