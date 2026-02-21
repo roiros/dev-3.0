@@ -6,7 +6,11 @@
       "Bash(python3:*)",
       "Bash(grep:*)",
       "Bash(tee:*)",
-      "Bash(head:*)"
+      "Bash(head:*)",
+      "WebFetch(domain:blackboard.sh)",
+      "Bash(ls:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }
