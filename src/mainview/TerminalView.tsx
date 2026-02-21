@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import { init, Terminal, FitAddon } from "ghostty-web";
 
+const PTY_WS_URL = "ws://localhost:7681";
+
 function TerminalView() {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const termRef = useRef<Terminal | null>(null);
@@ -8,6 +10,7 @@ function TerminalView() {
 	useEffect(() => {
 		let disposed = false;
 		let fitAddon: FitAddon | null = null;
+		let ws: WebSocket | null = null;
 
 		async function setup() {
 			if (!containerRef.current || disposed) return;
@@ -48,55 +51,53 @@ function TerminalView() {
 			fitAddon = new FitAddon();
 			term.loadAddon(fitAddon);
 			term.open(containerRef.current);
-			fitAddon.fit();
-			fitAddon.observeResize();
-
 			termRef.current = term;
 
-			// Hello World banner
-			term.writeln("\x1b[1;35m  ghostty-web \x1b[0m\x1b[2mv0.4.0\x1b[0m");
-			term.writeln("");
-			term.writeln(
-				"\x1b[32m  Terminal emulator powered by Ghostty WASM\x1b[0m",
-			);
-			term.writeln(
-				"\x1b[2m  Canvas renderer | VT100 | Kitty keyboard protocol\x1b[0m",
-			);
-			term.writeln("");
+			// Fit after a frame to ensure layout is computed
+			requestAnimationFrame(() => {
+				if (disposed) return;
+				fitAddon!.fit();
+				fitAddon!.observeResize();
+				term.focus();
+				connectPty(term, fitAddon!);
+			});
+		}
 
-			// ANSI color palette demo
-			let colors = "  ";
-			for (let i = 0; i < 8; i++) colors += `\x1b[4${i}m   `;
-			colors += "\x1b[0m\r\n  ";
-			for (let i = 0; i < 8; i++) colors += `\x1b[10${i}m   `;
-			colors += "\x1b[0m";
-			term.writeln(colors);
-			term.writeln("");
+		function connectPty(term: Terminal, fit: FitAddon) {
+			ws = new WebSocket(PTY_WS_URL);
 
-			// Simple local echo shell
-			let line = "";
-			const prompt = "\x1b[1;34m>\x1b[0m ";
+			ws.onopen = () => {
+				const dims = fit.proposeDimensions();
+				if (dims) {
+					ws?.send(`\x1b]resize;${dims.cols};${dims.rows}\x07`);
+				}
+			};
 
-			term.write(prompt);
+			ws.onmessage = (event) => {
+				term.write(
+					typeof event.data === "string"
+						? event.data
+						: new Uint8Array(event.data),
+				);
+			};
+
+			ws.onclose = () => {
+				term.writeln("\r\n\x1b[2m[session ended]\x1b[0m");
+			};
+
+			ws.onerror = () => {
+				term.writeln("\x1b[31mFailed to connect to PTY server\x1b[0m");
+			};
 
 			term.onData((data) => {
-				if (data === "\r") {
-					term.write("\r\n");
-					handleCommand(term, line.trim());
-					line = "";
-					term.write(prompt);
-				} else if (data === "\x7f" || data === "\b") {
-					if (line.length > 0) {
-						line = line.slice(0, -1);
-						term.write("\b \b");
-					}
-				} else if (data === "\x03") {
-					line = "";
-					term.write("^C\r\n");
-					term.write(prompt);
-				} else if (data >= " ") {
-					line += data;
-					term.write(data);
+				if (ws?.readyState === WebSocket.OPEN) {
+					ws.send(data);
+				}
+			});
+
+			term.onResize(({ cols, rows }) => {
+				if (ws?.readyState === WebSocket.OPEN) {
+					ws.send(`\x1b]resize;${cols};${rows}\x07`);
 				}
 			});
 		}
@@ -105,6 +106,7 @@ function TerminalView() {
 
 		return () => {
 			disposed = true;
+			ws?.close();
 			fitAddon?.dispose();
 			if (termRef.current) {
 				termRef.current.dispose();
@@ -118,60 +120,9 @@ function TerminalView() {
 			ref={containerRef}
 			className="w-full h-full min-h-0"
 			style={{ padding: "4px" }}
+			onClick={() => termRef.current?.focus()}
 		/>
 	);
-}
-
-function handleCommand(term: Terminal, cmd: string) {
-	if (!cmd) return;
-
-	switch (cmd) {
-		case "help":
-			term.writeln("\x1b[1mAvailable commands:\x1b[0m");
-			term.writeln("  \x1b[33mhelp\x1b[0m     Show this message");
-			term.writeln("  \x1b[33mhello\x1b[0m    Say hello");
-			term.writeln("  \x1b[33mcolors\x1b[0m   Show 256-color palette");
-			term.writeln("  \x1b[33mclear\x1b[0m    Clear screen");
-			term.writeln("  \x1b[33mecho\x1b[0m     Echo arguments");
-			break;
-
-		case "hello":
-			term.writeln("\x1b[1;36mHello, World!\x1b[0m");
-			break;
-
-		case "clear":
-			term.clear();
-			break;
-
-		case "colors": {
-			term.writeln("\x1b[1m256-color palette:\x1b[0m");
-			for (let i = 0; i < 16; i++) {
-				term.write(`\x1b[48;5;${i}m  `);
-				if (i === 7) term.write("\x1b[0m\r\n");
-			}
-			term.writeln("\x1b[0m");
-			for (let row = 0; row < 12; row++) {
-				for (let col = 0; col < 18; col++) {
-					const idx = 16 + row * 18 + col;
-					if (idx < 232) term.write(`\x1b[48;5;${idx}m `);
-				}
-				term.writeln("\x1b[0m");
-			}
-			for (let i = 232; i < 256; i++) {
-				term.write(`\x1b[48;5;${i}m `);
-			}
-			term.writeln("\x1b[0m");
-			break;
-		}
-
-		default:
-			if (cmd.startsWith("echo ")) {
-				term.writeln(cmd.slice(5));
-			} else {
-				term.writeln(`\x1b[31mcommand not found:\x1b[0m ${cmd}`);
-				term.writeln("\x1b[2mType 'help' for available commands\x1b[0m");
-			}
-	}
 }
 
 export default TerminalView;
