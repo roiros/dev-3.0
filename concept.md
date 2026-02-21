@@ -105,3 +105,25 @@ Every task gets its own isolated git branch + working directory, and the termina
 ### Terminal engine
 
 The terminal emulator is **ghostty-web** (already integrated into the project). PTY is provided by Bun.spawn's native terminal API, bridged to the renderer via WebSocket.
+
+### tmux window management
+
+Each task's terminal runs inside a **tmux session** with a known session name (derived from the task/project). The app needs to reliably identify and interact with the "main" tmux window — the one it created for the coding agent.
+
+**Window naming:**
+- On session creation, the first window is named `coder` (intended for the coding agent like `claude`).
+- `automatic-rename` is disabled for this window (`set-option -w automatic-rename off`) so tmux doesn't silently rename it when a different process starts inside.
+- The user is free to create additional windows/tabs — those are theirs to manage.
+
+**Window lookup strategy (priority order):**
+1. Look for a window named `coder` in the session.
+2. If `coder` not found (user renamed or closed it) — fall back to the window with the lowest `window_index`.
+3. If the session has no windows at all (or the session is dead) — **recreate** the session and the `coder` window from scratch. A working terminal must always exist for an active task.
+
+The terminal is a singleton per active task — if it's gone, we silently bring it back. No user confirmation needed.
+
+**Reading terminal content:**
+- **Current screen (viewport):** use the ghostty-web Buffer API — `terminal.buffer.active.getLine(y).translateToString()` iterating over visible rows, or `terminal.wasmTerm.getViewport()` for raw cell data in a single WASM call.
+- **Scrollback (ghostty-web level):** `terminal.wasmTerm.getScrollbackLength()` + `getScrollbackLine(offset)`. This is the outer terminal's scrollback — it does NOT include tmux's internal scroll history.
+- **Scrollback (tmux level):** `tmux capture-pane -t "session:window" -p -S -N` to capture N lines of history from a specific tmux pane. This is the real command output history when tmux uses the alternate screen.
+- **Window listing:** `tmux list-windows -t "session" -F "#{window_index}:#{window_name}:#{window_active}"` to discover all windows and their states.

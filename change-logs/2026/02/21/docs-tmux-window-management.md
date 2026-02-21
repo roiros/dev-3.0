@@ -1,0 +1,1 @@
+Added tmux window management design notes to concept.md: window naming strategy (coder window with automatic-rename disabled), lookup/fallback logic, terminal recreation policy, and approaches for reading terminal content (ghostty-web viewport, scrollback, and tmux capture-pane).
