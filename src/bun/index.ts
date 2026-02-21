@@ -125,4 +125,12 @@ mainWindow.on("close", () => {
 	Utils.quit();
 });
 
+// Open DevTools after page loads on dev channel
+mainWindow.webview.on("dom-ready", async () => {
+	const channel = await Updater.localInfo.channel();
+	if (channel === "dev") {
+		mainWindow.webview.openDevTools();
+	}
+});
+
 console.log("ghostty-web terminal app started!");
