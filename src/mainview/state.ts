@@ -19,7 +19,7 @@ export interface AppState {
 	loading: boolean;
 }
 
-const initialState: AppState = {
+export const initialState: AppState = {
 	route: { screen: "dashboard" },
 	projects: [],
 	currentProjectTasks: [],
@@ -40,7 +40,7 @@ export type AppAction =
 	| { type: "updateProject"; project: Project }
 	| { type: "setLoading"; loading: boolean };
 
-function reducer(state: AppState, action: AppAction): AppState {
+export function reducer(state: AppState, action: AppAction): AppState {
 	switch (action.type) {
 		case "navigate":
 			return { ...state, route: action.route };

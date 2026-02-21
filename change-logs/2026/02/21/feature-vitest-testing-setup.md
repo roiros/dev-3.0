@@ -1,0 +1,1 @@
+Set up Vitest testing infrastructure with happy-dom, React Testing Library, and jest-dom matchers. Added unit tests for i18n interpolation, plural forms, status key mapping, and app state reducer. Added integration test for Dashboard component with mocked Electrobun RPC.

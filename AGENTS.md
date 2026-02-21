@@ -67,7 +67,7 @@ bun run build
 bun run build:prod
 ```
 
-No testing framework or linter is configured.
+No linter is configured.
 
 ## Architecture
 
@@ -173,6 +173,58 @@ Call with `t.plural("dashboard.projectCount", count)`.
 - Input placeholders that are command examples (`"bun install"`, `"claude"`, `"main"`)
 - Terminal output (escape sequences written via `term.writeln()`)
 - App name in breadcrumbs (`"dev-3.0"`)
+
+## Testing
+
+**Framework: Vitest** with `happy-dom` environment and React Testing Library. Config in `vitest.config.ts`.
+
+```bash
+# Run all tests once
+bun run test
+
+# Watch mode (re-runs on file changes)
+bun run test:watch
+```
+
+### Where tests live
+
+Test files go in `__tests__/` directories next to the modules they test:
+
+```
+src/mainview/i18n/__tests__/interpolate.test.ts
+src/mainview/__tests__/state.test.ts
+src/mainview/components/__tests__/Dashboard.test.tsx
+```
+
+### Mocking Electrobun RPC
+
+Components that import `api` from `rpc.ts` need the Electrobun native module mocked. Use `vi.mock`:
+
+```ts
+vi.mock("../../rpc", () => ({
+	api: {
+		request: {
+			pickFolder: vi.fn(),
+			addProject: vi.fn(),
+			// ... add methods your test needs
+		},
+	},
+}));
+```
+
+### Wrapping components with providers
+
+Components using `useT()` must be wrapped in `<I18nProvider>`:
+
+```tsx
+import { I18nProvider } from "../../i18n";
+
+render(
+	<I18nProvider>
+		<YourComponent />
+	</I18nProvider>,
+);
+```
 
 ## Key config files
 
