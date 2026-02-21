@@ -80,6 +80,27 @@ The main process checks if the Vite dev server is running on `localhost:5173`. I
 
 Vite builds `src/mainview/` → `dist/`. Electrobun copies `dist/` contents into `views/mainview/` for packaging. Config in `electrobun.config.ts`.
 
+## Styling & design tokens
+
+All colors in the UI are defined as **CSS custom properties** (design tokens) in `src/mainview/index.css` and mapped to Tailwind via `tailwind.config.js`. Two themes exist: `dark` (default) and `light` (via `[data-theme="light"]` on `<html>`).
+
+**Strict rule: NEVER use hardcoded hex/rgb color values in components.** Always use the semantic Tailwind token classes:
+
+| Token class | Purpose |
+|---|---|
+| `bg-base`, `bg-raised`, `bg-elevated`, `bg-overlay` | Surface levels (page → panel → card → popup) |
+| `bg-raised-hover`, `bg-elevated-hover` | Hover states for corresponding surfaces |
+| `text-fg`, `text-fg-2`, `text-fg-3`, `text-fg-muted` | Text hierarchy (primary → muted) |
+| `border-edge`, `border-edge-active` | Borders (default / hover) |
+| `bg-accent`, `bg-accent-hover`, `text-accent` | Accent color (blue) |
+| `text-danger`, `bg-danger` | Destructive actions (red) |
+
+All tokens support Tailwind opacity modifiers (e.g., `bg-accent/20`, `border-accent/30`).
+
+**Exception:** `STATUS_COLORS` in `src/shared/types.ts` are hex values used in inline styles for status-specific coloring (column headers, card borders, dots). These are semantic status colors, not theme chrome — they stay as hex.
+
+If you need a new color, **add a CSS variable** in `index.css` (both themes) + a Tailwind mapping in `tailwind.config.js`. Do not inline arbitrary color values.
+
 ## Documentation
 
 Local documentation for key dependencies lives in `docs/`:
