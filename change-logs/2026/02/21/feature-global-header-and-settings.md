@@ -1,0 +1,1 @@
+Added global breadcrumb header visible on all screens (dev-3.0 / Project / Task), replacing per-screen headers. Created Global Settings page with live theme switcher (dark/light). Theme preference persists in localStorage and applies on app startup via data-theme attribute.

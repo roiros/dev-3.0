@@ -1,6 +1,8 @@
 import { useEffect, useCallback } from "react";
 import { useAppState, type Route } from "./state";
 import { api } from "./rpc";
+import GlobalHeader from "./components/GlobalHeader";
+import GlobalSettings from "./components/GlobalSettings";
 import Dashboard from "./components/Dashboard";
 import ProjectView from "./components/ProjectView";
 import TaskTerminal from "./components/TaskTerminal";
@@ -50,45 +52,61 @@ function App() {
 
 	const { route } = state;
 
-	switch (route.screen) {
-		case "dashboard":
-			return (
-				<Dashboard
-					projects={state.projects}
-					dispatch={dispatch}
-					navigate={navigate}
-				/>
-			);
-		case "project":
-			return (
-				<ProjectView
-					projectId={route.projectId}
-					projects={state.projects}
-					tasks={state.currentProjectTasks}
-					dispatch={dispatch}
-					navigate={navigate}
-				/>
-			);
-		case "task":
-			return (
-				<TaskTerminal
-					projectId={route.projectId}
-					taskId={route.taskId}
-					tasks={state.currentProjectTasks}
-					navigate={navigate}
-				/>
-			);
-		case "project-settings":
-			return (
-				<ProjectSettings
-					projectId={route.projectId}
-					projects={state.projects}
-					dispatch={dispatch}
-					navigate={navigate}
-				/>
-			);
-		default:
-			return null;
+	return (
+		<div className="h-full w-full flex flex-col bg-base">
+			<GlobalHeader
+				route={route}
+				projects={state.projects}
+				tasks={state.currentProjectTasks}
+				navigate={navigate}
+			/>
+			<div className="flex-1 min-h-0">{renderScreen()}</div>
+		</div>
+	);
+
+	function renderScreen() {
+		switch (route.screen) {
+			case "dashboard":
+				return (
+					<Dashboard
+						projects={state.projects}
+						dispatch={dispatch}
+						navigate={navigate}
+					/>
+				);
+			case "project":
+				return (
+					<ProjectView
+						projectId={route.projectId}
+						projects={state.projects}
+						tasks={state.currentProjectTasks}
+						dispatch={dispatch}
+						navigate={navigate}
+					/>
+				);
+			case "task":
+				return (
+					<TaskTerminal
+						projectId={route.projectId}
+						taskId={route.taskId}
+						tasks={state.currentProjectTasks}
+						navigate={navigate}
+					/>
+				);
+			case "project-settings":
+				return (
+					<ProjectSettings
+						projectId={route.projectId}
+						projects={state.projects}
+						dispatch={dispatch}
+						navigate={navigate}
+					/>
+				);
+			case "settings":
+				return <GlobalSettings />;
+			default:
+				return null;
+		}
 	}
 }
 

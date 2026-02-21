@@ -29,7 +29,7 @@ function ProjectSettings({
 
 	if (!project) {
 		return (
-			<div className="h-full w-full flex items-center justify-center bg-base">
+			<div className="h-full w-full flex items-center justify-center">
 				<span className="text-danger text-base">Project not found</span>
 			</div>
 		);
@@ -53,34 +53,7 @@ function ProjectSettings({
 	}
 
 	return (
-		<div className="h-full w-full flex flex-col bg-base">
-			{/* Header */}
-			<div className="flex items-center gap-4 px-6 py-4 border-b border-edge">
-				<button
-					onClick={() => navigate({ screen: "project", projectId })}
-					className="text-fg-3 hover:text-fg transition-colors p-1.5 rounded-lg hover:bg-elevated"
-				>
-					<svg
-						className="w-5 h-5"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							strokeLinecap="round"
-							strokeLinejoin="round"
-							strokeWidth={2}
-							d="M15 19l-7-7 7-7"
-						/>
-					</svg>
-				</button>
-				<span className="text-fg font-bold text-lg">
-					Settings
-				</span>
-				<span className="text-fg-3 text-sm">{project.name}</span>
-			</div>
-
-			{/* Form */}
+		<div className="h-full w-full flex flex-col">
 			<div className="flex-1 overflow-y-auto p-7">
 				<div className="max-w-xl space-y-7">
 					{/* Setup Script */}
