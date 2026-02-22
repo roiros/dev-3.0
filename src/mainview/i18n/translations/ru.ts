@@ -46,6 +46,7 @@ const ru: TranslationRecord & Record<string, string> = {
 	"settings.configBaseCommandOverride": "Переопределение команды",
 	"settings.deleteAgent": "Удалить",
 	"settings.deleteConfig": "Удалить конфигурацию",
+	"settings.commandPreview": "Итоговая команда",
 	"settings.defaultBadge": "По умолчанию",
 	"settings.cantDeleteDefault": "Встроенные агенты нельзя удалить",
 

@@ -236,6 +236,7 @@ function GlobalSettings() {
 																<ConfigEditor
 																	key={config.id}
 																	config={config}
+																	agentBaseCommand={agent.baseCommand}
 																	isExpanded={isConfigExpanded}
 																	canDelete={agent.configurations.length > 1}
 																	onToggle={() =>
@@ -315,8 +316,79 @@ function GlobalSettings() {
 
 // ---- Config Editor ----
 
+function buildCommandPreview(
+	agentBaseCommand: string,
+	config: AgentConfiguration,
+): { command: string; envLine: string | null } {
+	const baseCmd = config.baseCommandOverride || agentBaseCommand || "???";
+	const parts: string[] = [baseCmd];
+
+	if (config.model) {
+		parts.push("--model", config.model);
+	}
+
+	if (config.additionalArgs) {
+		for (const arg of config.additionalArgs) {
+			if (arg) parts.push(arg);
+		}
+	}
+
+	// Build prompt placeholder
+	let prompt = "{{TASK_DESCRIPTION}}";
+	if (config.appendPrompt) {
+		prompt += "\\n\\n" + config.appendPrompt;
+	}
+	parts.push(`'${prompt}'`);
+
+	// Env vars line
+	const envPairs = Object.entries(config.envVars || {}).filter(
+		([k]) => k,
+	);
+	const envLine =
+		envPairs.length > 0
+			? envPairs.map(([k, v]) => `${k}=${v}`).join(" ")
+			: null;
+
+	return { command: parts.join(" "), envLine };
+}
+
+function CommandPreview({
+	command,
+	envLine,
+}: {
+	command: string;
+	envLine: string | null;
+}) {
+	// Highlight {{VAR}} patterns
+	const parts = command.split(/(\{\{\w+\}\})/g);
+
+	return (
+		<div className="bg-base border border-edge rounded-lg p-3 font-mono text-xs leading-relaxed overflow-x-auto">
+			{envLine && (
+				<div className="text-fg-3 mb-1">
+					<span className="text-fg-muted">env: </span>
+					{envLine}
+				</div>
+			)}
+			<div className="text-fg-2">
+				<span className="text-fg-muted">$ </span>
+				{parts.map((part, i) =>
+					/^\{\{\w+\}\}$/.test(part) ? (
+						<span key={i} className="text-accent font-semibold">
+							{part}
+						</span>
+					) : (
+						<span key={i}>{part}</span>
+					),
+				)}
+			</div>
+		</div>
+	);
+}
+
 function ConfigEditor({
 	config,
+	agentBaseCommand,
 	isExpanded,
 	canDelete,
 	onToggle,
@@ -325,6 +397,7 @@ function ConfigEditor({
 	t,
 }: {
 	config: AgentConfiguration;
+	agentBaseCommand: string;
 	isExpanded: boolean;
 	canDelete: boolean;
 	onToggle: () => void;
@@ -332,6 +405,8 @@ function ConfigEditor({
 	onDelete: () => void;
 	t: (key: string, vars?: Record<string, string>) => string;
 }) {
+	const preview = buildCommandPreview(agentBaseCommand, config);
+
 	return (
 		<div className="bg-elevated border border-edge rounded-lg overflow-hidden">
 			<button
@@ -349,6 +424,17 @@ function ConfigEditor({
 
 			{isExpanded && (
 				<div className="border-t border-edge px-3 py-3 space-y-3">
+					{/* Command Preview — top of config */}
+					<div>
+						<label className="block text-fg-2 text-xs font-semibold mb-1.5">
+							{t("settings.commandPreview")}
+						</label>
+						<CommandPreview
+							command={preview.command}
+							envLine={preview.envLine}
+						/>
+					</div>
+
 					{/* Config name */}
 					<div>
 						<label className="block text-fg-2 text-xs mb-1">

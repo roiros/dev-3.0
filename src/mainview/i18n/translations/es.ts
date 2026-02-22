@@ -44,6 +44,7 @@ const es: TranslationRecord & Record<string, string> = {
 	"settings.configBaseCommandOverride": "Sobreescribir comando base",
 	"settings.deleteAgent": "Eliminar",
 	"settings.deleteConfig": "Eliminar configuración",
+	"settings.commandPreview": "Vista previa del comando",
 	"settings.defaultBadge": "Predeterminado",
 	"settings.cantDeleteDefault": "Los agentes predeterminados no se pueden eliminar",
 

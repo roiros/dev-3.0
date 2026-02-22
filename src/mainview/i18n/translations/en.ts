@@ -42,6 +42,7 @@ const en = {
 	"settings.configBaseCommandOverride": "Base Command Override",
 	"settings.deleteAgent": "Delete",
 	"settings.deleteConfig": "Delete Configuration",
+	"settings.commandPreview": "Command Preview",
 	"settings.defaultBadge": "Default",
 	"settings.cantDeleteDefault": "Default agents cannot be deleted",
 
