@@ -31,7 +31,13 @@ export async function loadProjects(): Promise<Project[]> {
 			log.info("No projects file yet, returning empty list");
 			return [];
 		}
-		const projects = await file.json();
+		const projects: Project[] = await file.json();
+		// Backfill defaultConfigId for projects created before this field existed
+		for (const p of projects) {
+			if ((p as any).defaultConfigId === undefined) {
+				p.defaultConfigId = null;
+			}
+		}
 		log.info(`Loaded ${projects.length} project(s)`);
 		return projects;
 	} catch (err) {
@@ -60,6 +66,7 @@ export async function addProject(
 		setupScript: "",
 		defaultTmuxCommand: "claude",
 		defaultAgentId: "builtin-claude",
+		defaultConfigId: "claude-default",
 		defaultBaseBranch: "main",
 		createdAt: new Date().toISOString(),
 	};
@@ -78,7 +85,7 @@ export async function removeProject(projectId: string): Promise<void> {
 
 export async function updateProject(
 	projectId: string,
-	updates: Partial<Pick<Project, "setupScript" | "defaultTmuxCommand" | "defaultAgentId" | "defaultBaseBranch">>,
+	updates: Partial<Pick<Project, "setupScript" | "defaultTmuxCommand" | "defaultAgentId" | "defaultConfigId" | "defaultBaseBranch">>,
 ): Promise<Project> {
 	log.info("Updating project", { projectId, updates });
 	const projects = await loadProjects();

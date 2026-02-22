@@ -20,6 +20,21 @@ function isActive(status: TaskStatus): boolean {
 	return ACTIVE_STATUSES.includes(status);
 }
 
+async function launchTaskPty(
+	project: Project,
+	task: Task,
+	worktreePath: string,
+): Promise<void> {
+	const { command: tmuxCmd, extraEnv } = await agents.resolveCommandForProject(
+		project,
+		task.title,
+		task.description,
+		worktreePath,
+	);
+	const env = { ...extraEnv, DEV3_TASK_ID: task.id };
+	pty.createSession(task.id, worktreePath, tmuxCmd, env);
+}
+
 export const handlers = {
 	async getProjects(): Promise<Project[]> {
 		log.info("→ getProjects");
@@ -86,6 +101,7 @@ export const handlers = {
 		setupScript: string;
 		defaultTmuxCommand: string;
 		defaultAgentId: string | null;
+		defaultConfigId: string | null;
 		defaultBaseBranch: string;
 	}): Promise<Project> {
 		log.info("→ updateProjectSettings", { projectId: params.projectId });
@@ -93,6 +109,7 @@ export const handlers = {
 			setupScript: params.setupScript,
 			defaultTmuxCommand: params.defaultTmuxCommand,
 			defaultAgentId: params.defaultAgentId,
+			defaultConfigId: params.defaultConfigId,
 			defaultBaseBranch: params.defaultBaseBranch,
 		});
 		log.info("← updateProjectSettings done");
@@ -136,9 +153,7 @@ export const handlers = {
 				taskId: task.id,
 			});
 			const wt = await git.createWorktree(project, task);
-			const { command: tmuxCmd } = await agents.resolveCommandForProject(project, task.title);
-			const extraEnv = agents.buildTaskEnv(project, task.title, task.id, wt.worktreePath);
-			pty.createSession(task.id, wt.worktreePath, tmuxCmd, extraEnv);
+			await launchTaskPty(project, task, wt.worktreePath);
 
 			const updated = await data.updateTask(project, task.id, {
 				worktreePath: wt.worktreePath,
@@ -170,9 +185,7 @@ export const handlers = {
 		if (!isActive(oldStatus) && isActive(newStatus)) {
 			log.info("Transition: inactive → active, creating worktree + PTY");
 			const wt = await git.createWorktree(project, task);
-			const { command: tmuxCmd } = await agents.resolveCommandForProject(project, task.title);
-			const extraEnv = agents.buildTaskEnv(project, task.title, task.id, wt.worktreePath);
-			pty.createSession(task.id, wt.worktreePath, tmuxCmd, extraEnv);
+			await launchTaskPty(project, task, wt.worktreePath);
 
 			const updated = await data.updateTask(project, task.id, {
 				status: newStatus,
@@ -253,14 +266,11 @@ export const handlers = {
 			}
 
 			if (foundTask && foundProject && isActive(foundTask.status) && foundTask.worktreePath) {
-				const { command: tmuxCmd } = await agents.resolveCommandForProject(foundProject, foundTask.title);
-				const extraEnv = agents.buildTaskEnv(foundProject, foundTask.title, foundTask.id, foundTask.worktreePath);
-				log.info("Restoring PTY session for active task", {
+				await launchTaskPty(foundProject, foundTask, foundTask.worktreePath);
+				log.info("Restored PTY session for active task", {
 					taskId: params.taskId.slice(0, 8),
 					worktreePath: foundTask.worktreePath,
-					tmuxCmd,
 				});
-				pty.createSession(params.taskId, foundTask.worktreePath, tmuxCmd, extraEnv);
 			} else {
 				log.warn("Cannot restore PTY session: task not active or no worktree", {
 					taskId: params.taskId.slice(0, 8),

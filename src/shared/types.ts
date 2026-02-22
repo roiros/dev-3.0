@@ -50,19 +50,50 @@ export const STATUS_COLORS: Record<TaskStatus, string> = {
 
 // ---- Coding Agents ----
 
-export type BuiltinAgentKind = "claude" | "codex" | "gemini";
+export interface AgentConfiguration {
+	id: string;
+	name: string;
+	model?: string;
+	appendPrompt?: string;
+	additionalArgs?: string[];
+	envVars?: Record<string, string>;
+	baseCommandOverride?: string;
+}
 
 export interface CodingAgent {
 	id: string;
-	kind: BuiltinAgentKind | "custom";
 	name: string;
-	command?: string; // only for kind:"custom" — shell command template
+	baseCommand: string;
+	isDefault?: boolean;
+	configurations: AgentConfiguration[];
+	defaultConfigId?: string;
 }
 
-export const BUILTIN_AGENTS: CodingAgent[] = [
-	{ id: "builtin-claude", kind: "claude", name: "Claude" },
-	{ id: "builtin-codex", kind: "codex", name: "Codex" },
-	{ id: "builtin-gemini", kind: "gemini", name: "Gemini" },
+export const DEFAULT_AGENTS: CodingAgent[] = [
+	{
+		id: "builtin-claude",
+		name: "Claude",
+		baseCommand: "claude",
+		isDefault: true,
+		configurations: [{ id: "claude-default", name: "Default" }],
+		defaultConfigId: "claude-default",
+	},
+	{
+		id: "builtin-codex",
+		name: "Codex",
+		baseCommand: "codex",
+		isDefault: true,
+		configurations: [{ id: "codex-default", name: "Default" }],
+		defaultConfigId: "codex-default",
+	},
+	{
+		id: "builtin-gemini",
+		name: "Gemini",
+		baseCommand: "gemini",
+		isDefault: true,
+		configurations: [{ id: "gemini-default", name: "Default" }],
+		defaultConfigId: "gemini-default",
+	},
 ];
 
 export interface Project {
@@ -72,6 +103,7 @@ export interface Project {
 	setupScript: string;
 	defaultTmuxCommand: string;
 	defaultAgentId: string | null;
+	defaultConfigId: string | null;
 	defaultBaseBranch: string;
 	createdAt: string;
 }
@@ -131,6 +163,7 @@ export type AppRPCSchema = {
 					setupScript: string;
 					defaultTmuxCommand: string;
 					defaultAgentId: string | null;
+					defaultConfigId: string | null;
 					defaultBaseBranch: string;
 				};
 				response: Project;
