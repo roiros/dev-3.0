@@ -27,17 +27,24 @@ function LaunchVariantsModal({
 	onClose,
 }: LaunchVariantsModalProps) {
 	const t = useT();
-	const [variants, setVariants] = useState<VariantRow[]>([
-		{ agentId: project.defaultAgentId, configId: project.defaultConfigId },
-	]);
+
+	function makeDefaultVariant(): VariantRow {
+		const agentId = project.defaultAgentId;
+		const agent = agentId ? agents.find((a) => a.id === agentId) : null;
+		const configId =
+			project.defaultConfigId ??
+			agent?.defaultConfigId ??
+			agent?.configurations[0]?.id ??
+			null;
+		return { agentId, configId };
+	}
+
+	const [variants, setVariants] = useState<VariantRow[]>(() => [makeDefaultVariant()]);
 	const [launching, setLaunching] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
 	function addVariant() {
-		setVariants((prev) => [
-			...prev,
-			{ agentId: project.defaultAgentId, configId: project.defaultConfigId },
-		]);
+		setVariants((prev) => [...prev, makeDefaultVariant()]);
 	}
 
 	function removeVariant(index: number) {
