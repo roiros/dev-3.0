@@ -115,7 +115,6 @@ async function restartElectrobun() {
 
 	startElectrobun();
 	restarting = false;
-	log("Press \x1b[1mR\x1b[0m to restart, \x1b[1mQ\x1b[0m to quit");
 }
 
 function scheduleRestart(reason: string) {
@@ -171,30 +170,13 @@ for (const dir of WATCH_DIRS) {
 
 log(`Watching ${WATCH_DIRS.join(", ")} for changes...`);
 
-// --- Stdin listener ---
-// Ignore SIGTTIN so we don't get suspended if not in foreground pgrp
-process.on("SIGTTIN", () => {});
-
-let stdinActive = false;
-try {
-	if (process.stdin.isTTY) {
-		process.stdin.setRawMode(true);
-	}
-	process.stdin.resume();
-	process.stdin.on("data", (data: Buffer) => {
-		const key = data.toString();
-		if (key === "r" || key === "R") {
-			if (debounceTimer) clearTimeout(debounceTimer);
-			log("Manual restart triggered");
-			restartElectrobun();
-		} else if (key === "q" || key === "Q" || key === "\x03") {
-			shutdown();
-		}
-	});
-	stdinActive = true;
-} catch {
-	warn("Could not attach to stdin — keyboard shortcuts disabled");
-}
+// --- Manual restart via SIGUSR1 ---
+// Usage: kill -USR1 $(pgrep -f watch-main)
+process.on("SIGUSR1", () => {
+	if (debounceTimer) clearTimeout(debounceTimer);
+	log("Manual restart triggered (SIGUSR1)");
+	restartElectrobun();
+});
 
 // --- Start ---
 
@@ -204,8 +186,4 @@ killPortOwner(ELECTROBUN_PORT);
 
 startVite();
 startElectrobun();
-if (stdinActive) {
-	log("Press \x1b[1mR\x1b[0m to restart, \x1b[1mQ\x1b[0m to quit");
-} else {
-	log("Watching for file changes (keyboard shortcuts unavailable)");
-}
+log(`Manual restart: \x1b[1mkill -USR1 ${process.pid}\x1b[0m`);
