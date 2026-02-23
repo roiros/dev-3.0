@@ -80,38 +80,38 @@
 	--accent-hover: 70 135 245;
 	--danger: 224 82 82;
 
-	/* Background: solid, no gradient */
-	--bg-grad-from: #f5f6fa;
-	--bg-grad-mid: #f5f6fa;
-	--bg-grad-to: #f5f6fa;
+	/* Background: pastel gradient (blue-lavender → lavender → pink) */
+	--bg-grad-from: #e8ecf4;
+	--bg-grad-mid: #ede8f4;
+	--bg-grad-to: #f4e8ef;
 
-	/* Glass: opaque solid fallbacks (raw values, no var() nesting) */
+	/* Glass: semi-transparent white (frosted glass on pastel gradient) */
 	--glass-column-rgb: 255 255 255;
-	--glass-column-alpha: 1;
-	--glass-card-rgb: 237 238 244;
-	--glass-card-alpha: 1;
-	--glass-card-hover-alpha: 1;
-	--glass-header-rgb: 245 246 250;
-	--glass-header-alpha: 1;
+	--glass-column-alpha: 0.55;
+	--glass-card-rgb: 255 255 255;
+	--glass-card-alpha: 0.45;
+	--glass-card-hover-alpha: 0.65;
+	--glass-header-rgb: 255 255 255;
+	--glass-header-alpha: 0.5;
 
-	/* No blur in light theme */
-	--glass-blur-column: 0px;
-	--glass-blur-header: 0px;
+	/* Blur enabled */
+	--glass-blur-column: 12px;
+	--glass-blur-header: 16px;
 
-	/* Borders: flat values */
-	--glass-border-rgb: 218 220 232;
-	--glass-border-column-alpha: 1;
-	--glass-border-card-alpha: 1;
-	--glass-border-card-hover-alpha: 1;
+	/* Borders: dark at low alpha (inverse of dark theme's white borders) */
+	--glass-border-rgb: 0 0 0;
+	--glass-border-column-alpha: 0.06;
+	--glass-border-card-alpha: 0.08;
+	--glass-border-card-hover-alpha: 0.15;
 
-	/* No column glow */
-	--glow-start-alpha: 0;
-	--glow-mid-alpha: 0;
-	--glow-line-alpha: 0;
+	/* Column glow: subtle */
+	--glow-start-alpha: 0.08;
+	--glow-mid-alpha: 0.02;
+	--glow-line-alpha: 0.2;
 
-	/* Shadows: lighter */
-	--shadow-column: 0 4px 12px -4px rgb(0 0 0 / 0.08);
-	--shadow-card-hover: 0 4px 12px -4px rgb(0 0 0 / 0.08);
+	/* Shadows: more prominent for depth */
+	--shadow-column: 0 8px 24px -8px rgb(0 0 0 / 0.12);
+	--shadow-card-hover: 0 8px 20px -6px rgb(0 0 0 / 0.12);
 }
 
 html, body, #root {

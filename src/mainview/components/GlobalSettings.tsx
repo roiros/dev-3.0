@@ -133,7 +133,7 @@ function GlobalSettings() {
 	}
 
 	return (
-		<div className="h-full w-full flex flex-col bg-base">
+		<div className="h-full w-full flex flex-col">
 			<div className="flex-1 overflow-y-auto p-7">
 				<div className="max-w-xl space-y-8">
 					{/* Theme */}
