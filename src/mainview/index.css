@@ -81,25 +81,25 @@
 	--danger: 224 82 82;
 
 	/* Background: solid, no gradient */
-	--bg-grad-from: rgb(var(--surface-base));
-	--bg-grad-mid: rgb(var(--surface-base));
-	--bg-grad-to: rgb(var(--surface-base));
+	--bg-grad-from: #f5f6fa;
+	--bg-grad-mid: #f5f6fa;
+	--bg-grad-to: #f5f6fa;
 
-	/* Glass: opaque solid fallbacks */
-	--glass-column-rgb: var(--surface-raised);
+	/* Glass: opaque solid fallbacks (raw values, no var() nesting) */
+	--glass-column-rgb: 255 255 255;
 	--glass-column-alpha: 1;
-	--glass-card-rgb: var(--surface-elevated);
+	--glass-card-rgb: 237 238 244;
 	--glass-card-alpha: 1;
 	--glass-card-hover-alpha: 1;
-	--glass-header-rgb: var(--surface-base);
+	--glass-header-rgb: 245 246 250;
 	--glass-header-alpha: 1;
 
 	/* No blur in light theme */
 	--glass-blur-column: 0px;
 	--glass-blur-header: 0px;
 
-	/* Borders: use standard tokens */
-	--glass-border-rgb: var(--border-default);
+	/* Borders: flat values */
+	--glass-border-rgb: 218 220 232;
 	--glass-border-column-alpha: 1;
 	--glass-border-card-alpha: 1;
 	--glass-border-card-hover-alpha: 1;
