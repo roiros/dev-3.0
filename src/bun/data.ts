@@ -32,8 +32,11 @@ export async function loadProjects(): Promise<Project[]> {
 			return [];
 		}
 		const projects: Project[] = await file.json();
-		// Backfill defaultConfigId for projects created before this field existed
+		// Backfill fields for projects created before they existed
 		for (const p of projects) {
+			if ((p as any).defaultAgentId === undefined) {
+				p.defaultAgentId = "builtin-claude";
+			}
 			if ((p as any).defaultConfigId === undefined) {
 				p.defaultConfigId = null;
 			}

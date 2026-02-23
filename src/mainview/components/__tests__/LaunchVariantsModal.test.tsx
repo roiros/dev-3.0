@@ -358,6 +358,55 @@ describe("LaunchVariantsModal", () => {
 		});
 	});
 
+	describe("fallback when defaultAgentId is missing", () => {
+		it("populates config dropdown when project.defaultAgentId is null", () => {
+			const project = makeProject({ defaultAgentId: null, defaultConfigId: null });
+			renderModal(project);
+
+			const configSelect = getConfigSelects()[0];
+			const options = within(configSelect).getAllByRole("option");
+
+			// Should fall back to first agent (Claude) and show its configs
+			expect(options.length).toBeGreaterThan(0);
+		});
+
+		it("selects first agent when project.defaultAgentId is null", () => {
+			const project = makeProject({ defaultAgentId: null, defaultConfigId: null });
+			renderModal(project);
+
+			const agentSelect = getAgentSelects()[0];
+			expect(agentSelect.value).toBe("builtin-claude");
+		});
+
+		it("populates config dropdown when defaultAgentId points to nonexistent agent", () => {
+			const project = makeProject({ defaultAgentId: "deleted-agent", defaultConfigId: null });
+			renderModal(project);
+
+			const configSelect = getConfigSelects()[0];
+			const options = within(configSelect).getAllByRole("option");
+
+			expect(options.length).toBeGreaterThan(0);
+		});
+
+		it("sends correct agentId in spawnVariants when falling back to first agent", async () => {
+			const user = userEvent.setup();
+			const dispatch = vi.fn();
+			const onClose = vi.fn();
+			const project = makeProject({ defaultAgentId: null, defaultConfigId: null });
+
+			mockedApi.request.spawnVariants.mockResolvedValue([]);
+			renderModal(project, { dispatch, onClose });
+
+			await user.click(screen.getByText("Launch"));
+
+			expect(mockedApi.request.spawnVariants).toHaveBeenCalledWith(
+				expect.objectContaining({
+					variants: [{ agentId: "builtin-claude", configId: "claude-default" }],
+				}),
+			);
+		});
+	});
+
 	describe("modal UI", () => {
 		it("shows task title in header", () => {
 			renderModal(makeProject());

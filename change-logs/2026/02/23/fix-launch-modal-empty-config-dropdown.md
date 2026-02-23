@@ -1,0 +1,1 @@
+Fix empty config dropdown in LaunchVariantsModal when project.defaultAgentId is null or points to a removed agent. The modal now falls back to the first available agent. Also added defaultAgentId backfill in loadProjects for old projects created before the agent model redesign.

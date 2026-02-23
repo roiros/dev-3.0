@@ -29,8 +29,16 @@ function LaunchVariantsModal({
 	const t = useT();
 
 	function makeDefaultVariant(): VariantRow {
-		const agentId = project.defaultAgentId;
-		const agent = agentId ? agents.find((a) => a.id === agentId) : null;
+		// Try project default agent, fall back to first available
+		let agentId = project.defaultAgentId ?? null;
+		let agent = agentId ? agents.find((a) => a.id === agentId) : null;
+
+		// If agent not found (null, undefined, or removed), use first available
+		if (!agent && agents.length > 0) {
+			agent = agents[0];
+			agentId = agent.id;
+		}
+
 		const configId =
 			project.defaultConfigId ??
 			agent?.defaultConfigId ??
