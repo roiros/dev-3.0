@@ -4,6 +4,9 @@ const WATCH_DIRS = ["src/bun", "src/shared"];
 const DEBOUNCE_MS = 2000;
 const ELECTROBUN_CMD = ["bunx", "electrobun", "dev"];
 const VITE_CMD = ["bunx", "vite", "--port", "5173"];
+const ELECTROBUN_PORT = 7681;
+const PORT_WAIT_TIMEOUT = 10_000;
+const PORT_POLL_INTERVAL = 200;
 
 let electrobunProc: ReturnType<typeof Bun.spawn> | null = null;
 let viteProc: ReturnType<typeof Bun.spawn> | null = null;
@@ -17,6 +20,38 @@ const log = (msg: string) =>
 const warn = (msg: string) =>
 	console.log(`\x1b[33m[watch]\x1b[0m ${msg}`);
 
+async function waitForPortFree(port: number): Promise<boolean> {
+	const deadline = Date.now() + PORT_WAIT_TIMEOUT;
+	while (Date.now() < deadline) {
+		try {
+			const server = Bun.listen({
+				hostname: "127.0.0.1",
+				port,
+				socket: {
+					data() {},
+				},
+			});
+			server.stop(true);
+			return true;
+		} catch {
+			await Bun.sleep(PORT_POLL_INTERVAL);
+		}
+	}
+	return false;
+}
+
+async function killProcessTree(proc: ReturnType<typeof Bun.spawn>) {
+	const pid = proc.pid;
+	// Kill child processes first (best-effort)
+	try {
+		const result = Bun.spawnSync(["pkill", "-TERM", "-P", String(pid)], {
+			cwd: projectRoot,
+		});
+	} catch {}
+	proc.kill();
+	await proc.exited;
+}
+
 function startVite() {
 	log("Starting Vite HMR server...");
 	viteProc = Bun.spawn(VITE_CMD, {
@@ -24,7 +59,7 @@ function startVite() {
 		cwd: projectRoot,
 	});
 	viteProc.exited.then((code) => {
-		warn(`Vite exited with code ${code}`);
+		if (!shuttingDown) warn(`Vite exited with code ${code}`);
 	});
 }
 
@@ -35,7 +70,7 @@ function startElectrobun() {
 		cwd: projectRoot,
 	});
 	electrobunProc.exited.then((code) => {
-		if (!restarting) {
+		if (!restarting && !shuttingDown) {
 			warn(`electrobun dev exited with code ${code}`);
 		}
 	});
@@ -47,9 +82,14 @@ async function restartElectrobun() {
 	log("Restarting electrobun dev...");
 
 	if (electrobunProc) {
-		electrobunProc.kill();
-		await electrobunProc.exited;
+		await killProcessTree(electrobunProc);
 		electrobunProc = null;
+	}
+
+	log(`Waiting for port ${ELECTROBUN_PORT} to be free...`);
+	const free = await waitForPortFree(ELECTROBUN_PORT);
+	if (!free) {
+		warn(`Port ${ELECTROBUN_PORT} still busy after ${PORT_WAIT_TIMEOUT / 1000}s — starting anyway`);
 	}
 
 	startElectrobun();
@@ -72,16 +112,10 @@ async function shutdown() {
 	log("Shutting down...");
 	if (debounceTimer) clearTimeout(debounceTimer);
 
-	const exits: Promise<number>[] = [];
-	if (electrobunProc) {
-		electrobunProc.kill();
-		exits.push(electrobunProc.exited);
-	}
-	if (viteProc) {
-		viteProc.kill();
-		exits.push(viteProc.exited);
-	}
-	await Promise.all(exits);
+	const kills: Promise<void>[] = [];
+	if (electrobunProc) kills.push(killProcessTree(electrobunProc));
+	if (viteProc) kills.push(killProcessTree(viteProc));
+	await Promise.all(kills);
 	process.exit(0);
 }
 
