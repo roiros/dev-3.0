@@ -3,23 +3,17 @@ import { watch, type WatchEventType } from "node:fs";
 const WATCH_DIRS = ["src/bun", "src/shared"];
 const DEBOUNCE_MS = 2000;
 const ELECTROBUN_CMD = ["bunx", "electrobun", "dev"];
-const VITE_CMD = ["bunx", "vite", "--port", "5173"];
-const VITE_PORT = 5173;
 const ELECTROBUN_PORT = 7681;
 const PORT_WAIT_TIMEOUT = 10_000;
 const PORT_POLL_INTERVAL = 200;
 
 let electrobunProc: ReturnType<typeof Bun.spawn> | null = null;
-let viteProc: ReturnType<typeof Bun.spawn> | null = null;
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let restarting = false;
 const projectRoot = import.meta.dir + "/..";
 
 const log = (msg: string) =>
 	console.log(`\x1b[36m[watch]\x1b[0m ${msg}`);
-
-const warn = (msg: string) =>
-	console.log(`\x1b[33m[watch]\x1b[0m ${msg}`);
 
 async function waitForPortFree(port: number): Promise<boolean> {
 	const deadline = Date.now() + PORT_WAIT_TIMEOUT;
@@ -54,14 +48,6 @@ function killPortOwner(port: number) {
 	} catch {}
 }
 
-function startVite() {
-	log("Starting Vite HMR server...");
-	viteProc = Bun.spawn(VITE_CMD, {
-		stdio: ["ignore", "inherit", "inherit"],
-		cwd: projectRoot,
-	});
-}
-
 function startElectrobun() {
 	log("Starting electrobun dev...");
 	electrobunProc = Bun.spawn(ELECTROBUN_CMD, {
@@ -69,13 +55,11 @@ function startElectrobun() {
 		cwd: projectRoot,
 	});
 
-	// When electrobun exits on its own (window closed, Ctrl+C, crash) — exit everything
+	// When electrobun exits on its own (window closed, crash) — exit watcher,
+	// concurrently's --kill-others will take care of vite
 	electrobunProc.exited.then((code) => {
 		if (restarting) return;
 		log(`electrobun dev exited (code ${code}), shutting down...`);
-		if (viteProc) {
-			viteProc.kill();
-		}
 		process.exit(0);
 	});
 }
@@ -109,19 +93,6 @@ function scheduleRestart(reason: string) {
 	}, DEBOUNCE_MS);
 }
 
-// --- Detect parent death (Ctrl+C kills `bun run`, orphaning us) ---
-const parentPid = process.ppid;
-setInterval(() => {
-	try {
-		process.kill(parentPid, 0); // signal 0 = just check if alive
-	} catch {
-		// Parent is dead — clean up and exit
-		if (electrobunProc) try { electrobunProc.kill(); } catch {}
-		if (viteProc) try { viteProc.kill(); } catch {}
-		process.exit(0);
-	}
-}, 500);
-
 // --- File watchers ---
 
 for (const dir of WATCH_DIRS) {
@@ -135,8 +106,5 @@ log(`Watching ${WATCH_DIRS.join(", ")} for changes...`);
 
 // --- Start ---
 
-killPortOwner(VITE_PORT);
 killPortOwner(ELECTROBUN_PORT);
-
-startVite();
 startElectrobun();
