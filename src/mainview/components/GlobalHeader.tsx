@@ -84,8 +84,8 @@ function GlobalHeader({ route, projects, tasks, navigate }: GlobalHeaderProps) {
 			</div>
 
 			{/* Actions */}
-			<div className="flex items-center gap-1 flex-shrink-0">
-				{/* Project settings gear — only on project kanban screen */}
+			<div className="flex items-center gap-1.5 flex-shrink-0">
+				{/* Project settings — only on project kanban screen */}
 				{"projectId" in route && route.screen === "project" && (
 					<button
 						onClick={() =>
@@ -94,28 +94,24 @@ function GlobalHeader({ route, projects, tasks, navigate }: GlobalHeaderProps) {
 								projectId: route.projectId,
 							})
 						}
-						className="text-fg-3 hover:text-fg transition-colors p-1.5 rounded-lg hover:bg-elevated"
+						className="flex items-center gap-1 text-fg-3 hover:text-fg transition-colors px-2 py-1 rounded-lg hover:bg-elevated"
 						title={t("header.projectSettings")}
 					>
 						<svg
-							className="w-4 h-4"
+							className="w-[18px] h-[18px]"
 							fill="none"
 							stroke="currentColor"
 							viewBox="0 0 24 24"
 						>
+							{/* Wrench icon — project-specific tooling */}
 							<path
 								strokeLinecap="round"
 								strokeLinejoin="round"
 								strokeWidth={1.5}
-								d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-							/>
-							<path
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								strokeWidth={1.5}
-								d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+								d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"
 							/>
 						</svg>
+						<span className="text-[11px] font-medium">{t("header.projLabel")}</span>
 					</button>
 				)}
 
@@ -123,15 +119,16 @@ function GlobalHeader({ route, projects, tasks, navigate }: GlobalHeaderProps) {
 				{route.screen !== "settings" && (
 					<button
 						onClick={() => navigate({ screen: "settings" })}
-						className="text-fg-3 hover:text-fg transition-colors p-1.5 rounded-lg hover:bg-elevated"
-						title={t("header.settings")}
+						className="flex items-center gap-1 text-fg-3 hover:text-fg transition-colors px-2 py-1 rounded-lg hover:bg-elevated"
+						title={t("header.globalSettingsTooltip")}
 					>
 						<svg
-							className="w-4 h-4"
+							className="w-[18px] h-[18px]"
 							fill="none"
 							stroke="currentColor"
 							viewBox="0 0 24 24"
 						>
+							{/* Sliders icon — global tuning */}
 							<path
 								strokeLinecap="round"
 								strokeLinejoin="round"
@@ -139,6 +136,7 @@ function GlobalHeader({ route, projects, tasks, navigate }: GlobalHeaderProps) {
 								d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
 							/>
 						</svg>
+						<span className="text-[11px] font-medium">{t("header.globalLabel")}</span>
 					</button>
 				)}
 			</div>

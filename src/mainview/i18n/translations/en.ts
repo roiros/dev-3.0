@@ -17,6 +17,9 @@ const en = {
 	"header.task": "Task",
 	"header.settings": "Settings",
 	"header.projectSettings": "Project Settings",
+	"header.globalSettingsTooltip": "Global Settings (\u2318,)",
+	"header.projLabel": "Proj",
+	"header.globalLabel": "Global",
 
 	// GlobalSettings
 	"settings.theme": "Theme",

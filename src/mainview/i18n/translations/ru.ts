@@ -21,6 +21,9 @@ const ru: TranslationRecord & Record<string, string> = {
 	"header.task": "Задача",
 	"header.settings": "Настройки",
 	"header.projectSettings": "Настройки проекта",
+	"header.globalSettingsTooltip": "Глобальные настройки (\u2318,)",
+	"header.projLabel": "Проект",
+	"header.globalLabel": "Общие",
 
 	// GlobalSettings
 	"settings.theme": "Тема",
