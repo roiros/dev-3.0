@@ -43,6 +43,32 @@ Worktree branches are auto-generated with opaque names like `dev3/task-8711d3e1`
 - The slug must be unique and descriptive enough to avoid collisions between parallel agents.
 - See `change-logs/README.md` for the full format specification.
 
+## Decision records
+
+Non-obvious architectural decisions, hacks, and workarounds are documented in `decisions/`. This helps future agents (and humans) understand **why** something was done a certain way — not just what.
+
+**When to create a decision record:**
+- You relied on undocumented behavior or reverse-engineered internals
+- You chose a non-obvious approach over a simpler alternative for a specific reason
+- You implemented a workaround for a bug or limitation in a dependency
+- The decision involves trade-offs or known risks worth documenting
+
+**Path:** `decisions/NNN-short-slug.md`
+
+**Naming:** Sequential numbering (`001`, `002`, …). Check existing files to find the next number. Slug should be descriptive (e.g., `claude-trust-auto-register`, `worktree-branch-cleanup`).
+
+**Required sections:**
+1. **Context** — what problem you were solving
+2. **Investigation** (if applicable) — what you tried, what you found
+3. **Decision** — what you did and where in the code
+4. **Risks** — what could break, what assumptions you made
+5. **Alternatives considered** — what you rejected and why
+
+**Rules:**
+- Include the decision file in the same commit as the code change.
+- Keep it concise — this is a reference document, not a blog post.
+- Link to relevant code paths (file + function names) so readers can find the implementation.
+
 ## What is this
 
 A **terminal-centric project manager** — iTerm2 meets Kanban. Desktop app for managing multiple AI coding agents and terminal-based tools across tasks and projects. Built with **Electrobun** (not Electron), React 18, Tailwind CSS, and Vite. Runtime is Bun. Cross-platform (macOS, Linux, Windows).
