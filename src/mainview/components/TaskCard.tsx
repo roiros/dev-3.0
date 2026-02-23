@@ -217,21 +217,7 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 						</svg>
 						{t("task.run")}
 					</button>
-				) : !showDismissButton && (
-					/* Delete button for non-todo/non-cancelled cards (visible on hover) */
-					<button
-						onClick={(e) => {
-							e.stopPropagation();
-							handleDelete();
-						}}
-						className="opacity-0 group-hover:opacity-100 text-fg-muted hover:text-danger transition-all p-1 rounded-lg hover:bg-danger/10"
-						title={t("task.delete")}
-					>
-						<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-						</svg>
-					</button>
-				)}
+				) : null}
 			</div>
 
 			{/* Status dropdown menu */}
@@ -258,27 +244,29 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 							{t(statusKey(s))}
 						</button>
 					))}
-					<div className="border-t border-edge-active mt-1.5 pt-1.5">
-						<button
-							onClick={handleDelete}
-							className="w-full text-left px-3 py-2 text-sm text-danger hover:bg-danger/10 flex items-center gap-2.5 transition-colors"
-						>
-							<svg
-								className="w-4 h-4 flex-shrink-0"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
+					{isCancelled && (
+						<div className="border-t border-edge-active mt-1.5 pt-1.5">
+							<button
+								onClick={handleDelete}
+								className="w-full text-left px-3 py-2 text-sm text-danger hover:bg-danger/10 flex items-center gap-2.5 transition-colors"
 							>
-								<path
-									strokeLinecap="round"
-									strokeLinejoin="round"
-									strokeWidth={2}
-									d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-								/>
-							</svg>
-							{t("task.delete")}
-						</button>
-					</div>
+								<svg
+									className="w-4 h-4 flex-shrink-0"
+									fill="none"
+									stroke="currentColor"
+									viewBox="0 0 24 24"
+								>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										strokeWidth={2}
+										d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+									/>
+								</svg>
+								{t("task.delete")}
+							</button>
+						</div>
+					)}
 				</div>
 			)}
 		</div>
