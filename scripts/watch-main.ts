@@ -170,10 +170,10 @@ for (const dir of WATCH_DIRS) {
 
 log(`Watching ${WATCH_DIRS.join(", ")} for changes...`);
 
-// --- Manual restart via Ctrl+\ (SIGQUIT) or SIGUSR1 ---
-process.on("SIGQUIT", () => {
+// --- Manual restart via Ctrl+Z (SIGTSTP) or SIGUSR1 ---
+process.on("SIGTSTP", () => {
 	if (debounceTimer) clearTimeout(debounceTimer);
-	log("Manual restart triggered (Ctrl+\\)");
+	log("Manual restart triggered (Ctrl+Z)");
 	restartElectrobun();
 });
 process.on("SIGUSR1", () => {
@@ -190,4 +190,4 @@ killPortOwner(ELECTROBUN_PORT);
 
 startVite();
 startElectrobun();
-log("Restart: \x1b[1mCtrl+\\\x1b[0m | Quit: \x1b[1mCtrl+C\x1b[0m");
+log("Restart: \x1b[1mCtrl+Z\x1b[0m | Quit: \x1b[1mCtrl+C\x1b[0m");
