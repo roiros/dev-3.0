@@ -53,6 +53,9 @@ async function launchTaskPty(
 		extraEnv = resolved.extraEnv;
 	}
 
+	// Pre-register worktree as trusted so claude skips the trust dialog
+	await agents.ensureClaudeTrust(worktreePath);
+
 	const env = { ...extraEnv, DEV3_TASK_ID: task.id };
 	pty.createSession(task.id, worktreePath, tmuxCmd, env);
 }

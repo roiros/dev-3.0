@@ -1,3 +1,5 @@
+import { realpath } from "node:fs/promises";
+import { homedir } from "node:os";
 import type { AgentConfiguration, CodingAgent, Project } from "../shared/types";
 import { DEFAULT_AGENTS } from "../shared/types";
 import { createLogger } from "./logger";
@@ -257,4 +259,59 @@ export function buildTaskEnv(
 	}
 
 	return env;
+}
+
+// ---- Claude Trust ----
+
+const CLAUDE_JSON = `${homedir()}/.claude.json`;
+
+const TRUST_ENTRY = {
+	allowedTools: [],
+	hasTrustDialogAccepted: true,
+	projectOnboardingSeenCount: 1,
+	hasCompletedProjectOnboarding: true,
+	hasClaudeMdExternalIncludesApproved: false,
+	mcpServers: {},
+	enabledMcpjsonServers: [],
+	disabledMcpjsonServers: [],
+	mcpContextUris: [],
+	ignorePatterns: [],
+};
+
+/**
+ * Ensure a directory is marked as trusted in ~/.claude.json so that
+ * `claude` CLI skips the "Do you trust this folder?" dialog.
+ * Resolves symlinks (e.g. /tmp → /private/tmp on macOS).
+ */
+export async function ensureClaudeTrust(dirPath: string): Promise<void> {
+	try {
+		// Resolve symlinks so the path matches what claude sees
+		const resolved = await realpath(dirPath);
+
+		const file = Bun.file(CLAUDE_JSON);
+		let data: any = {};
+		if (await file.exists()) {
+			data = await file.json();
+		}
+
+		if (!data.projects) {
+			data.projects = {};
+		}
+
+		if (data.projects[resolved]?.hasTrustDialogAccepted) {
+			return; // already trusted
+		}
+
+		data.projects[resolved] = {
+			...TRUST_ENTRY,
+			...(data.projects[resolved] || {}),
+			hasTrustDialogAccepted: true,
+		};
+
+		await Bun.write(CLAUDE_JSON, JSON.stringify(data, null, 2));
+		log.info("Registered worktree as trusted in ~/.claude.json", { path: resolved });
+	} catch (err) {
+		// Non-fatal — worst case the user sees the trust dialog
+		log.warn("Failed to register worktree trust", { error: String(err) });
+	}
 }
