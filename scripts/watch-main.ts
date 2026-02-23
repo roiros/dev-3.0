@@ -109,12 +109,18 @@ function scheduleRestart(reason: string) {
 	}, DEBOUNCE_MS);
 }
 
-// --- Ctrl+C: kill everything and exit immediately ---
-process.on("SIGINT", () => {
-	if (electrobunProc) try { electrobunProc.kill(); } catch {}
-	if (viteProc) try { viteProc.kill(); } catch {}
-	process.exit(0);
-});
+// --- Detect parent death (Ctrl+C kills `bun run`, orphaning us) ---
+const parentPid = process.ppid;
+setInterval(() => {
+	try {
+		process.kill(parentPid, 0); // signal 0 = just check if alive
+	} catch {
+		// Parent is dead — clean up and exit
+		if (electrobunProc) try { electrobunProc.kill(); } catch {}
+		if (viteProc) try { viteProc.kill(); } catch {}
+		process.exit(0);
+	}
+}, 500);
 
 // --- File watchers ---
 
