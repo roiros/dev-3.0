@@ -81,7 +81,14 @@ export const DEFAULT_AGENTS: CodingAgent[] = [
 		name: "Claude",
 		baseCommand: "claude",
 		isDefault: true,
-		configurations: [{ id: "claude-default", name: "Default" }],
+		configurations: [
+			{ id: "claude-default", name: "Default", model: "sonnet" },
+			{ id: "claude-plan", name: "Plan (Opus)", model: "opus", permissionMode: "plan" },
+			{ id: "claude-approvals-opus", name: "Approvals (Opus)", model: "opus", permissionMode: "acceptEdits" },
+			{ id: "claude-approvals-sonnet", name: "Approvals (Sonnet)", model: "sonnet", permissionMode: "acceptEdits" },
+			{ id: "claude-bypass-opus", name: "Bypass (Opus)", model: "opus", permissionMode: "bypassPermissions" },
+			{ id: "claude-bypass-sonnet", name: "Bypass (Sonnet)", model: "sonnet", permissionMode: "bypassPermissions" },
+		],
 		defaultConfigId: "claude-default",
 	},
 	{
