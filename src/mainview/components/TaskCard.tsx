@@ -115,17 +115,14 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants 
 					? agent.configurations.find((c) => c.id === task.configId)
 					: agent?.configurations.find((c) => c.id === agent.defaultConfigId) ?? agent?.configurations[0];
 
-				// Build label: #N · AgentName, with config details when meaningful
+				// Build label: #N · AgentName (ConfigName)
 				let label = `#${task.variantIndex}`;
 				if (agent) {
 					label += ` · ${agent.name}`;
-					// Show config name when agent has multiple configs and name isn't "Default"
-					const showConfigName = config && (agent.configurations.length > 1 || config.name !== "Default");
-					// Show model if set on config
-					if (config?.model) {
-						label += showConfigName ? ` · ${config.name} (${config.model})` : ` · ${config.model}`;
-					} else if (showConfigName) {
-						label += ` · ${config.name}`;
+					if (config) {
+						label += config.model
+							? ` (${config.name} · ${config.model})`
+							: ` (${config.name})`;
 					}
 				}
 				return (

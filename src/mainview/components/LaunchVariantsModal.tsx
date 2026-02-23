@@ -1,4 +1,4 @@
-import { useState, useEffect, type Dispatch } from "react";
+import { useState, type Dispatch } from "react";
 import type { CodingAgent, Project, Task, TaskStatus } from "../../shared/types";
 import type { AppAction } from "../state";
 import { api } from "../rpc";
@@ -13,6 +13,7 @@ interface LaunchVariantsModalProps {
 	task: Task;
 	project: Project;
 	targetStatus: TaskStatus;
+	agents: CodingAgent[];
 	dispatch: Dispatch<AppAction>;
 	onClose: () => void;
 }
@@ -21,20 +22,16 @@ function LaunchVariantsModal({
 	task,
 	project,
 	targetStatus,
+	agents,
 	dispatch,
 	onClose,
 }: LaunchVariantsModalProps) {
 	const t = useT();
-	const [agents, setAgents] = useState<CodingAgent[]>([]);
 	const [variants, setVariants] = useState<VariantRow[]>([
 		{ agentId: project.defaultAgentId, configId: project.defaultConfigId },
 	]);
 	const [launching, setLaunching] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-
-	useEffect(() => {
-		api.request.getAgents().then(setAgents).catch(() => {});
-	}, []);
 
 	function addVariant() {
 		setVariants((prev) => [

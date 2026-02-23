@@ -95,6 +95,7 @@ function KanbanBoard({ project, tasks, dispatch, navigate }: KanbanBoardProps) {
 					task={launchModal.task}
 					project={project}
 					targetStatus={launchModal.targetStatus}
+					agents={agents}
 					dispatch={dispatch}
 					onClose={() => setLaunchModal(null)}
 				/>
