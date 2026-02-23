@@ -1,0 +1,1 @@
+Added a Bun watcher script (`scripts/watch-main.ts`) that auto-restarts `electrobun dev` when files in `src/bun/` or `src/shared/` change. Supports 2-second debounce, manual restart via `R` key, and graceful quit via `Q`. The `dev` npm script now uses this watcher instead of `dev:once`, giving the main process a live-reload experience similar to Vite HMR for the renderer.
