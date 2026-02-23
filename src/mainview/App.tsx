@@ -64,7 +64,7 @@ function App() {
 	const { route } = state;
 
 	return (
-		<div className="h-full w-full flex flex-col bg-base">
+		<div className="h-full w-full flex flex-col">
 			<GlobalHeader
 				route={route}
 				projects={state.projects}

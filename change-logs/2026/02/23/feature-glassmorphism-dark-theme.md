@@ -1,0 +1,1 @@
+Redesigned the dark theme with glassmorphism aesthetics: gradient background, semi-transparent columns with per-status colored glow overlays, glass cards with hover lift, blurred header, and vibrant status colors. All values expressed through CSS custom properties; light theme falls back to solid opaque surfaces.

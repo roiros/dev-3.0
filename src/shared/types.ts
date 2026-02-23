@@ -39,14 +39,22 @@ export const STATUS_LABELS: Record<TaskStatus, string> = {
 };
 
 export const STATUS_COLORS: Record<TaskStatus, string> = {
-	todo: "#8890b5",
-	"in-progress": "#5e9eff",
-	"user-questions": "#ffb347",
-	"review-by-ai": "#a87cff",
-	"review-by-user": "#4fd1c5",
-	completed: "#68d391",
-	cancelled: "#fc8181",
+	todo: "#38bdf8",
+	"in-progress": "#818ef8",
+	"user-questions": "#fbbf24",
+	"review-by-ai": "#e879f9",
+	"review-by-user": "#2dd4bf",
+	completed: "#34d399",
+	cancelled: "#f87171",
 };
+
+/** Convert "#rrggbb" → "R G B" for use as CSS variable value */
+export function hexToRgb(hex: string): string {
+	const r = parseInt(hex.slice(1, 3), 16);
+	const g = parseInt(hex.slice(3, 5), 16);
+	const b = parseInt(hex.slice(5, 7), 16);
+	return `${r} ${g} ${b}`;
+}
 
 /** Returns the list of statuses a task can transition to from `current`. */
 export function getAllowedTransitions(current: TaskStatus): TaskStatus[] {

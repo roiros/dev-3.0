@@ -61,7 +61,8 @@
       "WebFetch(domain:electrobun.dev)",
       "WebFetch(domain:ghostty.org)",
       "Bash(git:*)",
-      "Bash(xxd:*)"
+      "Bash(xxd:*)",
+      "Bash(pkill:*)"
     ]
   }
 }

@@ -5,21 +5,62 @@
 /* ---- Theme tokens (space-separated RGB for Tailwind alpha support) ---- */
 :root,
 [data-theme="dark"] {
-	--surface-base: 23 25 36;
-	--surface-raised: 30 33 51;
-	--surface-raised-hover: 37 40 69;
-	--surface-elevated: 38 41 64;
-	--surface-elevated-hover: 46 50 80;
-	--surface-overlay: 38 41 64;
-	--text-primary: 236 238 248;
-	--text-secondary: 164 168 196;
-	--text-tertiary: 107 112 148;
-	--text-muted: 78 83 128;
-	--border-default: 42 46 72;
-	--border-active: 61 66 104;
-	--accent: 94 158 255;
-	--accent-hover: 77 139 255;
-	--danger: 252 129 129;
+	/* ---- Surfaces (opaque fallbacks, used outside kanban) ---- */
+	--surface-base: 5 8 18;
+	--surface-raised: 12 16 26;
+	--surface-raised-hover: 20 24 38;
+	--surface-elevated: 18 23 36;
+	--surface-elevated-hover: 30 35 50;
+	--surface-overlay: 15 20 32;
+
+	/* ---- Text ---- */
+	--text-primary: 248 250 252;
+	--text-secondary: 148 163 184;
+	--text-tertiary: 100 116 139;
+	--text-muted: 71 85 105;
+
+	/* ---- Borders ---- */
+	--border-default: 28 33 48;
+	--border-active: 45 50 72;
+
+	/* ---- Accent / Danger ---- */
+	--accent: 59 130 246;
+	--accent-hover: 37 99 235;
+	--danger: 248 113 113;
+
+	/* ---- Background gradient ---- */
+	--bg-grad-angle: 115deg;
+	--bg-grad-from: #050812;
+	--bg-grad-mid: #0d142b;
+	--bg-grad-to: #150b24;
+
+	/* ---- Glass surfaces ---- */
+	--glass-column-rgb: 10 14 20;
+	--glass-column-alpha: 0.7;
+	--glass-card-rgb: 255 255 255;
+	--glass-card-alpha: 0.03;
+	--glass-card-hover-alpha: 0.08;
+	--glass-header-rgb: 10 13 20;
+	--glass-header-alpha: 0.4;
+
+	/* ---- Glass blur ---- */
+	--glass-blur-column: 12px;
+	--glass-blur-header: 16px;
+
+	/* ---- Glass borders ---- */
+	--glass-border-rgb: 255 255 255;
+	--glass-border-column-alpha: 0.05;
+	--glass-border-card-alpha: 0.08;
+	--glass-border-card-hover-alpha: 0.15;
+
+	/* ---- Column glow (uses --col-rgb set per component) ---- */
+	--glow-start-alpha: 0.15;
+	--glow-mid-alpha: 0.03;
+	--glow-line-alpha: 0.4;
+
+	/* ---- Shadows ---- */
+	--shadow-column: 0 10px 30px -10px rgb(0 0 0 / 0.3);
+	--shadow-card-hover: 0 8px 20px -6px rgb(0 0 0 / 0.25);
 }
 
 [data-theme="light"] {
@@ -38,6 +79,39 @@
 	--accent: 94 158 255;
 	--accent-hover: 70 135 245;
 	--danger: 224 82 82;
+
+	/* Background: solid, no gradient */
+	--bg-grad-from: rgb(var(--surface-base));
+	--bg-grad-mid: rgb(var(--surface-base));
+	--bg-grad-to: rgb(var(--surface-base));
+
+	/* Glass: opaque solid fallbacks */
+	--glass-column-rgb: var(--surface-raised);
+	--glass-column-alpha: 1;
+	--glass-card-rgb: var(--surface-elevated);
+	--glass-card-alpha: 1;
+	--glass-card-hover-alpha: 1;
+	--glass-header-rgb: var(--surface-base);
+	--glass-header-alpha: 1;
+
+	/* No blur in light theme */
+	--glass-blur-column: 0px;
+	--glass-blur-header: 0px;
+
+	/* Borders: use standard tokens */
+	--glass-border-rgb: var(--border-default);
+	--glass-border-column-alpha: 1;
+	--glass-border-card-alpha: 1;
+	--glass-border-card-hover-alpha: 1;
+
+	/* No column glow */
+	--glow-start-alpha: 0;
+	--glow-mid-alpha: 0;
+	--glow-line-alpha: 0;
+
+	/* Shadows: lighter */
+	--shadow-column: 0 4px 12px -4px rgb(0 0 0 / 0.08);
+	--shadow-card-hover: 0 4px 12px -4px rgb(0 0 0 / 0.08);
 }
 
 html, body, #root {
@@ -47,7 +121,67 @@ html, body, #root {
 	overflow: hidden;
 }
 
-/* Custom scrollbars */
+#root {
+	background: linear-gradient(
+		var(--bg-grad-angle),
+		var(--bg-grad-from) 0%,
+		var(--bg-grad-mid) 45%,
+		var(--bg-grad-to) 100%
+	);
+}
+
+/* ---- Glass utility classes ---- */
+
+.glass-column {
+	background: rgb(var(--glass-column-rgb) / var(--glass-column-alpha));
+	backdrop-filter: blur(var(--glass-blur-column));
+	-webkit-backdrop-filter: blur(var(--glass-blur-column));
+	border-color: rgb(var(--glass-border-rgb) / var(--glass-border-column-alpha));
+	box-shadow: var(--shadow-column);
+}
+
+.glass-card {
+	background: rgb(var(--glass-card-rgb) / var(--glass-card-alpha));
+	border-color: rgb(var(--glass-border-rgb) / var(--glass-border-card-alpha));
+}
+.glass-card:hover {
+	background: rgb(var(--glass-card-rgb) / var(--glass-card-hover-alpha));
+	border-color: rgb(var(--glass-border-rgb) / var(--glass-border-card-hover-alpha));
+}
+
+.glass-header {
+	background: rgb(var(--glass-header-rgb) / var(--glass-header-alpha));
+	backdrop-filter: blur(var(--glass-blur-header));
+	-webkit-backdrop-filter: blur(var(--glass-blur-header));
+}
+
+/* ---- Column glow overlay ---- */
+
+.column-glow {
+	position: relative;
+	overflow: hidden;
+}
+.column-glow > * {
+	position: relative;
+	z-index: 1;
+}
+.column-glow::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	z-index: 0;
+	background: linear-gradient(
+		135deg,
+		rgb(var(--col-rgb) / var(--glow-start-alpha)) 0%,
+		rgb(var(--col-rgb) / var(--glow-mid-alpha)) 55%,
+		transparent 100%
+	);
+	box-shadow: inset 0 2px 0 0 rgb(var(--col-rgb) / var(--glow-line-alpha));
+}
+
+/* ---- Custom scrollbars ---- */
+
 ::-webkit-scrollbar {
 	width: 7px;
 	height: 7px;
@@ -66,7 +200,8 @@ html, body, #root {
 	background: rgb(var(--text-muted));
 }
 
-/* Font smoothing */
+/* ---- Font smoothing ---- */
+
 * {
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;

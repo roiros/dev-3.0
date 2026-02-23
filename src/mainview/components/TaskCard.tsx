@@ -132,10 +132,10 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 		<div
 			draggable={!moving}
 			onDragStart={handleDragStart}
-			className={`group relative p-3.5 bg-elevated rounded-xl transition-all border-l-[3px] ${
+			className={`group relative p-3.5 glass-card rounded-xl transition-all border border-transparent border-l-[3px] ${
 				isActive
-					? "cursor-pointer hover:bg-elevated-hover hover:shadow-lg hover:shadow-black/15"
-					: "cursor-grab active:cursor-grabbing"
+					? "cursor-pointer hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/25"
+					: "cursor-grab active:cursor-grabbing hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/25"
 			} ${moving ? "opacity-50 pointer-events-none" : ""}`}
 			style={{ borderLeftColor: color }}
 			onClick={handleClick}

@@ -107,7 +107,7 @@ function KanbanBoard({ project, tasks, dispatch, navigate }: KanbanBoardProps) {
 
 	return (
 		<>
-			<div className="flex gap-3 p-5 h-full min-h-0 overflow-x-auto overflow-y-hidden">
+			<div className="flex gap-5 p-6 h-full min-h-0 overflow-x-auto overflow-y-hidden">
 				{ALL_STATUSES.map((status) => (
 					<KanbanColumn
 						key={status}

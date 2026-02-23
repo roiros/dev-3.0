@@ -1,6 +1,6 @@
 import { useState, type Dispatch } from "react";
 import type { CodingAgent, Project, Task, TaskStatus } from "../../shared/types";
-import { STATUS_COLORS, getAllowedTransitions } from "../../shared/types";
+import { STATUS_COLORS, hexToRgb, getAllowedTransitions } from "../../shared/types";
 import type { AppAction, Route } from "../state";
 import { useT } from "../i18n";
 import TaskCard from "./TaskCard";
@@ -76,13 +76,14 @@ function KanbanColumn({
 
 	return (
 		<div
-			className={`flex flex-col flex-shrink-0 w-[240px] h-full bg-raised rounded-2xl overflow-hidden border transition-colors ${
+			className={`flex flex-col flex-shrink-0 w-[280px] h-full glass-column column-glow rounded-2xl border transition-colors ${
 				showDropHighlight
 					? "border-accent bg-accent/5 shadow-lg shadow-accent/10"
 					: isValidTarget && dragFromStatus
 						? "border-edge-active"
-						: "border-edge"
+						: "border-transparent"
 			}`}
+			style={{ "--col-rgb": hexToRgb(color) } as React.CSSProperties}
 			onDragOver={handleDragOver}
 			onDragEnter={handleDragEnter}
 			onDragLeave={handleDragLeave}
