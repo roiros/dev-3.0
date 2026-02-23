@@ -67,6 +67,8 @@ function scheduleRestart(reason: string) {
 }
 
 async function shutdown() {
+	if (shuttingDown) return;
+	shuttingDown = true;
 	log("Shutting down...");
 	if (debounceTimer) clearTimeout(debounceTimer);
 
@@ -82,6 +84,22 @@ async function shutdown() {
 	await Promise.all(exits);
 	process.exit(0);
 }
+
+// --- Signal handlers ---
+// electrobun's graceful shutdown sends signals to the whole process group.
+// Intercept them so the watcher survives child restarts.
+
+let shuttingDown = false;
+
+process.on("SIGTERM", () => {
+	if (!restarting) shutdown();
+});
+process.on("SIGINT", () => {
+	if (!restarting) shutdown();
+});
+process.on("SIGHUP", () => {
+	if (!restarting) shutdown();
+});
 
 // --- File watchers ---
 
