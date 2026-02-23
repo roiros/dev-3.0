@@ -11,7 +11,7 @@ const AGENTS_FILE = `${DEV3_HOME}/agents.json`;
 
 /** Merge stored agents with defaults. Missing defaults are added; stored versions win.
  *  For default agents, new predefined configurations are appended if not already present. */
-function mergeWithDefaults(stored: CodingAgent[]): CodingAgent[] {
+export function mergeWithDefaults(stored: CodingAgent[]): CodingAgent[] {
 	const byId = new Map(stored.map((a) => [a.id, a]));
 	const result: CodingAgent[] = [];
 
@@ -43,7 +43,7 @@ function mergeWithDefaults(stored: CodingAgent[]): CodingAgent[] {
 }
 
 /** Detect and migrate old flat format (kind-based agents) to new model. */
-function migrateOldFormat(data: any[]): CodingAgent[] {
+export function migrateOldFormat(data: any[]): CodingAgent[] {
 	if (!Array.isArray(data) || data.length === 0) return [];
 
 	// Check if this is the old format (has `kind` field)
@@ -99,7 +99,7 @@ export interface TemplateContext {
 	worktreePath: string;
 }
 
-function interpolateTemplate(template: string, ctx: TemplateContext): string {
+export function interpolateTemplate(template: string, ctx: TemplateContext): string {
 	const vars: Record<string, string> = {
 		TASK_TITLE: ctx.taskTitle,
 		TASK_DESCRIPTION: ctx.taskDescription,
@@ -112,7 +112,7 @@ function interpolateTemplate(template: string, ctx: TemplateContext): string {
 
 // ---- Command Resolution ----
 
-function shellEscape(s: string): string {
+export function shellEscape(s: string): string {
 	return "'" + s.replace(/'/g, "'\\''") + "'";
 }
 
@@ -161,7 +161,7 @@ export function resolveAgentCommand(
 	return parts.join(" ");
 }
 
-function findConfig(
+export function findConfig(
 	agent: CodingAgent,
 	configId: string | null | undefined,
 ): AgentConfiguration | undefined {
