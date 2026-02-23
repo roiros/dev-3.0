@@ -1,0 +1,1 @@
+Add drag-and-drop between Kanban columns with status transition rules. Tasks can be dragged from any column to valid target columns. TODO tasks can only move to In Progress (opens LaunchVariantsModal) or Cancelled. Valid drop targets highlight during drag. Status context menu also respects the same transition rules.

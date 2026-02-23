@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, type Dispatch } from "react";
 import type { CodingAgent, Project, Task, TaskStatus } from "../../shared/types";
-import { ALL_STATUSES, ACTIVE_STATUSES, STATUS_COLORS } from "../../shared/types";
+import { ACTIVE_STATUSES, STATUS_COLORS, getAllowedTransitions } from "../../shared/types";
 import type { AppAction, Route } from "../state";
 import { api } from "../rpc";
 import { useT, statusKey } from "../i18n";
@@ -12,9 +12,10 @@ interface TaskCardProps {
 	navigate: (route: Route) => void;
 	agents: CodingAgent[];
 	onLaunchVariants: (task: Task, targetStatus: TaskStatus) => void;
+	onDragStart: (taskId: string) => void;
 }
 
-function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants }: TaskCardProps) {
+function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants, onDragStart: onDragStartProp }: TaskCardProps) {
 	const t = useT();
 	const [moving, setMoving] = useState(false);
 	const [menuOpen, setMenuOpen] = useState(false);
@@ -98,12 +99,20 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants 
 		}
 	}
 
+	function handleDragStart(e: React.DragEvent) {
+		e.dataTransfer.setData("text/plain", task.id);
+		e.dataTransfer.effectAllowed = "move";
+		onDragStartProp(task.id);
+	}
+
 	return (
 		<div
+			draggable={!moving}
+			onDragStart={handleDragStart}
 			className={`group p-3.5 bg-elevated rounded-xl transition-all border-l-[3px] ${
 				isActive
 					? "cursor-pointer hover:bg-elevated-hover hover:shadow-lg hover:shadow-black/15"
-					: "opacity-60"
+					: "cursor-grab active:cursor-grabbing"
 			} ${moving ? "opacity-50 pointer-events-none" : ""}`}
 			style={{ borderLeftColor: color }}
 			onClick={handleClick}
@@ -190,7 +199,7 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants 
 					<div className="px-3 py-2 text-xs text-fg-3 uppercase tracking-wider font-semibold">
 						{t("task.moveTo")}
 					</div>
-					{ALL_STATUSES.filter((s) => s !== task.status).map((s) => (
+					{getAllowedTransitions(task.status).map((s) => (
 						<button
 							key={s}
 							onClick={() => handleMove(s)}

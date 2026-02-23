@@ -1,6 +1,6 @@
-import type { Dispatch } from "react";
+import { useState, type Dispatch } from "react";
 import type { CodingAgent, Project, Task, TaskStatus } from "../../shared/types";
-import { STATUS_COLORS } from "../../shared/types";
+import { STATUS_COLORS, getAllowedTransitions } from "../../shared/types";
 import type { AppAction, Route } from "../state";
 import { useT } from "../i18n";
 import TaskCard from "./TaskCard";
@@ -15,6 +15,9 @@ interface KanbanColumnProps {
 	onAddTask: () => void;
 	agents: CodingAgent[];
 	onLaunchVariants: (task: Task, targetStatus: TaskStatus) => void;
+	onTaskDrop: (taskId: string, targetStatus: TaskStatus) => void;
+	dragFromStatus: TaskStatus | null;
+	onDragStart: (taskId: string) => void;
 }
 
 function KanbanColumn({
@@ -27,12 +30,64 @@ function KanbanColumn({
 	onAddTask,
 	agents,
 	onLaunchVariants,
+	onTaskDrop,
+	dragFromStatus,
+	onDragStart,
 }: KanbanColumnProps) {
 	const t = useT();
 	const color = STATUS_COLORS[status];
+	const [dragOver, setDragOver] = useState(false);
+
+	// Can this column accept a drop from the dragged task's current status?
+	const isValidTarget =
+		dragFromStatus !== null &&
+		dragFromStatus !== status &&
+		getAllowedTransitions(dragFromStatus).includes(status);
+
+	function handleDragOver(e: React.DragEvent) {
+		if (!isValidTarget) return;
+		e.preventDefault();
+		e.dataTransfer.dropEffect = "move";
+	}
+
+	function handleDragEnter(e: React.DragEvent) {
+		if (!isValidTarget) return;
+		e.preventDefault();
+		setDragOver(true);
+	}
+
+	function handleDragLeave(e: React.DragEvent) {
+		// Only react when leaving the column itself, not its children
+		if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+		setDragOver(false);
+	}
+
+	function handleDrop(e: React.DragEvent) {
+		e.preventDefault();
+		setDragOver(false);
+		if (!isValidTarget) return;
+		const taskId = e.dataTransfer.getData("text/plain");
+		if (taskId) {
+			onTaskDrop(taskId, status);
+		}
+	}
+
+	const showDropHighlight = dragOver && isValidTarget;
 
 	return (
-		<div className="flex flex-col flex-shrink-0 w-[240px] h-full bg-raised rounded-2xl overflow-hidden border border-edge">
+		<div
+			className={`flex flex-col flex-shrink-0 w-[240px] h-full bg-raised rounded-2xl overflow-hidden border transition-colors ${
+				showDropHighlight
+					? "border-accent bg-accent/5 shadow-lg shadow-accent/10"
+					: isValidTarget && dragFromStatus
+						? "border-edge-active"
+						: "border-edge"
+			}`}
+			onDragOver={handleDragOver}
+			onDragEnter={handleDragEnter}
+			onDragLeave={handleDragLeave}
+			onDrop={handleDrop}
+		>
 			{/* Column header */}
 			<div
 				className="px-4 py-3.5 flex-shrink-0"
@@ -73,6 +128,7 @@ function KanbanColumn({
 						navigate={navigate}
 						agents={agents}
 						onLaunchVariants={onLaunchVariants}
+						onDragStart={onDragStart}
 					/>
 				))}
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, type Dispatch } from "react";
 import type { CodingAgent, Project, Task, TaskStatus } from "../../shared/types";
-import { ALL_STATUSES } from "../../shared/types";
+import { ALL_STATUSES, ACTIVE_STATUSES } from "../../shared/types";
 import type { AppAction, Route } from "../state";
 import { useT, statusKey } from "../i18n";
 import { api } from "../rpc";
@@ -40,10 +40,49 @@ function KanbanBoard({ project, tasks, dispatch, navigate }: KanbanBoardProps) {
 	const [showCreateModal, setShowCreateModal] = useState(false);
 	const [agents, setAgents] = useState<CodingAgent[]>([]);
 	const [launchModal, setLaunchModal] = useState<{ task: Task; targetStatus: TaskStatus } | null>(null);
+	const [dragFromStatus, setDragFromStatus] = useState<TaskStatus | null>(null);
 
 	useEffect(() => {
 		api.request.getAgents().then(setAgents).catch(() => {});
 	}, []);
+
+	// Global dragend listener to clear drag state
+	useEffect(() => {
+		function handleDragEnd() {
+			setDragFromStatus(null);
+		}
+		window.addEventListener("dragend", handleDragEnd);
+		return () => window.removeEventListener("dragend", handleDragEnd);
+	}, []);
+
+	function handleDragStart(taskId: string) {
+		const task = tasks.find((t) => t.id === taskId);
+		if (task) setDragFromStatus(task.status);
+	}
+
+	async function handleTaskDrop(taskId: string, targetStatus: TaskStatus) {
+		setDragFromStatus(null);
+		const task = tasks.find((t) => t.id === taskId);
+		if (!task || task.status === targetStatus) return;
+
+		// todo → active: open LaunchVariantsModal
+		if (task.status === "todo" && ACTIVE_STATUSES.includes(targetStatus)) {
+			setLaunchModal({ task, targetStatus });
+			return;
+		}
+
+		// Direct move for all other transitions
+		try {
+			const updated = await api.request.moveTask({
+				taskId: task.id,
+				projectId: project.id,
+				newStatus: targetStatus,
+			});
+			dispatch({ type: "updateTask", task: updated });
+		} catch (err) {
+			alert(t("task.failedMove", { error: String(err) }));
+		}
+	}
 
 	const tasksByStatus = new Map<TaskStatus, Task[]>();
 	for (const status of ALL_STATUSES) {
@@ -78,6 +117,9 @@ function KanbanBoard({ project, tasks, dispatch, navigate }: KanbanBoardProps) {
 						onLaunchVariants={(task, targetStatus) =>
 							setLaunchModal({ task, targetStatus })
 						}
+						onTaskDrop={handleTaskDrop}
+						dragFromStatus={dragFromStatus}
+						onDragStart={handleDragStart}
 					/>
 				))}
 			</div>

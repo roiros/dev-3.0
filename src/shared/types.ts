@@ -48,6 +48,14 @@ export const STATUS_COLORS: Record<TaskStatus, string> = {
 	cancelled: "#fc8181",
 };
 
+/** Returns the list of statuses a task can transition to from `current`. */
+export function getAllowedTransitions(current: TaskStatus): TaskStatus[] {
+	if (current === "todo") {
+		return ["in-progress", "cancelled"];
+	}
+	return ALL_STATUSES.filter((s) => s !== current);
+}
+
 // ---- Coding Agents ----
 
 export type PermissionMode = "default" | "acceptEdits" | "bypassPermissions" | "dontAsk" | "plan";
