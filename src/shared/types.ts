@@ -50,10 +50,16 @@ export const STATUS_COLORS: Record<TaskStatus, string> = {
 
 // ---- Coding Agents ----
 
+export type PermissionMode = "default" | "acceptEdits" | "bypassPermissions" | "dontAsk" | "plan";
+export type EffortLevel = "low" | "medium" | "high";
+
 export interface AgentConfiguration {
 	id: string;
 	name: string;
 	model?: string;
+	permissionMode?: PermissionMode;
+	effort?: EffortLevel;
+	maxBudgetUsd?: number;
 	appendPrompt?: string;
 	additionalArgs?: string[];
 	envVars?: Record<string, string>;

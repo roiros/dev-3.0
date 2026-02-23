@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useT, useLocale, ALL_LOCALES, LOCALE_LABELS } from "../i18n";
 import type { Locale } from "../i18n";
-import type { CodingAgent, AgentConfiguration } from "../../shared/types";
+import type { CodingAgent, AgentConfiguration, PermissionMode, EffortLevel } from "../../shared/types";
 import { api } from "../rpc";
 
 type Theme = "dark" | "light";
@@ -327,6 +327,18 @@ function buildCommandPreview(
 		parts.push("--model", config.model);
 	}
 
+	if (config.permissionMode && config.permissionMode !== "default") {
+		parts.push("--permission-mode", config.permissionMode);
+	}
+
+	if (config.effort) {
+		parts.push("--effort", config.effort);
+	}
+
+	if (config.maxBudgetUsd != null && config.maxBudgetUsd > 0) {
+		parts.push("--max-budget-usd", String(config.maxBudgetUsd));
+	}
+
 	if (config.additionalArgs) {
 		for (const arg of config.additionalArgs) {
 			if (arg) parts.push(arg);
@@ -462,6 +474,77 @@ function ConfigEditor({
 							placeholder="opus, sonnet, etc."
 							className="w-full px-3 py-1.5 bg-base border border-edge rounded-lg text-fg text-sm font-mono placeholder-fg-muted outline-none focus:border-accent/40 transition-colors"
 						/>
+					</div>
+
+					{/* Permission mode */}
+					<div>
+						<label className="block text-fg-2 text-xs mb-1">
+							{t("settings.configPermissionMode")}
+						</label>
+						<select
+							value={config.permissionMode || "default"}
+							onChange={(e) =>
+								onChange({
+									permissionMode:
+										(e.target.value as PermissionMode) === "default"
+											? undefined
+											: (e.target.value as PermissionMode),
+								})
+							}
+							className="w-full px-3 py-1.5 bg-base border border-edge rounded-lg text-fg text-sm outline-none focus:border-accent/40 transition-colors appearance-none cursor-pointer"
+						>
+							<option value="default">{t("settings.permDefault")}</option>
+							<option value="plan">{t("settings.permPlan")}</option>
+							<option value="acceptEdits">{t("settings.permAcceptEdits")}</option>
+							<option value="dontAsk">{t("settings.permDontAsk")}</option>
+							<option value="bypassPermissions">{t("settings.permBypass")}</option>
+						</select>
+					</div>
+
+					{/* Effort level */}
+					<div>
+						<label className="block text-fg-2 text-xs mb-1">
+							{t("settings.configEffort")}
+						</label>
+						<select
+							value={config.effort || ""}
+							onChange={(e) =>
+								onChange({
+									effort: (e.target.value as EffortLevel) || undefined,
+								})
+							}
+							className="w-full px-3 py-1.5 bg-base border border-edge rounded-lg text-fg text-sm outline-none focus:border-accent/40 transition-colors appearance-none cursor-pointer"
+						>
+							<option value="">{t("settings.effortDefault")}</option>
+							<option value="low">{t("settings.effortLow")}</option>
+							<option value="medium">{t("settings.effortMedium")}</option>
+							<option value="high">{t("settings.effortHigh")}</option>
+						</select>
+					</div>
+
+					{/* Max budget */}
+					<div>
+						<label className="block text-fg-2 text-xs mb-1">
+							{t("settings.configMaxBudget")}
+						</label>
+						<input
+							type="number"
+							min={0}
+							step={0.5}
+							value={config.maxBudgetUsd ?? ""}
+							onChange={(e) =>
+								onChange({
+									maxBudgetUsd: e.target.value
+										? Number(e.target.value)
+										: undefined,
+								})
+							}
+							placeholder="0"
+							className="w-full px-3 py-1.5 bg-base border border-edge rounded-lg text-fg text-sm font-mono placeholder-fg-muted outline-none focus:border-accent/40 transition-colors"
+						/>
+						<p className="text-fg-muted text-xs mt-1">
+							{t("settings.configMaxBudgetHint")}
+						</p>
 					</div>
 
 					{/* Append prompt */}

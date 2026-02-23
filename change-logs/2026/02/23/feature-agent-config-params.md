@@ -1,0 +1,1 @@
+Added permission mode, effort level, and max budget fields to agent configurations. These map directly to claude CLI flags (--permission-mode, --effort, --max-budget-usd) and are reflected in the live command preview.

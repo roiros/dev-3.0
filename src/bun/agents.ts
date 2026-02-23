@@ -120,6 +120,18 @@ export function resolveAgentCommand(
 		args.push("--model", config.model);
 	}
 
+	if (config?.permissionMode && config.permissionMode !== "default") {
+		args.push("--permission-mode", config.permissionMode);
+	}
+
+	if (config?.effort) {
+		args.push("--effort", config.effort);
+	}
+
+	if (config?.maxBudgetUsd != null && config.maxBudgetUsd > 0) {
+		args.push("--max-budget-usd", String(config.maxBudgetUsd));
+	}
+
 	if (config?.additionalArgs) {
 		args.push(...config.additionalArgs);
 	}
