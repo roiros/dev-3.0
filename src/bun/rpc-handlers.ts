@@ -58,6 +58,18 @@ async function launchTaskPty(
 }
 
 export const handlers = {
+	async showConfirm(params: { title: string; message: string }): Promise<boolean> {
+		const { response } = await Utils.showMessageBox({
+			type: "question",
+			title: params.title,
+			message: params.message,
+			buttons: ["OK", "Cancel"],
+			defaultId: 1,
+			cancelId: 1,
+		});
+		return response === 0;
+	},
+
 	async getProjects(): Promise<Project[]> {
 		log.info("→ getProjects");
 		const projects = await data.loadProjects();

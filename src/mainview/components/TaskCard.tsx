@@ -79,7 +79,11 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 
 	async function handleDelete() {
 		setMenuOpen(false);
-		if (!confirm(t("task.confirmDelete", { title: task.title }))) return;
+		const confirmed = await api.request.showConfirm({
+			title: t("task.delete"),
+			message: t("task.confirmDelete", { title: task.title }),
+		});
+		if (!confirmed) return;
 		try {
 			await api.request.deleteTask({
 				taskId: task.id,
@@ -92,10 +96,14 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 	}
 
 	/** X button handler: cancel (from todo) or delete (from cancelled), with confirmation */
-	function handleDismiss(e: React.MouseEvent) {
+	async function handleDismiss(e: React.MouseEvent) {
 		e.stopPropagation();
 		if (isTodo) {
-			if (!confirm(t("task.confirmCancel", { title: task.title }))) return;
+			const confirmed = await api.request.showConfirm({
+				title: t("task.cancel"),
+				message: t("task.confirmCancel", { title: task.title }),
+			});
+			if (!confirmed) return;
 			handleMove("cancelled");
 		} else if (isCancelled) {
 			handleDelete();

@@ -226,6 +226,10 @@ export type AppRPCSchema = {
 				};
 				response: Task[];
 			};
+			showConfirm: {
+				params: { title: string; message: string };
+				response: boolean;
+			};
 			getPtyUrl: {
 				params: { taskId: string };
 				response: string;

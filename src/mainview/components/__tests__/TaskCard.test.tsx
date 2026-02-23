@@ -10,6 +10,7 @@ vi.mock("../../rpc", () => ({
 		request: {
 			moveTask: vi.fn(),
 			deleteTask: vi.fn(),
+			showConfirm: vi.fn(),
 		},
 	},
 }));
@@ -101,8 +102,6 @@ function renderCard(
 describe("TaskCard", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		// happy-dom doesn't define window.confirm by default
-		window.confirm = window.confirm ?? (() => false);
 	});
 
 	describe("variant badge", () => {
@@ -175,22 +174,21 @@ describe("TaskCard", () => {
 		it("X button asks for confirmation before cancelling", async () => {
 			const user = userEvent.setup();
 			const task = makeTask({ status: "todo" });
-			const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+			mockedApi.request.showConfirm.mockResolvedValue(false);
 
 			renderCard(task);
 
 			await user.click(screen.getByTitle("Cancel"));
 
-			expect(confirmSpy).toHaveBeenCalled();
+			expect(mockedApi.request.showConfirm).toHaveBeenCalled();
 			expect(mockedApi.request.moveTask).not.toHaveBeenCalled();
-			confirmSpy.mockRestore();
 		});
 
 		it("X button moves to cancelled when confirmed", async () => {
 			const user = userEvent.setup();
 			const dispatch = vi.fn();
 			const task = makeTask({ status: "todo" });
-			vi.spyOn(window, "confirm").mockReturnValue(true);
+			mockedApi.request.showConfirm.mockResolvedValue(true);
 			mockedApi.request.moveTask.mockResolvedValue({ ...task, status: "cancelled" });
 
 			renderCard(task, { dispatch });
@@ -231,22 +229,21 @@ describe("TaskCard", () => {
 		it("X button asks for confirmation before deleting", async () => {
 			const user = userEvent.setup();
 			const task = makeTask({ status: "cancelled" });
-			const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+			mockedApi.request.showConfirm.mockResolvedValue(false);
 
 			renderCard(task);
 
 			await user.click(screen.getByTitle("Delete"));
 
-			expect(confirmSpy).toHaveBeenCalled();
+			expect(mockedApi.request.showConfirm).toHaveBeenCalled();
 			expect(mockedApi.request.deleteTask).not.toHaveBeenCalled();
-			confirmSpy.mockRestore();
 		});
 
 		it("X button deletes task when confirmed", async () => {
 			const user = userEvent.setup();
 			const dispatch = vi.fn();
 			const task = makeTask({ status: "cancelled" });
-			vi.spyOn(window, "confirm").mockReturnValue(true);
+			mockedApi.request.showConfirm.mockResolvedValue(true);
 			mockedApi.request.deleteTask.mockResolvedValue(undefined);
 
 			renderCard(task, { dispatch });
