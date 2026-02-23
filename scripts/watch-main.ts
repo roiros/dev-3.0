@@ -28,9 +28,7 @@ async function waitForPortFree(port: number): Promise<boolean> {
 			const server = Bun.listen({
 				hostname: "127.0.0.1",
 				port,
-				socket: {
-					data() {},
-				},
+				socket: { data() {} },
 			});
 			server.stop(true);
 			return true;
@@ -42,39 +40,18 @@ async function waitForPortFree(port: number): Promise<boolean> {
 }
 
 function killPortOwner(port: number) {
-	// Find and kill any process listening on this port (leftover zombies)
 	try {
-		const result = Bun.spawnSync(
-			["lsof", "-ti", `tcp:${port}`],
-			{ cwd: projectRoot },
-		);
+		const result = Bun.spawnSync(["lsof", "-ti", `tcp:${port}`], {
+			cwd: projectRoot,
+		});
 		const pids = result.stdout.toString().trim();
 		if (pids) {
 			for (const pid of pids.split("\n")) {
 				log(`Killing leftover process ${pid} on port ${port}`);
-				try {
-					process.kill(Number(pid), "SIGKILL");
-				} catch {}
+				try { process.kill(Number(pid), "SIGKILL"); } catch {}
 			}
 		}
 	} catch {}
-}
-
-async function freePort(port: number) {
-	killPortOwner(port);
-	await waitForPortFree(port);
-}
-
-async function killProcessTree(proc: ReturnType<typeof Bun.spawn>) {
-	const pid = proc.pid;
-	// Kill child processes first (best-effort)
-	try {
-		const result = Bun.spawnSync(["pkill", "-TERM", "-P", String(pid)], {
-			cwd: projectRoot,
-		});
-	} catch {}
-	proc.kill();
-	await proc.exited;
 }
 
 function startVite() {
@@ -82,9 +59,6 @@ function startVite() {
 	viteProc = Bun.spawn(VITE_CMD, {
 		stdio: ["ignore", "inherit", "inherit"],
 		cwd: projectRoot,
-	});
-	viteProc.exited.then((code) => {
-		if (!shuttingDown) warn(`Vite exited with code ${code}`);
 	});
 }
 
@@ -94,10 +68,15 @@ function startElectrobun() {
 		stdio: ["ignore", "inherit", "inherit"],
 		cwd: projectRoot,
 	});
+
+	// When electrobun exits on its own (window closed, Ctrl+C, crash) — exit everything
 	electrobunProc.exited.then((code) => {
-		if (!restarting && !shuttingDown) {
-			warn(`electrobun dev exited with code ${code}`);
+		if (restarting) return;
+		log(`electrobun dev exited (code ${code}), shutting down...`);
+		if (viteProc) {
+			viteProc.kill();
 		}
+		process.exit(0);
 	});
 }
 
@@ -107,11 +86,15 @@ async function restartElectrobun() {
 	log("Restarting electrobun dev...");
 
 	if (electrobunProc) {
-		await killProcessTree(electrobunProc);
+		const pid = electrobunProc.pid;
+		try { Bun.spawnSync(["pkill", "-TERM", "-P", String(pid)], { cwd: projectRoot }); } catch {}
+		electrobunProc.kill();
+		await electrobunProc.exited;
 		electrobunProc = null;
 	}
 
-	await freePort(ELECTROBUN_PORT);
+	killPortOwner(ELECTROBUN_PORT);
+	await waitForPortFree(ELECTROBUN_PORT);
 
 	startElectrobun();
 	restarting = false;
@@ -126,57 +109,21 @@ function scheduleRestart(reason: string) {
 	}, DEBOUNCE_MS);
 }
 
-async function shutdown() {
-	if (shuttingDown) return;
-	shuttingDown = true;
-	log("Shutting down...");
-	if (debounceTimer) clearTimeout(debounceTimer);
-
-	const kills: Promise<void>[] = [];
-	if (electrobunProc) kills.push(killProcessTree(electrobunProc));
-	if (viteProc) kills.push(killProcessTree(viteProc));
-	await Promise.all(kills);
-	process.exit(0);
-}
-
-// --- Signal handlers ---
-// electrobun's graceful shutdown sends signals to the whole process group.
-// Intercept them so the watcher survives child restarts.
-
-let shuttingDown = false;
-
-process.on("SIGINT", () => {
-	shutdown();
-});
-process.on("SIGTERM", () => {
-	if (!restarting) shutdown();
-});
-process.on("SIGHUP", () => {
-	if (!restarting) shutdown();
-});
-
 // --- File watchers ---
 
 for (const dir of WATCH_DIRS) {
-	watch(
-		dir,
-		{ recursive: true },
-		(event: WatchEventType, filename: string | null) => {
-			if (!filename) return;
-			scheduleRestart(`File changed: ${dir}/${filename}`);
-		},
-	);
+	watch(dir, { recursive: true }, (_event: WatchEventType, filename: string | null) => {
+		if (!filename) return;
+		scheduleRestart(`File changed: ${dir}/${filename}`);
+	});
 }
 
 log(`Watching ${WATCH_DIRS.join(", ")} for changes...`);
 
-
 // --- Start ---
 
-// Kill leftover processes from previous runs
 killPortOwner(VITE_PORT);
 killPortOwner(ELECTROBUN_PORT);
 
 startVite();
 startElectrobun();
-log("Quit: \x1b[1mCtrl+C\x1b[0m");
