@@ -80,11 +80,13 @@ export async function updateProject(
 	projectId: string,
 	updates: Partial<Pick<Project, "setupScript" | "devScript" | "cleanupScript" | "defaultBaseBranch">>,
 ): Promise<Project> {
+	console.log("[updateProject] updates:", JSON.stringify(updates));
 	log.info("Updating project", { projectId, updates });
 	const projects = await loadProjects();
 	const idx = projects.findIndex((p) => p.id === projectId);
 	if (idx === -1) throw new Error(`Project not found: ${projectId}`);
 	projects[idx] = { ...projects[idx], ...updates };
+	console.log("[updateProject] merged project:", JSON.stringify(projects[idx]));
 	await saveProjects(projects);
 	return projects[idx];
 }

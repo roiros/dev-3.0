@@ -141,6 +141,7 @@ export const handlers = {
 		cleanupScript: string;
 		defaultBaseBranch: string;
 	}): Promise<Project> {
+		console.log("[updateProjectSettings] params received:", JSON.stringify(params));
 		log.info("→ updateProjectSettings", { projectId: params.projectId });
 		const project = await data.updateProject(params.projectId, {
 			setupScript: params.setupScript,
@@ -148,6 +149,7 @@ export const handlers = {
 			cleanupScript: params.cleanupScript,
 			defaultBaseBranch: params.defaultBaseBranch,
 		});
+		console.log("[updateProjectSettings] saved project:", JSON.stringify(project));
 		log.info("← updateProjectSettings done");
 		return project;
 	},
