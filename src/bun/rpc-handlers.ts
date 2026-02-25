@@ -60,31 +60,36 @@ async function launchTaskPty(
 
 	if (runSetup && project.setupScript.trim()) {
 		const isBackground = project.setupScriptBackground ?? false;
-		const scriptPath = `/tmp/dev3-startup-${task.id}.sh`;
+		const prefix = `/tmp/dev3-${task.id}`;
+		const setupPath = `${prefix}-setup.sh`;
+		const claudePath = `${prefix}-cmd.sh`;
+		const startupPath = `${prefix}-startup.sh`;
 
-		extraEnv.DEV3_SETUP_SCRIPT = project.setupScript;
-		extraEnv.DEV3_CLAUDE_CMD = tmuxCmd;
-		extraEnv.DEV3_WORKTREE_PATH = worktreePath;
+		// Write setup script and claude command to separate files
+		// to avoid tmux env var propagation issues (tmux server doesn't
+		// inherit custom env vars from the client process)
+		await Bun.write(setupPath, project.setupScript + "\n");
+		await Bun.write(claudePath, `#!/bin/bash\nexec ${tmuxCmd}\n`);
 
 		const startupScript = isBackground
 			? [
 					"#!/bin/bash",
-					'tmux split-window -v -c "$DEV3_WORKTREE_PATH" "$DEV3_CLAUDE_CMD"',
-					'bash -x -c "$DEV3_SETUP_SCRIPT"',
+					`tmux split-window -v -c "${worktreePath}" "bash '${claudePath}'"`,
+					`bash -x "${setupPath}"`,
 					"S=$?; [ $S -ne 0 ] && printf '\\033[1;31m✗ Setup failed (exit %s)\\033[0m\\n' \"$S\" || printf '\\033[1;32m✓ Setup done\\033[0m\\n'",
 					"exec bash",
 				].join("\n")
 			: [
 					"#!/bin/bash",
-					'bash -x -c "$DEV3_SETUP_SCRIPT"',
+					`bash -x "${setupPath}"`,
 					"S=$?",
 					"[ $S -ne 0 ] && printf '\\033[1;31m✗ Setup failed (exit %s)\\033[0m\\n' \"$S\" || printf '\\033[1;32m✓ Setup done\\033[0m\\n'",
-					'tmux split-window -v -c "$DEV3_WORKTREE_PATH" "$DEV3_CLAUDE_CMD"',
+					`tmux split-window -v -c "${worktreePath}" "bash '${claudePath}'"`,
 					"exec bash",
 				].join("\n");
 
-		await Bun.write(scriptPath, startupScript + "\n");
-		tmuxCmd = `bash "${scriptPath}"`;
+		await Bun.write(startupPath, startupScript + "\n");
+		tmuxCmd = `bash "${startupPath}"`;
 	}
 
 	const env = { ...extraEnv, DEV3_TASK_ID: task.id };
