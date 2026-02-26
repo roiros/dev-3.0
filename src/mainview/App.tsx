@@ -103,7 +103,7 @@ function App() {
 						tasks={state.currentProjectTasks}
 						dispatch={dispatch}
 						navigate={navigate}
-						bellTaskIds={state.bellTaskIds}
+						bellCounts={state.bellCounts}
 					/>
 				);
 			case "task":

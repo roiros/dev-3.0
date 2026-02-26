@@ -17,7 +17,7 @@ export interface AppState {
 	projects: Project[];
 	currentProjectTasks: Task[];
 	loading: boolean;
-	bellTaskIds: Set<string>;
+	bellCounts: Map<string, number>;
 }
 
 export const initialState: AppState = {
@@ -25,7 +25,7 @@ export const initialState: AppState = {
 	projects: [],
 	currentProjectTasks: [],
 	loading: true,
-	bellTaskIds: new Set(),
+	bellCounts: new Map(),
 };
 
 // ---- Actions ----
@@ -49,13 +49,12 @@ export function reducer(state: AppState, action: AppAction): AppState {
 	switch (action.type) {
 		case "navigate": {
 			// Auto-clear bell when user opens the task terminal
-			let bellTaskIds = state.bellTaskIds;
-			if (action.route.screen === "task" && bellTaskIds.has(action.route.taskId)) {
-				const next = new Set(bellTaskIds);
-				next.delete(action.route.taskId);
-				bellTaskIds = next;
+			let bellCounts = state.bellCounts;
+			if (action.route.screen === "task" && bellCounts.has(action.route.taskId)) {
+				bellCounts = new Map(bellCounts);
+				bellCounts.delete(action.route.taskId);
 			}
-			return { ...state, route: action.route, bellTaskIds };
+			return { ...state, route: action.route, bellCounts };
 		}
 		case "setProjects":
 			return { ...state, projects: action.projects };
@@ -114,14 +113,15 @@ export function reducer(state: AppState, action: AppAction): AppState {
 			) {
 				return state;
 			}
-			if (state.bellTaskIds.has(action.taskId)) return state;
-			return { ...state, bellTaskIds: new Set([...state.bellTaskIds, action.taskId]) };
+			const bellCounts = new Map(state.bellCounts);
+			bellCounts.set(action.taskId, (bellCounts.get(action.taskId) ?? 0) + 1);
+			return { ...state, bellCounts };
 		}
 		case "clearBell": {
-			if (!state.bellTaskIds.has(action.taskId)) return state;
-			const next = new Set(state.bellTaskIds);
-			next.delete(action.taskId);
-			return { ...state, bellTaskIds: next };
+			if (!state.bellCounts.has(action.taskId)) return state;
+			const bellCounts = new Map(state.bellCounts);
+			bellCounts.delete(action.taskId);
+			return { ...state, bellCounts };
 		}
 		default:
 			return state;
