@@ -7,47 +7,13 @@ import { api } from "../rpc";
 import KanbanColumn from "./KanbanColumn";
 import CreateTaskModal from "./CreateTaskModal";
 import LaunchVariantsModal from "./LaunchVariantsModal";
+import { sortTasksForColumn } from "./sortTasks";
 
 interface KanbanBoardProps {
 	project: Project;
 	tasks: Task[];
 	dispatch: Dispatch<AppAction>;
 	navigate: (route: Route) => void;
-}
-
-function sortTasksForColumn(
-	tasks: Task[],
-	dropPosition: "top" | "bottom",
-	moveOrderMap: Map<string, number>,
-): Task[] {
-	return [...tasks].sort((a, b) => {
-		// Move order takes top priority when dropPosition is "top"
-		if (dropPosition === "top") {
-			const aOrder = moveOrderMap.get(a.id) ?? 0;
-			const bOrder = moveOrderMap.get(b.id) ?? 0;
-			if (aOrder !== bOrder) return bOrder - aOrder;
-		}
-		// Group by groupId: tasks with same groupId stay together
-		const aGroup = a.groupId ?? "";
-		const bGroup = b.groupId ?? "";
-		if (aGroup !== bGroup) {
-			if (!aGroup) return 1;
-			if (!bGroup) return -1;
-			return aGroup < bGroup ? -1 : 1;
-		}
-		// Within same group, sort by variantIndex
-		if (a.groupId && b.groupId) {
-			return (a.variantIndex ?? 0) - (b.variantIndex ?? 0);
-		}
-		// Ungrouped: sort by position preference
-		if (dropPosition === "top") {
-			// Fallback: movedAt from task (persisted across reloads)
-			if (a.movedAt && b.movedAt) return b.movedAt > a.movedAt ? 1 : -1;
-			if (a.movedAt) return -1;
-			if (b.movedAt) return 1;
-		}
-		return a.createdAt < b.createdAt ? -1 : 1;
-	});
 }
 
 function KanbanBoard({ project, tasks, dispatch, navigate }: KanbanBoardProps) {

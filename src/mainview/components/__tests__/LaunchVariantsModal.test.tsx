@@ -12,6 +12,7 @@ vi.mock("../../rpc", () => ({
 			getGlobalSettings: vi.fn().mockResolvedValue({
 				defaultAgentId: "builtin-claude",
 				defaultConfigId: "claude-default",
+				taskDropPosition: "top",
 			}),
 		},
 	},
@@ -88,6 +89,7 @@ function makeGlobalSettings(overrides?: Partial<GlobalSettings>): GlobalSettings
 	return {
 		defaultAgentId: "builtin-claude",
 		defaultConfigId: "claude-default",
+		taskDropPosition: "top",
 		...overrides,
 	};
 }
