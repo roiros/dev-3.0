@@ -70,7 +70,6 @@ function App() {
 				projects={state.projects}
 				tasks={state.currentProjectTasks}
 				navigate={navigate}
-				dispatch={dispatch}
 			/>
 			<div className="flex-1 min-h-0 flex flex-col">{renderScreen()}</div>
 		</div>
@@ -104,6 +103,7 @@ function App() {
 						tasks={state.currentProjectTasks}
 						projects={state.projects}
 						navigate={navigate}
+						dispatch={dispatch}
 					/>
 				);
 			case "project-settings":

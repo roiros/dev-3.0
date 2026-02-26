@@ -1,11 +1,15 @@
-import { useState, useRef, useCallback, useEffect } from "react";
-import type { Task, Project } from "../../shared/types";
-import { STATUS_COLORS } from "../../shared/types";
+import { useState, useRef, useCallback, useEffect, useLayoutEffect, type Dispatch } from "react";
+import { createPortal } from "react-dom";
+import type { Task, Project, TaskStatus } from "../../shared/types";
+import { ACTIVE_STATUSES, STATUS_COLORS, getAllowedTransitions } from "../../shared/types";
+import type { AppAction } from "../state";
+import { api } from "../rpc";
 import { useT, statusKey } from "../i18n";
 
 interface TaskInfoPanelProps {
 	task: Task;
 	project: Project;
+	dispatch: Dispatch<AppAction>;
 }
 
 const COLLAPSED_HEIGHT = 36;
@@ -50,13 +54,103 @@ function formatDate(iso: string): string {
 	}
 }
 
-function TaskInfoPanel({ task, project }: TaskInfoPanelProps) {
+function TaskInfoPanel({ task, project, dispatch }: TaskInfoPanelProps) {
 	const t = useT();
 	const [collapsed, setCollapsed] = useState(() => readBool(LS_COLLAPSED, true));
 	const [panelHeight, setPanelHeight] = useState(() => readNumber(LS_HEIGHT, DEFAULT_HEIGHT));
 
 	const panelRef = useRef<HTMLDivElement>(null);
 	const dragging = useRef(false);
+
+	// ---- Status dropdown state ----
+	const [statusMenuOpen, setStatusMenuOpen] = useState(false);
+	const [statusMenuPos, setStatusMenuPos] = useState({ top: 0, left: 0 });
+	const [statusMenuVisible, setStatusMenuVisible] = useState(false);
+	const [movingStatus, setMovingStatus] = useState(false);
+	const statusTriggerRef = useRef<HTMLButtonElement>(null);
+	const statusMenuRef = useRef<HTMLDivElement>(null);
+
+	// Close status menu on click outside
+	useEffect(() => {
+		if (!statusMenuOpen) return;
+		function handleClick(e: MouseEvent) {
+			if (
+				statusMenuRef.current &&
+				!statusMenuRef.current.contains(e.target as Node) &&
+				statusTriggerRef.current &&
+				!statusTriggerRef.current.contains(e.target as Node)
+			) {
+				setStatusMenuOpen(false);
+			}
+		}
+		document.addEventListener("mousedown", handleClick);
+		return () => document.removeEventListener("mousedown", handleClick);
+	}, [statusMenuOpen]);
+
+	// Smart viewport clamping for status menu
+	useLayoutEffect(() => {
+		if (!statusMenuOpen || !statusMenuRef.current || !statusTriggerRef.current) return;
+
+		const menu = statusMenuRef.current.getBoundingClientRect();
+		const trigger = statusTriggerRef.current.getBoundingClientRect();
+		const vw = window.innerWidth;
+		const vh = window.innerHeight;
+		const pad = 8;
+
+		let top = trigger.bottom + 6;
+		let left = trigger.left;
+
+		if (top + menu.height > vh - pad) {
+			top = trigger.top - menu.height - 6;
+		}
+		if (left + menu.width > vw - pad) {
+			left = vw - menu.width - pad;
+		}
+		if (left < pad) left = pad;
+		if (top < pad) top = pad;
+
+		setStatusMenuPos({ top, left });
+		setStatusMenuVisible(true);
+	}, [statusMenuOpen]);
+
+	function toggleStatusMenu(e: React.MouseEvent) {
+		e.stopPropagation();
+		if (!statusMenuOpen && statusTriggerRef.current) {
+			const rect = statusTriggerRef.current.getBoundingClientRect();
+			setStatusMenuPos({ top: rect.bottom + 6, left: rect.left });
+			setStatusMenuVisible(false);
+		}
+		setStatusMenuOpen(!statusMenuOpen);
+	}
+
+	async function handleStatusMove(newStatus: TaskStatus) {
+		setMovingStatus(true);
+		setStatusMenuOpen(false);
+		try {
+			const updated = await api.request.moveTask({
+				taskId: task.id,
+				projectId: project.id,
+				newStatus,
+			});
+			dispatch({ type: "updateTask", task: updated });
+		} catch (err) {
+			alert(t("task.failedMove", { error: String(err) }));
+		}
+		setMovingStatus(false);
+	}
+
+	// ---- Dev server ----
+	const hasDevScript = !!(project.devScript?.trim());
+	const isTaskActive = ACTIVE_STATUSES.includes(task.status);
+	const devServerDisabled = !hasDevScript || !isTaskActive;
+
+	function handleDevServer() {
+		if (!devServerDisabled) {
+			api.request.runDevServer({ taskId: task.id, projectId: project.id });
+		}
+	}
+
+	// ---- Panel collapse / drag ----
 
 	// Persist collapsed
 	useEffect(() => {
@@ -114,8 +208,80 @@ function TaskInfoPanel({ task, project }: TaskInfoPanelProps) {
 		setCollapsed((c) => !c);
 	}, []);
 
+	// ---- Shared elements ----
+
 	const statusColor = STATUS_COLORS[task.status];
 	const height = collapsed ? COLLAPSED_HEIGHT : panelHeight;
+
+	const statusDropdownButton = (
+		<button
+			ref={statusTriggerRef}
+			onClick={toggleStatusMenu}
+			disabled={movingStatus}
+			className="flex items-center gap-2 px-2.5 py-1 rounded-lg hover:bg-elevated transition-colors flex-shrink-0"
+		>
+			<div
+				className="w-2 h-2 rounded-full flex-shrink-0"
+				style={{ background: statusColor }}
+			/>
+			<span className="text-[11px] font-medium text-fg-2">
+				{t(statusKey(task.status))}
+			</span>
+			<svg className="w-3 h-3 text-fg-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+			</svg>
+		</button>
+	);
+
+	const statusDropdownPortal = statusMenuOpen && createPortal(
+		<div
+			ref={statusMenuRef}
+			className="fixed z-50 bg-overlay rounded-xl shadow-2xl shadow-black/40 border border-edge-active py-1.5 min-w-[180px]"
+			style={{
+				top: statusMenuPos.top,
+				left: statusMenuPos.left,
+				visibility: statusMenuVisible ? "visible" : "hidden",
+			}}
+			onClick={(e) => e.stopPropagation()}
+		>
+			<div className="px-3 py-2 text-xs text-fg-3 uppercase tracking-wider font-semibold">
+				{t("task.moveTo")}
+			</div>
+			{getAllowedTransitions(task.status).map((s) => (
+				<button
+					key={s}
+					onClick={() => handleStatusMove(s)}
+					className="w-full text-left px-3 py-2 text-sm text-fg-2 hover:bg-elevated-hover hover:text-fg flex items-center gap-2.5 transition-colors"
+				>
+					<div
+						className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+						style={{ background: STATUS_COLORS[s] }}
+					/>
+					{t(statusKey(s))}
+				</button>
+			))}
+		</div>,
+		document.body,
+	);
+
+	const devServerButton = (
+		<button
+			onClick={handleDevServer}
+			disabled={devServerDisabled}
+			className={`flex items-center gap-1 px-2 py-1 rounded-lg transition-colors flex-shrink-0 ${
+				devServerDisabled
+					? "text-fg-muted cursor-not-allowed"
+					: "text-fg-3 hover:text-fg hover:bg-elevated"
+			}`}
+			title={devServerDisabled ? t("header.devServerDisabled") : t("header.devServer")}
+		>
+			<svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+					d="M5 12h14M12 5l7 7-7 7" />
+			</svg>
+			<span className="text-[11px] font-medium">{t("header.devServer")}</span>
+		</button>
+	);
 
 	return (
 		<div
@@ -125,26 +291,20 @@ function TaskInfoPanel({ task, project }: TaskInfoPanelProps) {
 		>
 			{collapsed ? (
 				/* ---- Collapsed: single row ---- */
-				<div className="flex items-center h-full px-4 gap-3 min-w-0">
-					<div
-						className="w-2 h-2 rounded-full flex-shrink-0"
-						style={{ background: statusColor }}
-					/>
-					<span className="text-fg-2 text-xs font-medium truncate">
-						{t(statusKey(task.status))}
-					</span>
-					<span className="text-fg-muted text-xs">|</span>
-					<span className="text-fg text-xs font-medium truncate flex-1">
+				<div className="flex items-center h-full px-4 gap-1.5 min-w-0">
+					{statusDropdownButton}
+					{statusDropdownPortal}
+					<span className="text-fg-muted text-xs flex-shrink-0">|</span>
+					<span className="text-fg text-xs font-medium truncate flex-1 min-w-0">
 						{task.title}
 					</span>
 					{task.branchName && (
-						<>
-							<span className="text-fg-muted text-xs">|</span>
-							<span className="text-fg-3 text-xs font-mono truncate max-w-[200px]">
-								{task.branchName}
-							</span>
-						</>
+						<span className="text-fg-3 text-xs font-mono truncate max-w-[200px] flex-shrink-0">
+							{task.branchName}
+						</span>
 					)}
+					<span className="text-fg-muted text-xs flex-shrink-0">|</span>
+					{devServerButton}
 					<button
 						onClick={toggleCollapsed}
 						className="flex-shrink-0 p-1 rounded hover:bg-elevated transition-colors text-fg-3 hover:text-fg"
@@ -158,15 +318,14 @@ function TaskInfoPanel({ task, project }: TaskInfoPanelProps) {
 			) : (
 				/* ---- Expanded ---- */
 				<div className="flex flex-col h-full">
-					{/* Header row with collapse button */}
-					<div className="flex items-center px-4 py-2 gap-3 min-w-0">
-						<div
-							className="w-2 h-2 rounded-full flex-shrink-0"
-							style={{ background: statusColor }}
-						/>
-						<span className="text-fg text-sm font-semibold truncate flex-1">
+					{/* Header row with controls */}
+					<div className="flex items-center px-4 py-2 gap-2 min-w-0">
+						{statusDropdownButton}
+						{statusDropdownPortal}
+						<span className="text-fg text-sm font-semibold truncate flex-1 min-w-0">
 							{task.title}
 						</span>
+						{devServerButton}
 						<button
 							onClick={toggleCollapsed}
 							className="flex-shrink-0 p-1 rounded hover:bg-elevated transition-colors text-fg-3 hover:text-fg"
@@ -181,11 +340,6 @@ function TaskInfoPanel({ task, project }: TaskInfoPanelProps) {
 					{/* Metadata grid */}
 					<div className="flex-1 overflow-auto px-4 pb-2">
 						<div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-xs">
-							<span className="text-fg-3">{t("infoPanel.status")}</span>
-							<span className="text-fg-2 font-medium" style={{ color: statusColor }}>
-								{t(statusKey(task.status))}
-							</span>
-
 							{task.branchName && (
 								<>
 									<span className="text-fg-3">{t("infoPanel.branch")}</span>
@@ -196,7 +350,7 @@ function TaskInfoPanel({ task, project }: TaskInfoPanelProps) {
 							{task.description && (
 								<>
 									<span className="text-fg-3">{t("infoPanel.description")}</span>
-									<span className="text-fg-2 whitespace-pre-wrap line-clamp-3">{task.description}</span>
+									<span className="text-fg-2 whitespace-pre-wrap">{task.description}</span>
 								</>
 							)}
 

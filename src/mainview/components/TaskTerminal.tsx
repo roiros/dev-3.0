@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type Dispatch } from "react";
 import type { Task, Project } from "../../shared/types";
-import type { Route } from "../state";
+import type { AppAction, Route } from "../state";
 import { api } from "../rpc";
 import { useT } from "../i18n";
 import TerminalView from "../TerminalView";
@@ -12,9 +12,10 @@ interface TaskTerminalProps {
 	tasks: Task[];
 	projects: Project[];
 	navigate: (route: Route) => void;
+	dispatch: Dispatch<AppAction>;
 }
 
-function TaskTerminal({ projectId, taskId, tasks, projects }: TaskTerminalProps) {
+function TaskTerminal({ projectId, taskId, tasks, projects, dispatch }: TaskTerminalProps) {
 	const t = useT();
 	const [ptyUrl, setPtyUrl] = useState<string | null>(null);
 
@@ -34,7 +35,7 @@ function TaskTerminal({ projectId, taskId, tasks, projects }: TaskTerminalProps)
 
 	return (
 		<div className="h-full w-full flex flex-col">
-			{task && project && <TaskInfoPanel task={task} project={project} />}
+			{task && project && <TaskInfoPanel task={task} project={project} dispatch={dispatch} />}
 			<div className="flex-1 min-h-0">
 				{ptyUrl ? (
 					<TerminalView ptyUrl={ptyUrl} taskId={taskId} />
