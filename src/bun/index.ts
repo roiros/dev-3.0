@@ -159,9 +159,10 @@ mainWindow.webview.on("dom-ready", async () => {
 
 Electrobun.events.on("application-menu-clicked", async (e) => {
 	if (e.data.action === "rebuild") {
-		// Find project root by walking up from the bundle until we hit vite.config.ts
-		const { existsSync } = await import("fs");
+		const { existsSync, cpSync, rmSync } = await import("fs");
 		const { dirname, join } = await import("path");
+
+		// Find project root by walking up from the bundle until we hit vite.config.ts
 		let projectRoot = import.meta.dir;
 		for (let i = 0; i < 20; i++) {
 			if (existsSync(join(projectRoot, "vite.config.ts"))) break;
@@ -169,6 +170,7 @@ Electrobun.events.on("application-menu-clicked", async (e) => {
 			if (parent === projectRoot) break;
 			projectRoot = parent;
 		}
+
 		log.info("Rebuilding frontend...", { cwd: projectRoot });
 		const proc = Bun.spawn(["bunx", "vite", "build"], {
 			cwd: projectRoot,
@@ -176,6 +178,15 @@ Electrobun.events.on("application-menu-clicked", async (e) => {
 			stderr: "inherit",
 		});
 		await proc.exited;
+
+		// Copy dist/ into the app bundle's views/ (mirrors electrobun.config.ts copy rules)
+		const viewsDir = join(import.meta.dir, "..", "views", "mainview");
+		const distDir = join(projectRoot, "dist");
+		log.info("Copying dist to app bundle", { from: distDir, to: viewsDir });
+		cpSync(join(distDir, "index.html"), join(viewsDir, "index.html"));
+		rmSync(join(viewsDir, "assets"), { recursive: true, force: true });
+		cpSync(join(distDir, "assets"), join(viewsDir, "assets"), { recursive: true });
+
 		lastBuildTime = formatTime(new Date());
 		log.info(`Rebuild done, reloading [${lastBuildTime}]`);
 		mainWindow.setTitle(`dev-3.0 [${lastBuildTime}]`);
