@@ -65,7 +65,9 @@
       "Bash(pkill:*)",
       "Bash(open:*)",
       "Bash(grep dev3:*)",
-      "Bash(grep DEV3_:*)"
+      "Bash(grep DEV3_:*)",
+      "Bash(npx electrobun:*)",
+      "Bash(bunx electrobun:*)"
     ]
   }
 }

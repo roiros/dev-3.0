@@ -257,6 +257,10 @@ export type AppRPCSchema = {
 				params: { taskId: string };
 				response: string;
 			};
+			runDevServer: {
+				params: { taskId: string; projectId: string };
+				response: void;
+			};
 		};
 		messages: {
 			taskUpdated: { projectId: string; task: Task };

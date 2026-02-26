@@ -1,6 +1,8 @@
 import { Fragment } from "react";
 import type { Project, Task } from "../../shared/types";
+import { ACTIVE_STATUSES } from "../../shared/types";
 import type { Route } from "../state";
+import { api } from "../rpc";
 import { useT } from "../i18n";
 
 interface GlobalHeaderProps {
@@ -106,6 +108,37 @@ function GlobalHeader({ route, projects, tasks, navigate }: GlobalHeaderProps) {
 
 			{/* Actions */}
 			<div className="flex items-center gap-1.5 flex-shrink-0">
+				{/* Dev Server — only on task screen */}
+				{route.screen === "task" && (() => {
+					const project = projects.find((p) => p.id === route.projectId);
+					const task = tasks.find((t) => t.id === route.taskId);
+					const hasDevScript = !!(project?.devScript?.trim());
+					const isTaskActive = !!(task && ACTIVE_STATUSES.includes(task.status));
+					const disabled = !hasDevScript || !isTaskActive;
+					return (
+						<button
+							onClick={() => {
+								if (!disabled) {
+									api.request.runDevServer({ taskId: route.taskId, projectId: route.projectId });
+								}
+							}}
+							disabled={disabled}
+							className={`flex items-center gap-1 px-2 py-1 rounded-lg transition-colors ${
+								disabled
+									? "text-fg-muted cursor-not-allowed"
+									: "text-fg-3 hover:text-fg hover:bg-elevated"
+							}`}
+							title={disabled ? t("header.devServerDisabled") : t("header.devServer")}
+						>
+							<svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+									d="M5 12h14M12 5l7 7-7 7" />
+							</svg>
+							<span className="text-[11px] font-medium">{t("header.devServer")}</span>
+						</button>
+					);
+				})()}
+
 				{/* Project settings — only on project kanban screen */}
 				{"projectId" in route && route.screen === "project" && (
 					<button

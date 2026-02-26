@@ -1,0 +1,1 @@
+Added "Dev Server" button to the task header. When clicked, it opens a vertical tmux pane in the task's tmux session and runs the project's `devScript`. The button is disabled when no dev script is configured or the task is not active.

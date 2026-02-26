@@ -24,6 +24,8 @@ const ru: TranslationRecord & Record<string, string> = {
 	"header.globalSettingsTooltip": "Глобальные настройки (\u2318,)",
 	"header.projLabel": "Проект",
 	"header.globalLabel": "Общие",
+	"header.devServer": "Dev-сервер",
+	"header.devServerDisabled": "Настройте dev-скрипт в настройках проекта",
 
 	// GlobalSettings
 	"settings.theme": "Тема",

@@ -402,6 +402,29 @@ export const handlers = {
 		return updated;
 	},
 
+	async runDevServer(params: { taskId: string; projectId: string }): Promise<void> {
+		log.info("→ runDevServer", params);
+		const project = await data.getProject(params.projectId);
+		const task = await data.getTask(project, params.taskId);
+
+		if (!project.devScript.trim()) throw new Error("No dev script configured");
+		if (!task.worktreePath) throw new Error("Task has no worktree");
+
+		const tmuxSession = `dev3-${task.id.slice(0, 8)}`;
+		const devScriptPath = `/tmp/dev3-${task.id}-dev.sh`;
+
+		await Bun.write(devScriptPath, project.devScript + "\n");
+
+		const proc = Bun.spawn([
+			"tmux", "split-window", "-h",
+			"-t", tmuxSession,
+			"-c", task.worktreePath,
+			`bash "${devScriptPath}"`,
+		]);
+		await proc.exited;
+		log.info("← runDevServer done");
+	},
+
 	async getPtyUrl(params: { taskId: string }): Promise<string> {
 		log.info("→ getPtyUrl", { taskId: params.taskId });
 

@@ -20,6 +20,8 @@ const en = {
 	"header.globalSettingsTooltip": "Global Settings (\u2318,)",
 	"header.projLabel": "Proj",
 	"header.globalLabel": "Global",
+	"header.devServer": "Dev Server",
+	"header.devServerDisabled": "Configure dev script in Project Settings",
 
 	// GlobalSettings
 	"settings.theme": "Theme",

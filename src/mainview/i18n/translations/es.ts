@@ -22,6 +22,8 @@ const es: TranslationRecord & Record<string, string> = {
 	"header.globalSettingsTooltip": "Configuración global (\u2318,)",
 	"header.projLabel": "Proy",
 	"header.globalLabel": "Global",
+	"header.devServer": "Servidor Dev",
+	"header.devServerDisabled": "Configure el script dev en la configuración del proyecto",
 
 	// GlobalSettings
 	"settings.theme": "Tema",
