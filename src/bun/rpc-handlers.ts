@@ -29,33 +29,25 @@ async function runCleanupScript(task: Task, project: Project): Promise<void> {
 
 	const scriptPath = `/tmp/dev3-${task.id}-cleanup.sh`;
 	const sessionName = `dev3-cl-${task.id.slice(0, 8)}`;
-	const lockName = `dev3cl${task.id.slice(0, 8)}`;
 
-	// Wrap the cleanup script so it signals completion via tmux wait-for
-	const wrapped = `#!/bin/bash\n${project.cleanupScript}\ntmux wait-for -U "${lockName}"\n`;
-	await Bun.write(scriptPath, wrapped);
+	await Bun.write(scriptPath, `#!/bin/bash\n${project.cleanupScript}\n`);
 
 	log.info("Starting cleanup tmux session", { session: sessionName, worktreePath: task.worktreePath });
 
-	// Launch a new detached tmux session for cleanup
-	const spawnProc = Bun.spawn([
-		"tmux", "new-session",
-		"-d",
-		"-s", sessionName,
-		"-c", task.worktreePath,
-		`bash "${scriptPath}"`,
-	]);
-	await spawnProc.exited;
+	// Run attached (no -d) so proc.exited fires when the script finishes
+	// and tmux destroys the session automatically when the shell exits.
+	const proc = Bun.spawn(
+		["tmux", "new-session", "-s", sessionName, "-c", task.worktreePath, `bash "${scriptPath}"`],
+		{
+			terminal: { cols: 220, rows: 50, data: () => {} },
+			env: { ...process.env, TERM: "xterm-256color", HOME: process.env.HOME || "/" },
+			cwd: task.worktreePath,
+		},
+	);
 
-	// Wait for the script to signal it's done
-	const waitProc = Bun.spawn(["tmux", "wait-for", lockName]);
-	await waitProc.exited;
+	await proc.exited;
 
-	// Kill the cleanup session
-	const killProc = Bun.spawn(["tmux", "kill-session", "-t", sessionName]);
-	await killProc.exited;
-
-	log.info("Cleanup session finished and destroyed", { session: sessionName });
+	log.info("Cleanup session finished", { session: sessionName });
 }
 
 async function launchTaskPty(
