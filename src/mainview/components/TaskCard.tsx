@@ -15,9 +15,10 @@ interface TaskCardProps {
 	onLaunchVariants: (task: Task, targetStatus: TaskStatus) => void;
 	onDragStart: (taskId: string) => void;
 	onTaskMoved: (taskId: string) => void;
+	hasBell?: boolean;
 }
 
-function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants, onDragStart: onDragStartProp, onTaskMoved }: TaskCardProps) {
+function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants, onDragStart: onDragStartProp, onTaskMoved, hasBell = false }: TaskCardProps) {
 	const t = useT();
 	const [moving, setMoving] = useState(false);
 	const [menuOpen, setMenuOpen] = useState(false);
@@ -235,6 +236,19 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 						<path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
 					</svg>
 				</button>
+			)}
+
+			{/* Bell indicator — shown when terminal rang the bell (needs attention) */}
+			{hasBell && (
+				<div
+					className="absolute top-2.5 right-2.5 w-5 h-5 flex items-center justify-center"
+					title={t("task.bellTooltip")}
+				>
+					<span className="absolute w-4 h-4 rounded-full bg-orange-500/30 animate-ping" />
+					<svg className="relative w-3.5 h-3.5 text-orange-400" fill="currentColor" viewBox="0 0 24 24">
+						<path d="M12 22a2 2 0 0 0 2-2H10a2 2 0 0 0 2 2zm6-6V11a6 6 0 1 0-12 0v5l-1.3 1.3A1 1 0 0 0 5.4 19H18.6a1 1 0 0 0 .7-1.7L18 16z" />
+					</svg>
+				</div>
 			)}
 
 			{/* Variant badge */}

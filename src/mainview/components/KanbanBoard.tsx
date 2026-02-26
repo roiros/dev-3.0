@@ -14,9 +14,10 @@ interface KanbanBoardProps {
 	tasks: Task[];
 	dispatch: Dispatch<AppAction>;
 	navigate: (route: Route) => void;
+	bellTaskIds: Set<string>;
 }
 
-function KanbanBoard({ project, tasks, dispatch, navigate }: KanbanBoardProps) {
+function KanbanBoard({ project, tasks, dispatch, navigate, bellTaskIds }: KanbanBoardProps) {
 	const t = useT();
 	const [showCreateModal, setShowCreateModal] = useState(false);
 	const [agents, setAgents] = useState<CodingAgent[]>([]);
@@ -116,6 +117,7 @@ function KanbanBoard({ project, tasks, dispatch, navigate }: KanbanBoardProps) {
 						dragFromStatus={dragFromStatus}
 						onDragStart={handleDragStart}
 					onTaskMoved={recordMove}
+						bellTaskIds={bellTaskIds}
 					/>
 				))}
 			</div>

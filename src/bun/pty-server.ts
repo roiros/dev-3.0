@@ -15,9 +15,14 @@ interface PtySession {
 
 const sessions = new Map<string, PtySession>();
 let onPtyDiedCallback: ((taskId: string) => void) | null = null;
+let onBellCallback: ((taskId: string) => void) | null = null;
 
 export function setOnPtyDied(fn: (taskId: string) => void): void {
 	onPtyDiedCallback = fn;
+}
+
+export function setOnBell(fn: (taskId: string) => void): void {
+	onBellCallback = fn;
 }
 
 export function createSession(
@@ -81,6 +86,8 @@ function shortId(taskId: string): string {
 }
 
 const OSC52_RE = /\x1b\]52;[^;]*;([A-Za-z0-9+/=]*)(?:\x07|\x1b\\)/g;
+// Matches any OSC sequence (used to strip them when checking for standalone BEL)
+const OSC_ANY_RE = /\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g;
 
 function handleOsc52(data: string): string {
 	return data.replace(OSC52_RE, (_match, b64: string) => {
@@ -97,6 +104,14 @@ function handleOsc52(data: string): string {
 		}
 		return "";
 	});
+}
+
+function checkForBell(data: string, taskId: string): void {
+	// Remove all OSC sequences first, then check for standalone BEL (\x07)
+	const withoutOsc = data.replace(OSC_ANY_RE, "");
+	if (withoutOsc.includes("\x07")) {
+		onBellCallback?.(taskId);
+	}
 }
 
 function configureTmuxClipboard(): void {
@@ -135,6 +150,7 @@ function spawnPty(session: PtySession, cols: number, rows: number): void {
 							typeof data === "string"
 								? data
 								: new TextDecoder().decode(data);
+						checkForBell(str, session.taskId);
 						const cleaned = handleOsc52(str);
 						if (cleaned && session.ws) {
 							session.ws.sendText(cleaned);

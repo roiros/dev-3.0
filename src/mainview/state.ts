@@ -17,6 +17,7 @@ export interface AppState {
 	projects: Project[];
 	currentProjectTasks: Task[];
 	loading: boolean;
+	bellTaskIds: Set<string>;
 }
 
 export const initialState: AppState = {
@@ -24,6 +25,7 @@ export const initialState: AppState = {
 	projects: [],
 	currentProjectTasks: [],
 	loading: true,
+	bellTaskIds: new Set(),
 };
 
 // ---- Actions ----
@@ -39,12 +41,22 @@ export type AppAction =
 	| { type: "addProject"; project: Project }
 	| { type: "removeProject"; projectId: string }
 	| { type: "updateProject"; project: Project }
-	| { type: "setLoading"; loading: boolean };
+	| { type: "setLoading"; loading: boolean }
+	| { type: "addBell"; taskId: string }
+	| { type: "clearBell"; taskId: string };
 
 export function reducer(state: AppState, action: AppAction): AppState {
 	switch (action.type) {
-		case "navigate":
-			return { ...state, route: action.route };
+		case "navigate": {
+			// Auto-clear bell when user opens the task terminal
+			let bellTaskIds = state.bellTaskIds;
+			if (action.route.screen === "task" && bellTaskIds.has(action.route.taskId)) {
+				const next = new Set(bellTaskIds);
+				next.delete(action.route.taskId);
+				bellTaskIds = next;
+			}
+			return { ...state, route: action.route, bellTaskIds };
+		}
 		case "setProjects":
 			return { ...state, projects: action.projects };
 		case "setTasks":
@@ -94,6 +106,23 @@ export function reducer(state: AppState, action: AppAction): AppState {
 			};
 		case "setLoading":
 			return { ...state, loading: action.loading };
+		case "addBell": {
+			// Don't add bell if user is already viewing this task's terminal
+			if (
+				state.route.screen === "task" &&
+				state.route.taskId === action.taskId
+			) {
+				return state;
+			}
+			if (state.bellTaskIds.has(action.taskId)) return state;
+			return { ...state, bellTaskIds: new Set([...state.bellTaskIds, action.taskId]) };
+		}
+		case "clearBell": {
+			if (!state.bellTaskIds.has(action.taskId)) return state;
+			const next = new Set(state.bellTaskIds);
+			next.delete(action.taskId);
+			return { ...state, bellTaskIds: next };
+		}
 		default:
 			return state;
 	}

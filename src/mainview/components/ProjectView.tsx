@@ -11,6 +11,7 @@ interface ProjectViewProps {
 	tasks: Task[];
 	dispatch: Dispatch<AppAction>;
 	navigate: (route: Route) => void;
+	bellTaskIds: Set<string>;
 }
 
 function ProjectView({
@@ -19,6 +20,7 @@ function ProjectView({
 	tasks,
 	dispatch,
 	navigate,
+	bellTaskIds,
 }: ProjectViewProps) {
 	const t = useT();
 	const project = projects.find((p) => p.id === projectId);
@@ -49,6 +51,7 @@ function ProjectView({
 				tasks={tasks}
 				dispatch={dispatch}
 				navigate={navigate}
+				bellTaskIds={bellTaskIds}
 			/>
 		</div>
 	);
