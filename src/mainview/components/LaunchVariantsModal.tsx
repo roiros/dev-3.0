@@ -77,6 +77,7 @@ function Select({
 				<div
 					style={{ position: "fixed", top: dropdownStyle.top, left: dropdownStyle.left, width: dropdownStyle.width, zIndex: 9999 }}
 					className="bg-overlay border border-edge-active rounded-lg shadow-xl shadow-black/50 overflow-hidden"
+					onMouseDown={(e) => e.stopPropagation()}
 				>
 					{options.map((opt) => (
 						<button
