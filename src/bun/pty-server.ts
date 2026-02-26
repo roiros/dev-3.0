@@ -86,8 +86,6 @@ function shortId(taskId: string): string {
 }
 
 const OSC52_RE = /\x1b\]52;[^;]*;([A-Za-z0-9+/=]*)(?:\x07|\x1b\\)/g;
-// Matches any OSC sequence (used to strip them when checking for standalone BEL)
-const OSC_ANY_RE = /\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g;
 
 function handleOsc52(data: string): string {
 	return data.replace(OSC52_RE, (_match, b64: string) => {
@@ -104,14 +102,6 @@ function handleOsc52(data: string): string {
 		}
 		return "";
 	});
-}
-
-function checkForBell(data: string, taskId: string): void {
-	// Remove all OSC sequences first, then check for standalone BEL (\x07)
-	const withoutOsc = data.replace(OSC_ANY_RE, "");
-	if (withoutOsc.includes("\x07")) {
-		onBellCallback?.(taskId);
-	}
 }
 
 function configureTmuxClipboard(): void {
@@ -150,7 +140,6 @@ function spawnPty(session: PtySession, cols: number, rows: number): void {
 							typeof data === "string"
 								? data
 								: new TextDecoder().decode(data);
-						checkForBell(str, session.taskId);
 						const cleaned = handleOsc52(str);
 						if (cleaned && session.ws) {
 							session.ws.sendText(cleaned);
@@ -180,14 +169,31 @@ function spawnPty(session: PtySession, cols: number, rows: number): void {
 
 	log.info("PTY process started", { taskId: shortId(session.taskId), pid: proc.pid });
 
-	// Configure tmux clipboard after server is running
-	setTimeout(() => configureTmuxClipboard(), 200);
+	// Configure tmux clipboard and bell hook after server is running
+	setTimeout(() => {
+		configureTmuxClipboard();
+		// tmux intercepts BEL internally and never forwards \x07 to the PTY data stream.
+		// Use alert-bell hook instead: tmux calls curl to notify our HTTP endpoint.
+		const hookCmd = `run-shell 'curl -sf http://localhost:${ptyWsPort}/bell/${session.taskId} >/dev/null 2>&1 &'`;
+		Bun.spawnSync(["tmux", "set-hook", "-t", tmuxSessionName, "alert-bell", hookCmd]);
+		log.info("tmux bell hook configured", { tmuxSession: tmuxSessionName });
+	}, 200);
 }
 
 const ptyServer = Bun.serve({
 	port: 0,
 	fetch(req, server) {
-		if (server.upgrade(req, { data: { url: new URL(req.url) } } as any)) return;
+		const url = new URL(req.url);
+		// Bell notification from tmux alert-bell hook (via curl)
+		if (url.pathname.startsWith("/bell/")) {
+			const taskId = url.pathname.slice(6);
+			if (taskId) {
+				log.debug("Bell received via tmux hook", { taskId: taskId.slice(0, 8) });
+				onBellCallback?.(taskId);
+			}
+			return new Response("ok");
+		}
+		if (server.upgrade(req, { data: { url } } as any)) return;
 		return new Response("PTY WebSocket server", { status: 200 });
 	},
 	websocket: {
