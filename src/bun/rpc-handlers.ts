@@ -24,6 +24,40 @@ function isActive(status: TaskStatus): boolean {
 	return ACTIVE_STATUSES.includes(status);
 }
 
+async function runCleanupScript(task: Task, project: Project): Promise<void> {
+	if (!task.worktreePath || !project.cleanupScript?.trim()) return;
+
+	const scriptPath = `/tmp/dev3-${task.id}-cleanup.sh`;
+	const sessionName = `dev3-cl-${task.id.slice(0, 8)}`;
+	const lockName = `dev3cl${task.id.slice(0, 8)}`;
+
+	// Wrap the cleanup script so it signals completion via tmux wait-for
+	const wrapped = `#!/bin/bash\n${project.cleanupScript}\ntmux wait-for -U "${lockName}"\n`;
+	await Bun.write(scriptPath, wrapped);
+
+	log.info("Starting cleanup tmux session", { session: sessionName, worktreePath: task.worktreePath });
+
+	// Launch a new detached tmux session for cleanup
+	const spawnProc = Bun.spawn([
+		"tmux", "new-session",
+		"-d",
+		"-s", sessionName,
+		"-c", task.worktreePath,
+		`bash "${scriptPath}"`,
+	]);
+	await spawnProc.exited;
+
+	// Wait for the script to signal it's done
+	const waitProc = Bun.spawn(["tmux", "wait-for", lockName]);
+	await waitProc.exited;
+
+	// Kill the cleanup session
+	const killProc = Bun.spawn(["tmux", "kill-session", "-t", sessionName]);
+	await killProc.exited;
+
+	log.info("Cleanup session finished and destroyed", { session: sessionName });
+}
+
 async function launchTaskPty(
 	project: Project,
 	task: Task,
@@ -292,13 +326,19 @@ export const handlers = {
 			return updated;
 		}
 
-		// active → completed/cancelled: destroy PTY + worktree
+		// active → completed/cancelled: destroy PTY, run cleanup if configured, then remove worktree
 		if (
 			isActive(oldStatus) &&
 			(newStatus === "completed" || newStatus === "cancelled")
 		) {
-			log.info("Transition: active → terminal, destroying PTY + worktree");
+			log.info("Transition: active → terminal, destroying PTY");
 			pty.destroySession(task.id);
+
+			if (project.cleanupScript?.trim()) {
+				log.info("Running cleanup script before removing worktree", { taskId: task.id });
+				await runCleanupScript(task, project);
+			}
+
 			await git.removeWorktree(project, task);
 
 			const updated = await data.updateTask(project, task.id, {
