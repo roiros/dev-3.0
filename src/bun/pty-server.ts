@@ -2,7 +2,7 @@ import { createLogger } from "./logger";
 
 const log = createLogger("pty");
 
-const PTY_WS_PORT = 7681;
+let ptyWsPort = 0;
 
 interface PtySession {
 	taskId: string;
@@ -62,6 +62,10 @@ export function destroySession(taskId: string): void {
 
 export function hasSession(taskId: string): boolean {
 	return sessions.has(taskId);
+}
+
+export function getPtyPort(): number {
+	return ptyWsPort;
 }
 
 function shortId(taskId: string): string {
@@ -156,8 +160,8 @@ function spawnPty(session: PtySession, cols: number, rows: number): void {
 	setTimeout(() => configureTmuxClipboard(), 200);
 }
 
-Bun.serve({
-	port: PTY_WS_PORT,
+const ptyServer = Bun.serve({
+	port: 0,
 	fetch(req, server) {
 		if (server.upgrade(req, { data: { url: new URL(req.url) } } as any)) return;
 		return new Response("PTY WebSocket server", { status: 200 });
@@ -254,4 +258,5 @@ Bun.serve({
 	},
 });
 
-log.info(`PTY WebSocket server running on ws://localhost:${PTY_WS_PORT}`);
+ptyWsPort = ptyServer.port;
+log.info(`PTY WebSocket server running on ws://localhost:${ptyWsPort}`);

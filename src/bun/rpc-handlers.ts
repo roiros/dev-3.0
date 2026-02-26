@@ -464,7 +464,7 @@ export const handlers = {
 			}
 		}
 
-		const url = `ws://localhost:7681?session=${params.taskId}`;
+		const url = `ws://localhost:${pty.getPtyPort()}?session=${params.taskId}`;
 		log.info("← getPtyUrl", { url });
 		return url;
 	},
