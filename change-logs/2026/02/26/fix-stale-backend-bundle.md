@@ -1,0 +1,1 @@
+Added `clean` script that removes `dist/` and the app bundle's `Resources/app/` directory. All build scripts (`dev`, `build`, `build:prod`) now run `clean` first, ensuring both frontend and backend are always rebuilt from scratch. Previously `electrobun dev` would skip rebundling the backend if the old bundle existed, causing stale handler errors.
