@@ -238,16 +238,13 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 				</button>
 			)}
 
-			{/* Bell badge — counter of terminal bell notifications */}
+			{/* Bell badge — macOS Dock style, peeking outside the card */}
 			{bellCount > 0 && (
 				<div
-					className="absolute top-2 right-2 flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-orange-500/20 border border-orange-400/30"
+					className="absolute -top-1.5 -right-1.5 z-10 min-w-[20px] h-5 flex items-center justify-center px-1.5 rounded-full bg-red-500 shadow-lg shadow-red-500/40"
 					title={t("task.bellTooltip")}
 				>
-					<svg className="w-3 h-3 text-orange-400" fill="currentColor" viewBox="0 0 24 24">
-						<path d="M12 22a2 2 0 0 0 2-2H10a2 2 0 0 0 2 2zm6-6V11a6 6 0 1 0-12 0v5l-1.3 1.3A1 1 0 0 0 5.4 19H18.6a1 1 0 0 0 .7-1.7L18 16z" />
-					</svg>
-					<span className="text-[10px] font-bold text-orange-300 leading-none">
+					<span className="text-[11px] font-bold text-white leading-none">
 						{bellCount > 9 ? "9+" : bellCount}
 					</span>
 				</div>
