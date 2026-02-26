@@ -1,4 +1,4 @@
-# 004 — Clean build before dev/build
+# 004 — Always run electrobun build before electrobun dev
 
 ## Context
 
@@ -6,25 +6,30 @@ After adding a new RPC handler (`runDevServer`) to `src/bun/rpc-handlers.ts`, ru
 
 ## Investigation
 
-- `bun run dev` runs `vite build && electrobun dev`
+- `bun run dev` originally ran `vite build && electrobun dev`
 - `vite build` rebuilds only the **frontend** (`src/mainview/` → `dist/`)
-- `electrobun dev` bundles the **backend** (`src/bun/` → `build/.../app/bun/index.js`) BUT skips rebundling if the output file already exists
-- Result: frontend sees the new RPC method, backend doesn't — runtime error
+- `electrobun dev` does **NOT** bundle the backend at all — it only launches the app from existing files in `Resources/app/`
+- `electrobun build` is the only command that bundles the backend (`src/bun/` → `app/bun/index.js`) and copies views
+- Result: frontend sees new RPC methods, backend doesn't — runtime error
 
-The stale bundle at `build/dev-macos-arm64/dev-3.0-dev.app/Contents/Resources/app/bun/index.js` had timestamp 13:13, while the source was changed at 13:24.
+First attempted fix (cleaning `Resources/app/` before `electrobun dev`) was worse — `electrobun dev` can't launch without the pre-built bundle, so the app wouldn't start at all.
 
 ## Decision
 
-Added a `clean` script to `package.json` that removes both `dist/` and the `Resources/app/` directory inside the app bundle. All build commands (`dev`, `build`, `build:prod`) now run `clean` first.
+Changed `dev` script to: `vite build && electrobun build && electrobun dev`
 
-This is a blunt approach — it always forces a full rebuild of both frontend and backend. The cost is a few extra seconds per restart, but it eliminates an entire class of "stale bundle" bugs.
+- `vite build` — always produces fresh frontend
+- `electrobun build` — always rebundles backend + copies views into app bundle
+- `electrobun dev` — launches the app with dev features (devtools, etc.)
+
+No `clean` step needed — `electrobun build` always overwrites its outputs.
 
 ## Risks
 
-- Clean path is hardcoded to `build/dev-macos-arm64/dev-3.0-dev.app/...` — only covers macOS ARM64 dev channel. If other targets are used, the clean script needs updating.
-- Slightly slower dev iteration due to always rebuilding. Acceptable since the build is under 1s.
+- Slightly longer startup due to running both `electrobun build` and `electrobun dev`. Acceptable since the build is fast.
+- `electrobun build` + `electrobun dev` may duplicate some work (copying views), but correctness > speed here.
 
 ## Alternatives considered
 
-- **Deleting only `app/bun/`** — would fix the backend issue specifically, but `dist/` can also get stale (e.g. leftover assets from renamed chunks). Cleaning both is more robust.
-- **Relying on `electrobun dev` to detect changes** — not possible without modifying Electrobun itself.
+- **Clean + electrobun dev** — breaks the app because `electrobun dev` doesn't rebundle the backend. Tried and reverted.
+- **Relying on `electrobun dev` to detect changes** — not possible, `electrobun dev` doesn't bundle at all.
