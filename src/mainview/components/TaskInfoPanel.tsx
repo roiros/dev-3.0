@@ -294,16 +294,15 @@ function TaskInfoPanel({ task, project, dispatch }: TaskInfoPanelProps) {
 				<div className="flex items-center h-full px-4 gap-1.5 min-w-0">
 					{statusDropdownButton}
 					{statusDropdownPortal}
-					<span className="text-fg-muted text-xs flex-shrink-0">|</span>
-					<span className="text-fg text-xs font-medium truncate flex-1 min-w-0">
-						{task.title}
-					</span>
 					{task.branchName && (
-						<span className="text-fg-3 text-xs font-mono truncate max-w-[200px] flex-shrink-0">
-							{task.branchName}
-						</span>
+						<>
+							<span className="text-fg-muted text-xs flex-shrink-0">|</span>
+							<span className="text-fg-3 text-xs font-mono truncate max-w-[200px] flex-shrink-0">
+								{task.branchName}
+							</span>
+						</>
 					)}
-					<span className="text-fg-muted text-xs flex-shrink-0">|</span>
+					<div className="flex-1" />
 					{devServerButton}
 					<button
 						onClick={toggleCollapsed}
@@ -322,9 +321,15 @@ function TaskInfoPanel({ task, project, dispatch }: TaskInfoPanelProps) {
 					<div className="flex items-center px-4 py-2 gap-2 min-w-0">
 						{statusDropdownButton}
 						{statusDropdownPortal}
-						<span className="text-fg text-sm font-semibold truncate flex-1 min-w-0">
-							{task.title}
-						</span>
+						{task.branchName && (
+							<>
+								<span className="text-fg-muted text-xs flex-shrink-0">|</span>
+								<span className="text-fg-3 text-xs font-mono truncate max-w-[200px] flex-shrink-0">
+									{task.branchName}
+								</span>
+							</>
+						)}
+						<div className="flex-1" />
 						{devServerButton}
 						<button
 							onClick={toggleCollapsed}
