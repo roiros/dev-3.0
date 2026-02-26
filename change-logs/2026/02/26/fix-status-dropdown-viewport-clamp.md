@@ -1,0 +1,1 @@
+Added smart viewport clamping for the status dropdown in TaskCard. The menu now renders invisible first, then useLayoutEffect measures its actual size and flips it above the trigger if it would overflow the bottom edge, and clamps left/right/top edges within 8px of the viewport boundary.

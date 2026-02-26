@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, type Dispatch } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, type Dispatch } from "react";
 import { createPortal } from "react-dom";
 import type { CodingAgent, Project, Task, TaskStatus } from "../../shared/types";
 import { ACTIVE_STATUSES, STATUS_COLORS, getAllowedTransitions } from "../../shared/types";
@@ -21,6 +21,7 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 	const [moving, setMoving] = useState(false);
 	const [menuOpen, setMenuOpen] = useState(false);
 	const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+	const [menuVisible, setMenuVisible] = useState(false);
 	const [isEditing, setIsEditing] = useState(false);
 	const [editValue, setEditValue] = useState("");
 	const [saving, setSaving] = useState(false);
@@ -50,11 +51,42 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 		return () => document.removeEventListener("mousedown", handleClick);
 	}, [menuOpen]);
 
+	// After menu renders (invisible), measure and clamp position within viewport
+	useLayoutEffect(() => {
+		if (!menuOpen || !menuRef.current || !triggerRef.current) return;
+
+		const menu = menuRef.current.getBoundingClientRect();
+		const trigger = triggerRef.current.getBoundingClientRect();
+		const vw = window.innerWidth;
+		const vh = window.innerHeight;
+		const pad = 8;
+
+		let top = trigger.bottom + 6;
+		let left = trigger.left;
+
+		// Flip above trigger if overflows bottom
+		if (top + menu.height > vh - pad) {
+			top = trigger.top - menu.height - 6;
+		}
+		// Clamp right edge
+		if (left + menu.width > vw - pad) {
+			left = vw - menu.width - pad;
+		}
+		// Clamp left edge
+		if (left < pad) left = pad;
+		// Clamp top edge
+		if (top < pad) top = pad;
+
+		setMenuPos({ top, left });
+		setMenuVisible(true);
+	}, [menuOpen]);
+
 	function toggleMenu(e: React.MouseEvent) {
 		e.stopPropagation();
 		if (!menuOpen && triggerRef.current) {
 			const rect = triggerRef.current.getBoundingClientRect();
 			setMenuPos({ top: rect.bottom + 6, left: rect.left });
+			setMenuVisible(false);
 		}
 		setMenuOpen(!menuOpen);
 	}
@@ -306,12 +338,16 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 				) : null}
 			</div>
 
-			{/* Status dropdown menu — rendered via portal to escape backdrop-filter containing block */}
+			{/* Status dropdown menu — portal + smart viewport clamping */}
 			{menuOpen && createPortal(
 				<div
 					ref={menuRef}
 					className="fixed z-50 bg-overlay rounded-xl shadow-2xl shadow-black/40 border border-edge-active py-1.5 min-w-[180px]"
-					style={{ top: menuPos.top, left: menuPos.left }}
+					style={{
+						top: menuPos.top,
+						left: menuPos.left,
+						visibility: menuVisible ? "visible" : "hidden",
+					}}
 					onClick={(e) => e.stopPropagation()}
 				>
 					<div className="px-3 py-2 text-xs text-fg-3 uppercase tracking-wider font-semibold">
