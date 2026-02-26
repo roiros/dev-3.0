@@ -71,21 +71,38 @@ async function launchTaskPty(
 		await Bun.write(setupPath, project.setupScript + "\n");
 		await Bun.write(claudePath, `#!/bin/bash\nexec ${tmuxCmd}\n`);
 
+		const splitCmd = `tmux split-window -v -c "${worktreePath}" "bash '${claudePath}'"`;
+		const setupFail = [
+			"  printf '\\033[1;31m✗ Setup failed (exit %s)\\033[0m\\n' \"$S\"",
+			"  exec bash",
+		].join("\n");
+		const setupOkClose = [
+			"printf '\\033[1;32m✓ Setup done\\033[0m\\n'",
+			"printf '\\033[2mClosing in 30s — press any key to close now\\033[0m\\n'",
+			"read -t 30 -n 1 -s",
+			"exit",
+		].join("\n");
+
 		const startupScript = isBackground
 			? [
 					"#!/bin/bash",
-					`tmux split-window -v -c "${worktreePath}" "bash '${claudePath}'"`,
+					splitCmd,
 					`bash -x "${setupPath}"`,
-					"S=$?; [ $S -ne 0 ] && printf '\\033[1;31m✗ Setup failed (exit %s)\\033[0m\\n' \"$S\" || printf '\\033[1;32m✓ Setup done\\033[0m\\n'",
-					"exec bash",
+					"S=$?",
+					`if [ $S -ne 0 ]; then`,
+					setupFail,
+					"fi",
+					setupOkClose,
 				].join("\n")
 			: [
 					"#!/bin/bash",
 					`bash -x "${setupPath}"`,
 					"S=$?",
-					"[ $S -ne 0 ] && printf '\\033[1;31m✗ Setup failed (exit %s)\\033[0m\\n' \"$S\" || printf '\\033[1;32m✓ Setup done\\033[0m\\n'",
-					`tmux split-window -v -c "${worktreePath}" "bash '${claudePath}'"`,
-					"exec bash",
+					`if [ $S -ne 0 ]; then`,
+					setupFail,
+					"fi",
+					splitCmd,
+					setupOkClose,
 				].join("\n");
 
 		await Bun.write(startupPath, startupScript + "\n");
