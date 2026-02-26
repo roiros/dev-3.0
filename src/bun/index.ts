@@ -13,7 +13,7 @@ import { DEV3_HOME } from "./paths";
 
 const log = createLogger("main");
 
-log.info("=== dev-3.0 starting (build 2026-02-26T1) ===");
+log.info("=== dev-3.0 starting (build 2026-02-26T2) ===");
 log.info("All data at", { dir: DEV3_HOME });
 log.info("Log files", { dir: getLogPath() });
 
@@ -154,9 +154,19 @@ mainWindow.webview.on("dom-ready", async () => {
 
 Electrobun.events.on("application-menu-clicked", async (e) => {
 	if (e.data.action === "rebuild") {
-		log.info("Rebuilding frontend...");
+		// Find project root by walking up from the bundle until we hit vite.config.ts
+		const { existsSync } = await import("fs");
+		const { dirname, join } = await import("path");
+		let projectRoot = import.meta.dir;
+		for (let i = 0; i < 20; i++) {
+			if (existsSync(join(projectRoot, "vite.config.ts"))) break;
+			const parent = dirname(projectRoot);
+			if (parent === projectRoot) break;
+			projectRoot = parent;
+		}
+		log.info("Rebuilding frontend...", { cwd: projectRoot });
 		const proc = Bun.spawn(["bunx", "vite", "build"], {
-			cwd: import.meta.dir + "/../..",
+			cwd: projectRoot,
 			stdout: "inherit",
 			stderr: "inherit",
 		});
