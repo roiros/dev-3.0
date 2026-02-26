@@ -67,6 +67,12 @@ const en = {
 	"settings.defaultAgentDesc": "Agent used for new tasks",
 	"settings.defaultConfig": "Default Configuration",
 	"settings.defaultConfigDesc": "Configuration applied when launching tasks",
+	"settings.taskDropPosition": "Task Drop Position",
+	"settings.taskDropPositionDesc": "Where moved tasks appear in the destination column",
+	"settings.dropToTop": "Top",
+	"settings.dropToTopDesc": "Moved tasks appear at the top",
+	"settings.dropToBottom": "Bottom",
+	"settings.dropToBottomDesc": "Moved tasks appear at the bottom",
 
 	// KanbanColumn
 	"kanban.noTasks": "No tasks",

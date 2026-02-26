@@ -128,6 +128,7 @@ export const DEFAULT_AGENTS: CodingAgent[] = [
 export interface GlobalSettings {
 	defaultAgentId: string;
 	defaultConfigId: string;
+	taskDropPosition: "top" | "bottom";
 }
 
 export interface Project {
@@ -156,6 +157,7 @@ export interface Task {
 	configId: string | null;
 	createdAt: string;
 	updatedAt: string;
+	movedAt?: string;
 }
 
 /** Generate a short title from a description (first ~maxLen chars, word-boundary truncated). */

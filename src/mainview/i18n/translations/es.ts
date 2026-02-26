@@ -69,6 +69,12 @@ const es: TranslationRecord & Record<string, string> = {
 	"settings.defaultAgentDesc": "Agente utilizado para nuevas tareas",
 	"settings.defaultConfig": "Configuración predeterminada",
 	"settings.defaultConfigDesc": "Configuración aplicada al lanzar tareas",
+	"settings.taskDropPosition": "Posición al mover tareas",
+	"settings.taskDropPositionDesc": "Dónde aparecen las tareas movidas en la columna destino",
+	"settings.dropToTop": "Arriba",
+	"settings.dropToTopDesc": "Las tareas movidas aparecen arriba",
+	"settings.dropToBottom": "Abajo",
+	"settings.dropToBottomDesc": "Las tareas movidas aparecen abajo",
 
 	// KanbanColumn
 	"kanban.noTasks": "Sin tareas",

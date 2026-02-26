@@ -15,7 +15,7 @@ interface KanbanBoardProps {
 	navigate: (route: Route) => void;
 }
 
-function sortTasksForColumn(tasks: Task[]): Task[] {
+function sortTasksForColumn(tasks: Task[], dropPosition: "top" | "bottom"): Task[] {
 	return [...tasks].sort((a, b) => {
 		// Group by groupId: tasks with same groupId stay together
 		const aGroup = a.groupId ?? "";
@@ -30,8 +30,13 @@ function sortTasksForColumn(tasks: Task[]): Task[] {
 		if (a.groupId && b.groupId) {
 			return (a.variantIndex ?? 0) - (b.variantIndex ?? 0);
 		}
-		// Ungrouped: sort by createdAt
-		return a.createdAt < b.createdAt ? -1 : 1;
+		// Ungrouped: sort by position preference
+		if (dropPosition === "top") {
+			const aKey = a.movedAt ?? a.createdAt;
+			const bKey = b.movedAt ?? b.createdAt;
+			return bKey < aKey ? -1 : 1; // DESC: most recently moved/created first
+		}
+		return a.createdAt < b.createdAt ? -1 : 1; // ASC: oldest first
 	});
 }
 
@@ -42,6 +47,7 @@ function KanbanBoard({ project, tasks, dispatch, navigate }: KanbanBoardProps) {
 	const [globalSettings, setGlobalSettings] = useState<GlobalSettings>({
 		defaultAgentId: "builtin-claude",
 		defaultConfigId: "claude-default",
+		taskDropPosition: "top",
 	});
 	const [launchModal, setLaunchModal] = useState<{ task: Task; targetStatus: TaskStatus } | null>(null);
 	const [dragFromStatus, setDragFromStatus] = useState<TaskStatus | null>(null);
@@ -101,7 +107,7 @@ function KanbanBoard({ project, tasks, dispatch, navigate }: KanbanBoardProps) {
 	for (const status of ALL_STATUSES) {
 		const columnTasks = tasksByStatus.get(status);
 		if (columnTasks && columnTasks.length > 1) {
-			tasksByStatus.set(status, sortTasksForColumn(columnTasks));
+			tasksByStatus.set(status, sortTasksForColumn(columnTasks, globalSettings.taskDropPosition));
 		}
 	}
 
