@@ -620,7 +620,7 @@ export const handlers = {
 			return { ok: false, error: "Branch is not rebased" };
 		}
 
-		const result = await git.mergeBranch(project.path, task.branchName, `merge ${task.branchName}`);
+		const result = await git.mergeBranch(project.path, task.branchName, task.title);
 		log.info("← mergeTask", result);
 		return result;
 	},
