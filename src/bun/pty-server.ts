@@ -1,4 +1,5 @@
 import { existsSync } from "node:fs";
+import * as path from "node:path";
 import { createLogger } from "./logger";
 
 const log = createLogger("pty");
@@ -11,6 +12,7 @@ interface PtySession {
 	cwd: string;
 	tmuxCommand: string;
 	env: Record<string, string>;
+	hasSetupScript?: boolean;
 	proc: ReturnType<typeof Bun.spawn> | null;
 	ws: any;
 }
@@ -33,6 +35,7 @@ export function createSession(
 	cwd: string,
 	tmuxCommand: string,
 	extraEnv: Record<string, string> = {},
+	hasSetupScript = false,
 ): void {
 	log.info("Creating PTY session", { taskId: taskId.slice(0, 8), cwd, tmuxCommand });
 	const session: PtySession = {
@@ -41,6 +44,7 @@ export function createSession(
 		cwd,
 		tmuxCommand,
 		env: extraEnv,
+		hasSetupScript,
 		proc: null,
 		ws: null,
 	};
@@ -92,6 +96,18 @@ export function getSessionProjectId(taskId: string): string | null {
 	return sessions.get(taskId)?.projectId ?? null;
 }
 
+export function enablePipePane(paneTarget: string, logFilePath: string): void {
+	log.info("Enabling pipe-pane", { paneTarget, logFilePath });
+	try {
+		Bun.spawnSync([
+			"tmux", "pipe-pane", "-O", "-t", paneTarget,
+			`cat >> "${logFilePath}"`,
+		]);
+	} catch (err) {
+		log.warn("pipe-pane failed", { paneTarget, error: String(err) });
+	}
+}
+
 export function getPtyPort(): number {
 	return ptyWsPort;
 }
@@ -131,7 +147,7 @@ function checkForBell(data: string, taskId: string): void {
 	}
 }
 
-function configureTmux(tmuxSessionName: string): void {
+function configureTmux(tmuxSessionName: string, logsDir: string | null, hasSetupScript: boolean): void {
 	// Clipboard
 	Bun.spawnSync(["tmux", "set", "-s", "set-clipboard", "on"]);
 	for (const table of ["copy-mode", "copy-mode-vi"]) {
@@ -145,7 +161,14 @@ function configureTmux(tmuxSessionName: string): void {
 	Bun.spawnSync(["tmux", "set", "-t", tmuxSessionName, "visual-bell", "off"]);
 	Bun.spawnSync(["tmux", "set", "-t", tmuxSessionName, "bell-action", "any"]);
 	Bun.spawnSync(["tmux", "set", "-t", tmuxSessionName, "monitor-bell", "on"]);
-	log.info("tmux configured (clipboard + bell pass-through)", { tmuxSession: tmuxSessionName });
+
+	// Enable stdout logging via pipe-pane
+	if (logsDir) {
+		const logName = hasSetupScript ? "setup.log" : "main.log";
+		enablePipePane(tmuxSessionName, path.join(logsDir, logName));
+	}
+
+	log.info("tmux configured (clipboard + bell + pipe-pane)", { tmuxSession: tmuxSessionName });
 }
 
 function spawnPty(session: PtySession, cols: number, rows: number): void {
@@ -211,8 +234,9 @@ function spawnPty(session: PtySession, cols: number, rows: number): void {
 
 	log.info("PTY process started", { taskId: shortId(session.taskId), pid: proc.pid });
 
-	// Configure tmux (clipboard + bell pass-through) after session is ready
-	setTimeout(() => configureTmux(tmuxSessionName), 200);
+	// Configure tmux (clipboard + bell + pipe-pane logging) after session is ready
+	const logsDir = path.join(path.dirname(session.cwd), "logs");
+	setTimeout(() => configureTmux(tmuxSessionName, logsDir, session.hasSetupScript ?? false), 200);
 }
 
 const ptyServer = Bun.serve({

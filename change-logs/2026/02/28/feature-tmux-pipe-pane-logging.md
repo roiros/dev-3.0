@@ -1,0 +1,1 @@
+Added stdout logging for all tmux panes via `tmux pipe-pane`. Each task's `logs/` directory now receives `main.log` (agent output), `setup.log` (setup script), `dev-server.log` (dev server pane), and `cleanup.log` (cleanup script). Uses tmux's native `pipe-pane -O` to redirect pane output to files without interfering with interactive sessions.

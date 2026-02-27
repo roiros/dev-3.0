@@ -67,7 +67,10 @@
       "Bash(grep dev3:*)",
       "Bash(grep DEV3_:*)",
       "Bash(npx electrobun:*)",
-      "Bash(bunx electrobun:*)"
+      "Bash(bunx electrobun:*)",
+      "Bash(tmux list-commands:*)",
+      "Bash(tmux pipe-pane:*)",
+      "Bash(col:*)"
     ]
   }
 }

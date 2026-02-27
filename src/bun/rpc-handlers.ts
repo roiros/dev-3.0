@@ -1,4 +1,5 @@
 import { existsSync } from "node:fs";
+import * as path from "node:path";
 import { Utils } from "electrobun/bun";
 import type { CodingAgent, GlobalSettings, Project, Task, TaskStatus } from "../shared/types";
 import { ACTIVE_STATUSES, titleFromDescription } from "../shared/types";
@@ -76,6 +77,12 @@ async function runCleanupScript(task: Task, project: Project): Promise<void> {
 		},
 	);
 
+	// Enable logging for cleanup session
+	const logsDir = path.join(path.dirname(task.worktreePath!), "logs");
+	setTimeout(() => {
+		pty.enablePipePane(sessionName, path.join(logsDir, "cleanup.log"));
+	}, 200);
+
 	await proc.exited;
 
 	log.info("Cleanup session finished", { session: sessionName });
@@ -130,7 +137,11 @@ async function launchTaskPty(
 		await Bun.write(setupPath, project.setupScript + "\n");
 		await Bun.write(claudePath, `#!/bin/bash\necho "Starting: ${tmuxCmd.replace(/"/g, '\\"')}" && exec ${tmuxCmd}\n`);
 
-		const splitCmd = `tmux split-window -v -c "${worktreePath}" "bash '${claudePath}'"`;
+		const logsDir = path.join(path.dirname(worktreePath), "logs");
+		const splitCmd = [
+			`AGENT_PANE=$(tmux split-window -v -c "${worktreePath}" -P -F "#{pane_id}" "bash '${claudePath}'")`,
+			`tmux pipe-pane -O -t "$AGENT_PANE" 'cat >> "${logsDir}/main.log"'`,
+		].join(" && ");
 		const setupFail = [
 			"  printf '\\033[1;31m✗ Setup failed (exit %s)\\033[0m\\n' \"$S\"",
 			"  exec bash",
@@ -157,9 +168,10 @@ async function launchTaskPty(
 		tmuxCmd = `bash "${startupPath}"`;
 	}
 
+	const hasSetup = runSetup && !!project.setupScript.trim();
 	const env = { ...extraEnv, DEV3_TASK_ID: task.id };
 	const echoAndRun = `echo "Starting: ${tmuxCmd.replace(/"/g, '\\"')}" && ${tmuxCmd}`;
-	pty.createSession(task.id, project.id, worktreePath, echoAndRun, env);
+	pty.createSession(task.id, project.id, worktreePath, echoAndRun, env, hasSetup);
 }
 
 export const handlers = {
@@ -564,6 +576,8 @@ export const handlers = {
 		const paneId = output.trim();
 		if (paneId) {
 			devPaneIds.set(task.id, paneId);
+			const logsDir = path.join(path.dirname(task.worktreePath!), "logs");
+			pty.enablePipePane(paneId, path.join(logsDir, "dev-server.log"));
 			log.info("← runDevServer done", { paneId });
 		} else {
 			log.info("← runDevServer done (no pane id captured)");
