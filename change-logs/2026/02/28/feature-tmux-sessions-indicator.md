@@ -1,0 +1,1 @@
+Added tmux sessions indicator to the GlobalHeader. Shows the number of active `dev3-*` tmux sessions with a hover popover listing each session's name, attached/detached status, and cleanup tag. Polls every 15 seconds via a new `listTmuxSessions` RPC endpoint. Hides automatically when no sessions are active.

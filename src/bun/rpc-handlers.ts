@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { Utils } from "electrobun/bun";
-import type { CodingAgent, GlobalSettings, Project, Task, TaskStatus } from "../shared/types";
+import type { CodingAgent, GlobalSettings, Project, Task, TaskStatus, TmuxSessionInfo } from "../shared/types";
 import { ACTIVE_STATUSES, titleFromDescription } from "../shared/types";
 import * as data from "./data";
 import * as git from "./git";
@@ -639,6 +639,35 @@ export const handlers = {
 		const result = await git.pushBranch(task.worktreePath);
 		log.info("← pushTask", result);
 		return result;
+	},
+
+	async listTmuxSessions(): Promise<TmuxSessionInfo[]> {
+		try {
+			const proc = Bun.spawn(
+				["tmux", "list-sessions", "-F", "#{session_name}\t#{session_windows}\t#{session_created}\t#{session_attached}"],
+				{ stdout: "pipe", stderr: "pipe" },
+			);
+			const output = await new Response(proc.stdout).text();
+			const exitCode = await proc.exited;
+
+			if (exitCode !== 0) return [];
+
+			const sessions: TmuxSessionInfo[] = [];
+			for (const line of output.trim().split("\n")) {
+				if (!line) continue;
+				const [name, windows, created, attached] = line.split("\t");
+				if (!name.startsWith("dev3-")) continue;
+				sessions.push({
+					name,
+					windows: parseInt(windows, 10) || 1,
+					created: new Date(parseInt(created, 10) * 1000).toISOString(),
+					attached: attached === "1",
+				});
+			}
+			return sessions;
+		} catch {
+			return [];
+		}
 	},
 
 	async getPtyUrl(params: { taskId: string }): Promise<string> {

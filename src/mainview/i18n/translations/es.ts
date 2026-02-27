@@ -24,6 +24,12 @@ const es: TranslationRecord & Record<string, string> = {
 	"header.globalLabel": "Global",
 	"header.devServer": "Servidor Dev",
 	"header.devServerDisabled": "Configure el script dev en la configuración del proyecto",
+	"header.tmuxSessionsTooltip": "Sesiones tmux activas",
+	"header.tmuxSessionAttached": "conectada",
+	"header.tmuxSessionDetached": "desconectada",
+	"header.tmuxSessionCleanup": "limpieza",
+	"header.tmuxSessionCount_one": "{count} sesión tmux",
+	"header.tmuxSessionCount_other": "{count} sesiones tmux",
 
 	// GlobalSettings
 	"settings.theme": "Tema",

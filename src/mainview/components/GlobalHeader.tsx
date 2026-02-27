@@ -2,6 +2,7 @@ import { Fragment } from "react";
 import type { Project, Task } from "../../shared/types";
 import type { Route } from "../state";
 import { useT } from "../i18n";
+import TmuxSessionsIndicator from "./TmuxSessionsIndicator";
 
 interface GlobalHeaderProps {
 	route: Route;
@@ -105,8 +106,9 @@ function GlobalHeader({ route, projects, tasks, navigate }: GlobalHeaderProps) {
 				))}
 			</div>
 
-			{/* Actions — project settings & global settings only */}
+			{/* Actions — tmux indicator, project settings & global settings */}
 			<div className="flex items-center gap-1.5 flex-shrink-0">
+				<TmuxSessionsIndicator />
 				{/* Project settings — anywhere inside a project (not on project-settings screen itself) */}
 				{"projectId" in route && route.screen !== "project-settings" && (
 					<button

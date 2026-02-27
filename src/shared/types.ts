@@ -182,6 +182,13 @@ export interface BranchStatus {
 	canRebase: boolean;
 }
 
+export interface TmuxSessionInfo {
+	name: string;
+	windows: number;
+	created: string;
+	attached: boolean;
+}
+
 // ---- RPC schema ----
 
 export type AppRPCSchema = {
@@ -289,6 +296,10 @@ export type AppRPCSchema = {
 			pushTask: {
 				params: { taskId: string; projectId: string };
 				response: { ok: boolean; error?: string };
+			};
+			listTmuxSessions: {
+				params: void;
+				response: TmuxSessionInfo[];
 			};
 		};
 		messages: {

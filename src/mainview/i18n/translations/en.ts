@@ -22,6 +22,12 @@ const en = {
 	"header.globalLabel": "Global",
 	"header.devServer": "Dev Server",
 	"header.devServerDisabled": "Configure dev script in Project Settings",
+	"header.tmuxSessionsTooltip": "Active tmux sessions",
+	"header.tmuxSessionAttached": "attached",
+	"header.tmuxSessionDetached": "detached",
+	"header.tmuxSessionCleanup": "cleanup",
+	"header.tmuxSessionCount_one": "{count} tmux session",
+	"header.tmuxSessionCount_other": "{count} tmux sessions",
 
 	// GlobalSettings
 	"settings.theme": "Theme",

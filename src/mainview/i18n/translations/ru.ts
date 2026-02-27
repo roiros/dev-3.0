@@ -26,6 +26,14 @@ const ru: TranslationRecord & Record<string, string> = {
 	"header.globalLabel": "Общие",
 	"header.devServer": "Dev-сервер",
 	"header.devServerDisabled": "Настройте dev-скрипт в настройках проекта",
+	"header.tmuxSessionsTooltip": "Активные tmux-сессии",
+	"header.tmuxSessionAttached": "подключена",
+	"header.tmuxSessionDetached": "отключена",
+	"header.tmuxSessionCleanup": "очистка",
+	"header.tmuxSessionCount_one": "{count} tmux-сессия",
+	"header.tmuxSessionCount_few": "{count} tmux-сессии",
+	"header.tmuxSessionCount_many": "{count} tmux-сессий",
+	"header.tmuxSessionCount_other": "{count} tmux-сессий",
 
 	// GlobalSettings
 	"settings.theme": "Тема",
