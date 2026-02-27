@@ -170,6 +170,19 @@ const es: TranslationRecord & Record<string, string> = {
 	"infoPanel.mergeComplete": "Merge completado",
 	"infoPanel.mergeCompleteMessage": "Rama fusionada exitosamente. ¿Marcar la tarea como completada?",
 
+	// Tmux hotkey hints
+	"tmux.hSplit": "h-div",
+	"tmux.vSplit": "v-div",
+	"tmux.zoom": "zoom",
+	"tmux.title": "Atajos de tmux",
+	"tmux.panes": "Paneles",
+	"tmux.splitHDesc": "Dividir horizontalmente",
+	"tmux.splitVDesc": "Dividir verticalmente",
+	"tmux.zoomDesc": "Zoom del panel (alternar)",
+	"tmux.closePaneDesc": "Cerrar panel",
+	"tmux.selectPaneDesc": "Haz clic en un panel para seleccionarlo",
+	"tmux.resizePaneDesc": "Arrastra el borde del panel para redimensionar",
+
 	// Status labels
 	"status.todo": "Por hacer",
 	"status.inProgress": "En progreso",
