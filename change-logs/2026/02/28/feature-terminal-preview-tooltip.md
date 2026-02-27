@@ -1,0 +1,1 @@
+Added terminal screenshot preview on hover for active task cards. When hovering over an in-progress task card on the Kanban board, a popover appears with a real-time screenshot of the terminal rendered via ghostty-web. Uses tmux capture-pane with ANSI escape sequences for visual accuracy including colors and formatting.

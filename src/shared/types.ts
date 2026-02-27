@@ -266,6 +266,10 @@ export type AppRPCSchema = {
 				params: { taskId: string };
 				response: string;
 			};
+			captureTaskPane: {
+				params: { taskId: string };
+				response: string | null;
+			};
 			resolveFilename: {
 				params: { filename: string };
 				response: string | null;

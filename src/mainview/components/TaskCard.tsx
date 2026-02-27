@@ -5,6 +5,7 @@ import { ACTIVE_STATUSES, STATUS_COLORS, getAllowedTransitions } from "../../sha
 import type { AppAction, Route } from "../state";
 import { api } from "../rpc";
 import { useT, statusKey } from "../i18n";
+import TerminalPreview from "./TerminalPreview";
 
 interface TaskCardProps {
 	task: Task;
@@ -224,7 +225,7 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 
 	const showDismissButton = isTodo || isCancelled;
 
-	return (
+	const cardContent = (
 		<div
 			draggable={!moving && !isEditing}
 			onDragStart={handleDragStart}
@@ -423,6 +424,11 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 			)}
 		</div>
 	);
+
+	if (isActive) {
+		return <TerminalPreview taskId={task.id}>{cardContent}</TerminalPreview>;
+	}
+	return cardContent;
 }
 
 export default TaskCard;

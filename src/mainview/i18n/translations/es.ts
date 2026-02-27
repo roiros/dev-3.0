@@ -110,6 +110,11 @@ const es: TranslationRecord & Record<string, string> = {
 	"task.editHint": "⌘Enter para guardar",
 	"task.bellTooltip": "Requiere atención",
 
+	// Terminal Preview
+	"preview.title": "Vista previa del terminal",
+	"preview.loading": "Cargando...",
+	"preview.noContent": "Sin salida de terminal",
+
 	// LaunchVariantsModal
 	"launch.title": "Lanzar tarea",
 	"launch.agent": "Agente",

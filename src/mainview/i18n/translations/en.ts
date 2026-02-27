@@ -108,6 +108,11 @@ const en = {
 	"task.editHint": "⌘Enter to save",
 	"task.bellTooltip": "Needs attention",
 
+	// Terminal Preview
+	"preview.title": "Terminal Preview",
+	"preview.loading": "Loading...",
+	"preview.noContent": "No terminal output",
+
 	// LaunchVariantsModal
 	"launch.title": "Launch Task",
 	"launch.agent": "Agent",

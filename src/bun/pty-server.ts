@@ -96,6 +96,52 @@ export function getPtyPort(): number {
 	return ptyWsPort;
 }
 
+export function capturePane(taskId: string): string | null {
+	const tmuxSessionName = `dev3-${shortId(taskId)}`;
+
+	// List all panes in the session
+	let paneIds: string[];
+	try {
+		const listResult = Bun.spawnSync(
+			["tmux", "list-panes", "-t", tmuxSessionName, "-F", "#{pane_id}"],
+			{ stdout: "pipe", stderr: "pipe" },
+		);
+		if (listResult.exitCode !== 0) return null;
+		const output = new TextDecoder().decode(listResult.stdout).trim();
+		if (!output) return null;
+		paneIds = output.split("\n").filter(Boolean);
+	} catch {
+		return null;
+	}
+
+	const paneContents: string[] = [];
+	for (const paneId of paneIds) {
+		try {
+			const result = Bun.spawnSync(
+				["tmux", "capture-pane", "-p", "-e", "-t", paneId],
+				{ stdout: "pipe", stderr: "pipe" },
+			);
+			if (result.exitCode === 0 && result.stdout.length > 0) {
+				let content = new TextDecoder().decode(result.stdout);
+				// Trim trailing blank lines
+				content = content.replace(/\n+$/, "");
+				paneContents.push(content);
+			}
+		} catch {
+			// skip broken pane
+		}
+	}
+
+	if (paneContents.length === 0) return null;
+
+	if (paneContents.length === 1) return paneContents[0];
+
+	// Multiple panes — join with separator
+	return paneContents
+		.map((c, i) => (i > 0 ? `\r\n--- pane ${i + 1} ---\r\n${c}` : c))
+		.join("");
+}
+
 function shortId(taskId: string): string {
 	return taskId.slice(0, 8);
 }

@@ -112,6 +112,11 @@ const ru: TranslationRecord & Record<string, string> = {
 	"task.editHint": "⌘Enter для сохранения",
 	"task.bellTooltip": "Требует внимания",
 
+	// Terminal Preview
+	"preview.title": "Предпросмотр терминала",
+	"preview.loading": "Загрузка...",
+	"preview.noContent": "Нет вывода терминала",
+
 	// LaunchVariantsModal
 	"launch.title": "Запуск задачи",
 	"launch.agent": "Агент",
