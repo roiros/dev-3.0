@@ -103,6 +103,7 @@ function App() {
 						taskId={route.taskId}
 						tasks={state.currentProjectTasks}
 						navigate={navigate}
+						dispatch={dispatch}
 					/>
 				);
 			case "project-settings":
