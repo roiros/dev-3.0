@@ -251,6 +251,7 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 	const [branchStatus, setBranchStatus] = useState<BranchStatus | null>(null);
 	const [rebasing, setRebasing] = useState(false);
 	const [merging, setMerging] = useState(false);
+	const [pushing, setPushing] = useState(false);
 
 	useEffect(() => {
 		if (!isTaskActive || !task.worktreePath) return;
@@ -334,6 +335,29 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 			alert(t("infoPanel.mergeFailed", { error: String(err) }));
 		}
 		setMerging(false);
+	}
+
+	async function handlePush() {
+		if (pushing) return;
+		setPushing(true);
+		try {
+			const result = await api.request.pushTask({
+				taskId: task.id,
+				projectId: project.id,
+			});
+			if (result.ok) {
+				const status = await api.request.getBranchStatus({
+					taskId: task.id,
+					projectId: project.id,
+				});
+				setBranchStatus(status);
+			} else {
+				alert(t("infoPanel.pushFailed", { error: result.error || "unknown" }));
+			}
+		} catch (err) {
+			alert(t("infoPanel.pushFailed", { error: String(err) }));
+		}
+		setPushing(false);
 	}
 
 	// ---- Panel collapse / drag ----
@@ -459,6 +483,8 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 		</span>
 	) : null;
 
+	const comparisonBranch = task.baseBranch || project.defaultBaseBranch || "main";
+
 	const branchStatusBadge = branchStatus && (branchStatus.ahead > 0 || branchStatus.behind > 0) ? (
 		<span className="flex items-center gap-1.5 text-[11px] flex-shrink-0">
 			{branchStatus.behind > 0 && branchStatus.ahead > 0 ? (
@@ -476,6 +502,7 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 					{t("infoPanel.commitsAhead", { count: String(branchStatus.ahead) })}
 				</span>
 			)}
+			<span className="text-fg-muted font-normal">vs origin/{comparisonBranch}</span>
 			{branchStatus.behind > 0 && (
 				<button
 					onClick={handleRebase}
@@ -488,6 +515,20 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 					title={!branchStatus.canRebase ? t("infoPanel.rebaseConflicts") : t("infoPanel.rebase")}
 				>
 					{rebasing ? t("infoPanel.rebasing") : t("infoPanel.rebase")}
+				</button>
+			)}
+			{branchStatus.ahead > 0 && (
+				<button
+					onClick={handlePush}
+					disabled={pushing}
+					className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${
+						pushing
+							? "text-fg-muted cursor-not-allowed bg-raised"
+							: "text-accent hover:bg-accent/20 bg-accent/10"
+					}`}
+					title={t("infoPanel.push")}
+				>
+					{pushing ? t("infoPanel.pushing") : t("infoPanel.push")}
 				</button>
 			)}
 			{branchStatus.behind === 0 && branchStatus.ahead > 0 && (
