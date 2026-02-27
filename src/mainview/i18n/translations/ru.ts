@@ -169,6 +169,20 @@ const ru: TranslationRecord & Record<string, string> = {
 	"infoPanel.mergeFailed": "Merge не удался: {error}",
 	"infoPanel.mergeNotRebased": "Сначала сделайте rebase",
 
+	// Tmux hints
+	"tmux.title": "Горячие клавиши tmux",
+	"tmux.splitH": "Разделить горизонтально",
+	"tmux.splitV": "Разделить вертикально",
+	"tmux.zoom": "Развернуть / свернуть панель",
+	"tmux.navigate": "Перемещение между панелями",
+	"tmux.closePane": "Закрыть панель",
+	"tmux.scrollMode": "Режим скролла (q для выхода)",
+	"tmux.detach": "Отключиться от сессии",
+	"tmux.panes": "Панели",
+	"tmux.other": "Прочее",
+	"tmux.hint": "Подсказка: префикс Ctrl-B — сначала нажмите его, потом клавишу команды",
+	"tmux.infoTooltip": "Справка по горячим клавишам tmux",
+
 	// Status labels
 	"status.todo": "К выполнению",
 	"status.inProgress": "В работе",

@@ -1,0 +1,1 @@
+Added tmux hotkey hints to the TaskInfoPanel header. Three core shortcuts (split horizontal, split vertical, zoom) are always visible as inline keyboard badges. An info button (ⓘ) opens a full popover with all tmux shortcuts grouped by category (Panes, Other) plus a tip about the prefix key. Translations added for EN, RU, ES.

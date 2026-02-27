@@ -55,6 +55,128 @@ function formatDate(iso: string): string {
 	}
 }
 
+/* ---- Kbd badge for hotkey display ---- */
+function Kbd({ children }: { children: React.ReactNode }) {
+	return (
+		<kbd className="inline-flex items-center justify-center min-w-[20px] h-[18px] px-1 rounded bg-base border border-edge text-[10px] font-mono text-fg-2 leading-none">
+			{children}
+		</kbd>
+	);
+}
+
+/* ---- Tmux shortcuts popover ---- */
+function TmuxHintsPopover({ onClose, triggerRef }: { onClose: () => void; triggerRef: React.RefObject<HTMLButtonElement | null> }) {
+	const t = useT();
+	const popoverRef = useRef<HTMLDivElement>(null);
+	const [pos, setPos] = useState({ top: 0, left: 0 });
+	const [visible, setVisible] = useState(false);
+
+	useEffect(() => {
+		function handleClick(e: MouseEvent) {
+			if (
+				popoverRef.current && !popoverRef.current.contains(e.target as Node) &&
+				triggerRef.current && !triggerRef.current.contains(e.target as Node)
+			) {
+				onClose();
+			}
+		}
+		document.addEventListener("mousedown", handleClick);
+		return () => document.removeEventListener("mousedown", handleClick);
+	}, [onClose, triggerRef]);
+
+	useLayoutEffect(() => {
+		if (!popoverRef.current || !triggerRef.current) return;
+		const menu = popoverRef.current.getBoundingClientRect();
+		const trigger = triggerRef.current.getBoundingClientRect();
+		const vw = window.innerWidth;
+		const vh = window.innerHeight;
+		const pad = 12;
+
+		let top = trigger.bottom + 8;
+		let left = trigger.right - menu.width;
+
+		if (top + menu.height > vh - pad) top = trigger.top - menu.height - 8;
+		if (left < pad) left = pad;
+		if (left + menu.width > vw - pad) left = vw - menu.width - pad;
+		if (top < pad) top = pad;
+
+		setPos({ top, left });
+		setVisible(true);
+	}, [triggerRef]);
+
+	const paneShortcuts = [
+		{ keys: ["⌃B", "−"], desc: t("tmux.splitH") },
+		{ keys: ["⌃B", "|"], desc: t("tmux.splitV") },
+		{ keys: ["⌃B", "Z"], desc: t("tmux.zoom") },
+		{ keys: ["⌃B", "←↑↓→"], desc: t("tmux.navigate") },
+		{ keys: ["⌃B", "X"], desc: t("tmux.closePane") },
+	];
+
+	const otherShortcuts = [
+		{ keys: ["⌃B", "["], desc: t("tmux.scrollMode") },
+		{ keys: ["⌃B", "D"], desc: t("tmux.detach") },
+	];
+
+	return createPortal(
+		<div
+			ref={popoverRef}
+			className="fixed z-50 bg-overlay rounded-xl shadow-2xl shadow-black/40 border border-edge-active w-[320px]"
+			style={{ top: pos.top, left: pos.left, visibility: visible ? "visible" : "hidden" }}
+		>
+			<div className="px-4 pt-3.5 pb-2 border-b border-edge">
+				<h3 className="text-sm font-semibold text-fg">{t("tmux.title")}</h3>
+			</div>
+
+			<div className="px-4 py-3 space-y-3">
+				{/* Panes section */}
+				<div>
+					<div className="text-[10px] uppercase tracking-wider font-semibold text-fg-3 mb-1.5">{t("tmux.panes")}</div>
+					<div className="space-y-1.5">
+						{paneShortcuts.map((s, i) => (
+							<div key={i} className="flex items-center gap-2">
+								<span className="flex items-center gap-0.5 flex-shrink-0">
+									{s.keys.map((k, j) => (
+										<span key={j} className="flex items-center gap-0.5">
+											{j > 0 && <span className="text-fg-muted text-[10px] mx-0.5" />}
+											<Kbd>{k}</Kbd>
+										</span>
+									))}
+								</span>
+								<span className="text-xs text-fg-2">{s.desc}</span>
+							</div>
+						))}
+					</div>
+				</div>
+
+				{/* Other section */}
+				<div>
+					<div className="text-[10px] uppercase tracking-wider font-semibold text-fg-3 mb-1.5">{t("tmux.other")}</div>
+					<div className="space-y-1.5">
+						{otherShortcuts.map((s, i) => (
+							<div key={i} className="flex items-center gap-2">
+								<span className="flex items-center gap-0.5 flex-shrink-0">
+									{s.keys.map((k, j) => (
+										<span key={j} className="flex items-center gap-0.5">
+											<Kbd>{k}</Kbd>
+										</span>
+									))}
+								</span>
+								<span className="text-xs text-fg-2">{s.desc}</span>
+							</div>
+						))}
+					</div>
+				</div>
+			</div>
+
+			{/* Footer hint */}
+			<div className="px-4 py-2.5 border-t border-edge text-[11px] text-fg-muted leading-snug">
+				{t("tmux.hint")}
+			</div>
+		</div>,
+		document.body,
+	);
+}
+
 function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps) {
 	const t = useT();
 	const [collapsed, setCollapsed] = useState(() => readBool(LS_COLLAPSED, true));
@@ -142,6 +264,10 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 		}
 		setMovingStatus(false);
 	}
+
+	// ---- Tmux hints popover ----
+	const [tmuxOpen, setTmuxOpen] = useState(false);
+	const tmuxTriggerRef = useRef<HTMLButtonElement>(null);
 
 	// ---- Dev server ----
 	const hasDevScript = !!(project.devScript?.trim());
@@ -401,6 +527,40 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 		</span>
 	) : null;
 
+	const tmuxHintsInline = (
+		<div className="flex items-center gap-2.5 flex-shrink-0">
+			{/* Always-visible core shortcuts */}
+			<div className="flex items-center gap-2 text-[10px] text-fg-3">
+				<span className="flex items-center gap-0.5">
+					<Kbd>⌃B</Kbd><Kbd>−</Kbd>
+					<span className="ml-0.5 hidden xl:inline">split</span>
+				</span>
+				<span className="flex items-center gap-0.5">
+					<Kbd>⌃B</Kbd><Kbd>|</Kbd>
+					<span className="ml-0.5 hidden xl:inline">vert</span>
+				</span>
+				<span className="flex items-center gap-0.5">
+					<Kbd>⌃B</Kbd><Kbd>Z</Kbd>
+					<span className="ml-0.5 hidden xl:inline">zoom</span>
+				</span>
+			</div>
+
+			{/* Info button */}
+			<button
+				ref={tmuxTriggerRef}
+				onClick={() => setTmuxOpen(!tmuxOpen)}
+				className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-fg-3 hover:text-fg hover:bg-elevated transition-colors border border-edge hover:border-edge-active"
+				title={t("tmux.infoTooltip")}
+			>
+				<svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+					<path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+				</svg>
+			</button>
+
+			{tmuxOpen && <TmuxHintsPopover onClose={() => setTmuxOpen(false)} triggerRef={tmuxTriggerRef} />}
+		</div>
+	);
+
 	const devServerButton = (
 		<button
 			onClick={handleDevServer}
@@ -446,6 +606,7 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 						</>
 					)}
 					<div className="flex-1" />
+					{tmuxHintsInline}
 					{devServerButton}
 					<button
 						onClick={toggleCollapsed}
@@ -479,6 +640,7 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 							</>
 						)}
 						<div className="flex-1" />
+						{tmuxHintsInline}
 						{devServerButton}
 						<button
 							onClick={toggleCollapsed}

@@ -165,6 +165,20 @@ const en = {
 	"infoPanel.mergeFailed": "Merge failed: {error}",
 	"infoPanel.mergeNotRebased": "Rebase first before merging",
 
+	// Tmux hints
+	"tmux.title": "tmux Shortcuts",
+	"tmux.splitH": "Split horizontal",
+	"tmux.splitV": "Split vertical",
+	"tmux.zoom": "Toggle zoom",
+	"tmux.navigate": "Navigate panes",
+	"tmux.closePane": "Close pane",
+	"tmux.scrollMode": "Scroll mode (q to exit)",
+	"tmux.detach": "Detach session",
+	"tmux.panes": "Panes",
+	"tmux.other": "Other",
+	"tmux.hint": "Tip: prefix key is Ctrl-B — press it first, then the shortcut key",
+	"tmux.infoTooltip": "tmux shortcuts reference",
+
 	// Status labels
 	"status.todo": "To Do",
 	"status.inProgress": "In Progress",
