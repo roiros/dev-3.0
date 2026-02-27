@@ -21,6 +21,7 @@ function GlobalSettings() {
 	const [globalSettings, setGlobalSettings] = useState<GlobalSettingsType>({
 		defaultAgentId: "builtin-claude",
 		defaultConfigId: "claude-default",
+		taskDropPosition: "top",
 	});
 
 	useEffect(() => {
@@ -35,6 +36,12 @@ function GlobalSettings() {
 		setTheme(th);
 		document.documentElement.dataset.theme = th;
 		localStorage.setItem("dev3-theme", th);
+	}
+
+	function handleDropPositionChange(pos: "top" | "bottom") {
+		const updated = { ...globalSettings, taskDropPosition: pos };
+		setGlobalSettings(updated);
+		api.request.saveGlobalSettings(updated);
 	}
 
 	function handleDefaultAgentChange(agentId: string) {
@@ -169,7 +176,33 @@ function GlobalSettings() {
 						</div>
 					</div>
 
-					{/* Default Agent */}
+					{/* Task Drop Position */}
+					<div>
+						<label className="block text-fg text-sm font-semibold mb-2">
+							{t("settings.taskDropPosition")}
+						</label>
+						<p className="text-fg-3 text-sm mb-3">
+							{t("settings.taskDropPositionDesc")}
+						</p>
+						<div className="flex gap-3">
+							<DropPositionCard
+								label={t("settings.dropToTop")}
+								description={t("settings.dropToTopDesc")}
+								active={globalSettings.taskDropPosition === "top"}
+								onClick={() => handleDropPositionChange("top")}
+								icon="↑"
+							/>
+							<DropPositionCard
+								label={t("settings.dropToBottom")}
+								description={t("settings.dropToBottomDesc")}
+								active={globalSettings.taskDropPosition === "bottom"}
+								onClick={() => handleDropPositionChange("bottom")}
+								icon="↓"
+							/>
+						</div>
+					</div>
+
+				{/* Default Agent */}
 					<div>
 						<label className="block text-fg text-sm font-semibold mb-2">
 							{t("settings.defaultAgent")}
@@ -810,6 +843,37 @@ function KeyValueEditor({
 				+ {addLabel}
 			</button>
 		</div>
+	);
+}
+
+// ---- Drop Position Card ----
+
+function DropPositionCard({
+	label,
+	description,
+	active,
+	onClick,
+	icon,
+}: {
+	label: string;
+	description: string;
+	active: boolean;
+	onClick: () => void;
+	icon: string;
+}) {
+	return (
+		<button
+			onClick={onClick}
+			className={`flex-1 p-4 rounded-xl border-2 transition-all text-left ${
+				active
+					? "border-accent shadow-lg shadow-accent/10"
+					: "border-edge hover:border-edge-active"
+			}`}
+		>
+			<div className="text-2xl mb-2 font-mono text-fg-2 font-bold">{icon}</div>
+			<div className="text-fg text-sm font-semibold">{label}</div>
+			<div className="text-fg-3 text-xs mt-0.5">{description}</div>
+		</button>
 	);
 }
 

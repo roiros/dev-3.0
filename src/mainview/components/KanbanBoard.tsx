@@ -1,4 +1,4 @@
-import { useState, useEffect, type Dispatch } from "react";
+import { useState, useEffect, useRef, type Dispatch } from "react";
 import type { CodingAgent, GlobalSettings, Project, Task, TaskStatus } from "../../shared/types";
 import { ALL_STATUSES, ACTIVE_STATUSES } from "../../shared/types";
 import type { AppAction, Route } from "../state";
@@ -7,32 +7,13 @@ import { api } from "../rpc";
 import KanbanColumn from "./KanbanColumn";
 import CreateTaskModal from "./CreateTaskModal";
 import LaunchVariantsModal from "./LaunchVariantsModal";
+import { sortTasksForColumn } from "./sortTasks";
 
 interface KanbanBoardProps {
 	project: Project;
 	tasks: Task[];
 	dispatch: Dispatch<AppAction>;
 	navigate: (route: Route) => void;
-}
-
-function sortTasksForColumn(tasks: Task[]): Task[] {
-	return [...tasks].sort((a, b) => {
-		// Group by groupId: tasks with same groupId stay together
-		const aGroup = a.groupId ?? "";
-		const bGroup = b.groupId ?? "";
-		if (aGroup !== bGroup) {
-			// Ungrouped tasks sort by createdAt
-			if (!aGroup) return 1;
-			if (!bGroup) return -1;
-			return aGroup < bGroup ? -1 : 1;
-		}
-		// Within same group, sort by variantIndex
-		if (a.groupId && b.groupId) {
-			return (a.variantIndex ?? 0) - (b.variantIndex ?? 0);
-		}
-		// Ungrouped: sort by createdAt
-		return a.createdAt < b.createdAt ? -1 : 1;
-	});
 }
 
 function KanbanBoard({ project, tasks, dispatch, navigate }: KanbanBoardProps) {
@@ -42,9 +23,17 @@ function KanbanBoard({ project, tasks, dispatch, navigate }: KanbanBoardProps) {
 	const [globalSettings, setGlobalSettings] = useState<GlobalSettings>({
 		defaultAgentId: "builtin-claude",
 		defaultConfigId: "claude-default",
+		taskDropPosition: "top",
 	});
 	const [launchModal, setLaunchModal] = useState<{ task: Task; targetStatus: TaskStatus } | null>(null);
 	const [dragFromStatus, setDragFromStatus] = useState<TaskStatus | null>(null);
+	const [moveOrderMap, setMoveOrderMap] = useState<Map<string, number>>(new Map());
+	const moveCounterRef = useRef(0);
+
+	function recordMove(taskId: string) {
+		moveCounterRef.current += 1;
+		setMoveOrderMap((prev) => new Map(prev).set(taskId, moveCounterRef.current));
+	}
 
 	useEffect(() => {
 		api.request.getAgents().then(setAgents).catch(() => {});
@@ -84,6 +73,7 @@ function KanbanBoard({ project, tasks, dispatch, navigate }: KanbanBoardProps) {
 				newStatus: targetStatus,
 			});
 			dispatch({ type: "updateTask", task: updated });
+			recordMove(task.id);
 		} catch (err) {
 			alert(t("task.failedMove", { error: String(err) }));
 		}
@@ -101,7 +91,7 @@ function KanbanBoard({ project, tasks, dispatch, navigate }: KanbanBoardProps) {
 	for (const status of ALL_STATUSES) {
 		const columnTasks = tasksByStatus.get(status);
 		if (columnTasks && columnTasks.length > 1) {
-			tasksByStatus.set(status, sortTasksForColumn(columnTasks));
+			tasksByStatus.set(status, sortTasksForColumn(columnTasks, globalSettings.taskDropPosition, moveOrderMap));
 		}
 	}
 
@@ -125,6 +115,7 @@ function KanbanBoard({ project, tasks, dispatch, navigate }: KanbanBoardProps) {
 						onTaskDrop={handleTaskDrop}
 						dragFromStatus={dragFromStatus}
 						onDragStart={handleDragStart}
+					onTaskMoved={recordMove}
 					/>
 				))}
 			</div>

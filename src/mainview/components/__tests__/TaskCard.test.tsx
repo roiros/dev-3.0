@@ -79,6 +79,7 @@ function renderCard(
 		navigate?: (route: Route) => void;
 		onLaunchVariants?: (task: Task, targetStatus: TaskStatus) => void;
 		onDragStart?: (taskId: string) => void;
+		onTaskMoved?: (taskId: string) => void;
 	},
 ) {
 	return render(
@@ -91,6 +92,7 @@ function renderCard(
 				agents={agents}
 				onLaunchVariants={opts?.onLaunchVariants ?? vi.fn()}
 				onDragStart={opts?.onDragStart ?? vi.fn()}
+				onTaskMoved={opts?.onTaskMoved ?? vi.fn()}
 			/>
 		</I18nProvider>,
 	);

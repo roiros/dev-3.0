@@ -1,0 +1,1 @@
+Added global setting `taskDropPosition` ("top" / "bottom", default "top") that controls where a task appears in the destination column when dragged between statuses. Moved tasks now have a `movedAt` timestamp used for column sorting.

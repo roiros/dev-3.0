@@ -71,6 +71,12 @@ const ru: TranslationRecord & Record<string, string> = {
 	"settings.defaultAgentDesc": "Агент для запуска новых задач",
 	"settings.defaultConfig": "Конфигурация по умолчанию",
 	"settings.defaultConfigDesc": "Конфигурация при запуске задач",
+	"settings.taskDropPosition": "Позиция при перемещении",
+	"settings.taskDropPositionDesc": "Куда попадает таск при переносе в колонку",
+	"settings.dropToTop": "Вверх",
+	"settings.dropToTopDesc": "Перемещённые таски появляются сверху",
+	"settings.dropToBottom": "Вниз",
+	"settings.dropToBottomDesc": "Перемещённые таски появляются снизу",
 
 	// KanbanColumn
 	"kanban.noTasks": "Нет задач",

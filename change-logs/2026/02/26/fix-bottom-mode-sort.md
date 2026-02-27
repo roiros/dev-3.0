@@ -1,0 +1,1 @@
+Fix moveOrderMap handling for "bottom" drop position mode. Previously moveOrderMap was only consulted in "top" mode — tasks dragged to a column in "bottom" mode ignored move ordering entirely. Now both modes respect moveOrderMap (top: most recent first, bottom: most recent last). Extracted sortTasksForColumn to its own module and added 19 unit tests covering all sort scenarios.

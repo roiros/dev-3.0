@@ -8,11 +8,13 @@ const SETTINGS_FILE = `${DEV3_HOME}/settings.json`;
 export interface GlobalSettings {
 	defaultAgentId: string;
 	defaultConfigId: string;
+	taskDropPosition: "top" | "bottom";
 }
 
 const DEFAULT_SETTINGS: GlobalSettings = {
 	defaultAgentId: "builtin-claude",
 	defaultConfigId: "claude-default",
+	taskDropPosition: "top",
 };
 
 export async function loadSettings(): Promise<GlobalSettings> {
@@ -25,6 +27,7 @@ export async function loadSettings(): Promise<GlobalSettings> {
 		return {
 			defaultAgentId: data.defaultAgentId ?? DEFAULT_SETTINGS.defaultAgentId,
 			defaultConfigId: data.defaultConfigId ?? DEFAULT_SETTINGS.defaultConfigId,
+			taskDropPosition: data.taskDropPosition === "bottom" ? "bottom" : "top",
 		};
 	} catch (err) {
 		log.error("Failed to load settings", { error: String(err) });
