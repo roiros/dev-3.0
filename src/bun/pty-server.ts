@@ -96,12 +96,28 @@ export function getSessionProjectId(taskId: string): string | null {
 	return sessions.get(taskId)?.projectId ?? null;
 }
 
+/**
+ * Build a shell command that strips ANSI escape sequences and appends to a log file.
+ * Uses perl to remove CSI sequences (colors, cursor movement, modes),
+ * OSC sequences (title, clipboard), charset designations, and carriage returns.
+ * The returned string is a valid sh command suitable for tmux pipe-pane or script files.
+ */
+export function ansiStripPipeCmd(logFilePath: string): string {
+	const stripCmd = [
+		"s/\\e\\[\\??[0-9;]*[A-Za-z]//g",
+		"s/\\e\\][^\\x07\\x1b]*(?:\\x07|\\e\\\\)//g",
+		"s/\\e[()][A-Z0-9]//g",
+		"s/\\r//g",
+	].join(";");
+	return `perl -pe '${stripCmd}' >> "${logFilePath}"`;
+}
+
 export function enablePipePane(paneTarget: string, logFilePath: string): void {
 	log.info("Enabling pipe-pane", { paneTarget, logFilePath });
 	try {
 		Bun.spawnSync([
 			"tmux", "pipe-pane", "-O", "-t", paneTarget,
-			`cat >> "${logFilePath}"`,
+			ansiStripPipeCmd(logFilePath),
 		]);
 	} catch (err) {
 		log.warn("pipe-pane failed", { paneTarget, error: String(err) });

@@ -138,9 +138,12 @@ async function launchTaskPty(
 		await Bun.write(claudePath, `#!/bin/bash\necho "Starting: ${tmuxCmd.replace(/"/g, '\\"')}" && exec ${tmuxCmd}\n`);
 
 		const logsDir = path.join(path.dirname(worktreePath), "logs");
+		const pipeMainPath = `${prefix}-pipe-main.sh`;
+		await Bun.write(pipeMainPath, `#!/bin/bash\n${pty.ansiStripPipeCmd(path.join(logsDir, "main.log"))}\n`);
+
 		const splitCmd = [
 			`AGENT_PANE=$(tmux split-window -v -c "${worktreePath}" -P -F "#{pane_id}" "bash '${claudePath}'")`,
-			`tmux pipe-pane -O -t "$AGENT_PANE" 'cat >> "${logsDir}/main.log"'`,
+			`tmux pipe-pane -O -t "$AGENT_PANE" "bash '${pipeMainPath}'"`,
 		].join(" && ");
 		const setupFail = [
 			"  printf '\\033[1;31m✗ Setup failed (exit %s)\\033[0m\\n' \"$S\"",
