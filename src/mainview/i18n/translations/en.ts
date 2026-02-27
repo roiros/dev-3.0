@@ -165,6 +165,21 @@ const en = {
 	"infoPanel.mergeFailed": "Merge failed: {error}",
 	"infoPanel.mergeNotRebased": "Rebase first before merging",
 
+	// Tmux shortcuts
+	"tmux.splitH": "Split",
+	"tmux.splitV": "VSplit",
+	"tmux.zoom": "Zoom",
+	"tmux.infoTitle": "Terminal Shortcuts",
+	"tmux.infoTooltip": "Terminal shortcuts",
+	"tmux.splitHDesc": "Split pane horizontally",
+	"tmux.splitVDesc": "Split pane vertically",
+	"tmux.zoomDesc": "Zoom / unzoom current pane",
+	"tmux.navSection": "Navigation",
+	"tmux.movePanes": "Move between panes",
+	"tmux.detach": "Detach from session",
+	"tmux.newWindow": "Create new window",
+	"tmux.nextPrevWindow": "Next / prev window",
+
 	// Status labels
 	"status.todo": "To Do",
 	"status.inProgress": "In Progress",

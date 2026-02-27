@@ -6,6 +6,17 @@ import type { AppAction, Route } from "../state";
 import { api } from "../rpc";
 import { useT, statusKey } from "../i18n";
 
+function ShortcutRow({ keys, desc }: { keys: string; desc: string }) {
+	return (
+		<div className="flex items-center gap-2 py-1">
+			<kbd className="bg-elevated px-1.5 py-0.5 rounded font-mono text-[11px] text-fg-2 flex-shrink-0 min-w-[60px] text-center">
+				{keys}
+			</kbd>
+			<span className="text-xs text-fg-3">{desc}</span>
+		</div>
+	);
+}
+
 interface TaskInfoPanelProps {
 	task: Task;
 	project: Project;
@@ -71,6 +82,13 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 	const statusTriggerRef = useRef<HTMLButtonElement>(null);
 	const statusMenuRef = useRef<HTMLDivElement>(null);
 
+	// ---- Tmux info popover state ----
+	const [tmuxInfoOpen, setTmuxInfoOpen] = useState(false);
+	const [tmuxInfoPos, setTmuxInfoPos] = useState({ top: 0, left: 0 });
+	const [tmuxInfoVisible, setTmuxInfoVisible] = useState(false);
+	const tmuxInfoTriggerRef = useRef<HTMLButtonElement>(null);
+	const tmuxInfoRef = useRef<HTMLDivElement>(null);
+
 	// Close status menu on click outside
 	useEffect(() => {
 		if (!statusMenuOpen) return;
@@ -87,6 +105,49 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 		document.addEventListener("mousedown", handleClick);
 		return () => document.removeEventListener("mousedown", handleClick);
 	}, [statusMenuOpen]);
+
+	// Close tmux info on click outside
+	useEffect(() => {
+		if (!tmuxInfoOpen) return;
+		function handleClick(e: MouseEvent) {
+			if (
+				tmuxInfoRef.current &&
+				!tmuxInfoRef.current.contains(e.target as Node) &&
+				tmuxInfoTriggerRef.current &&
+				!tmuxInfoTriggerRef.current.contains(e.target as Node)
+			) {
+				setTmuxInfoOpen(false);
+			}
+		}
+		document.addEventListener("mousedown", handleClick);
+		return () => document.removeEventListener("mousedown", handleClick);
+	}, [tmuxInfoOpen]);
+
+	// Smart viewport clamping for tmux info (right-aligned)
+	useLayoutEffect(() => {
+		if (!tmuxInfoOpen || !tmuxInfoRef.current || !tmuxInfoTriggerRef.current) return;
+
+		const menu = tmuxInfoRef.current.getBoundingClientRect();
+		const trigger = tmuxInfoTriggerRef.current.getBoundingClientRect();
+		const vw = window.innerWidth;
+		const vh = window.innerHeight;
+		const pad = 8;
+
+		let top = trigger.bottom + 6;
+		let left = trigger.right - menu.width;
+
+		if (top + menu.height > vh - pad) {
+			top = trigger.top - menu.height - 6;
+		}
+		if (left < pad) left = pad;
+		if (left + menu.width > vw - pad) {
+			left = vw - menu.width - pad;
+		}
+		if (top < pad) top = pad;
+
+		setTmuxInfoPos({ top, left });
+		setTmuxInfoVisible(true);
+	}, [tmuxInfoOpen]);
 
 	// Smart viewport clamping for status menu
 	useLayoutEffect(() => {
@@ -420,6 +481,71 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 		</button>
 	);
 
+	function toggleTmuxInfo(e: React.MouseEvent) {
+		e.stopPropagation();
+		if (!tmuxInfoOpen && tmuxInfoTriggerRef.current) {
+			const rect = tmuxInfoTriggerRef.current.getBoundingClientRect();
+			setTmuxInfoPos({ top: rect.bottom + 6, left: rect.right - 320 });
+			setTmuxInfoVisible(false);
+		}
+		setTmuxInfoOpen(!tmuxInfoOpen);
+	}
+
+	const tmuxHintsInline = (
+		<div className="flex items-center gap-2 flex-shrink-0">
+			<span className="flex items-center gap-1 text-[10px] text-fg-muted" title={t("tmux.splitHDesc")}>
+				<kbd className="font-mono">⌃B</kbd> <kbd className="font-mono">-</kbd>
+			</span>
+			<span className="flex items-center gap-1 text-[10px] text-fg-muted" title={t("tmux.splitVDesc")}>
+				<kbd className="font-mono">⌃B</kbd> <kbd className="font-mono">|</kbd>
+			</span>
+			<span className="flex items-center gap-1 text-[10px] text-fg-muted" title={t("tmux.zoomDesc")}>
+				<kbd className="font-mono">⌃B</kbd> <kbd className="font-mono">Z</kbd>
+			</span>
+		</div>
+	);
+
+	const tmuxInfoButton = (
+		<button
+			ref={tmuxInfoTriggerRef}
+			onClick={toggleTmuxInfo}
+			className="flex-shrink-0 p-1 rounded hover:bg-elevated transition-colors text-fg-muted hover:text-fg-3"
+			title={t("tmux.infoTooltip")}
+		>
+			<svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+				<circle cx="12" cy="12" r="10" />
+				<path strokeLinecap="round" d="M12 16v-4M12 8h.01" />
+			</svg>
+		</button>
+	);
+
+	const tmuxInfoPortal = tmuxInfoOpen && createPortal(
+		<div
+			ref={tmuxInfoRef}
+			className="fixed z-50 bg-overlay rounded-xl shadow-2xl shadow-black/40 border border-edge-active p-4 w-[320px]"
+			style={{
+				top: tmuxInfoPos.top,
+				left: tmuxInfoPos.left,
+				visibility: tmuxInfoVisible ? "visible" : "hidden",
+			}}
+			onClick={(e) => e.stopPropagation()}
+		>
+			<div className="text-xs font-semibold text-fg-2 mb-2">{t("tmux.infoTitle")}</div>
+			<div className="border-b border-edge mb-2" />
+			<ShortcutRow keys="⌃B -" desc={t("tmux.splitHDesc")} />
+			<ShortcutRow keys="⌃B |" desc={t("tmux.splitVDesc")} />
+			<ShortcutRow keys="⌃B Z" desc={t("tmux.zoomDesc")} />
+
+			<div className="text-xs font-semibold text-fg-2 mt-3 mb-2">{t("tmux.navSection")}</div>
+			<div className="border-b border-edge mb-2" />
+			<ShortcutRow keys="⌃B ←↑↓→" desc={t("tmux.movePanes")} />
+			<ShortcutRow keys="⌃B D" desc={t("tmux.detach")} />
+			<ShortcutRow keys="⌃B C" desc={t("tmux.newWindow")} />
+			<ShortcutRow keys="⌃B N/P" desc={t("tmux.nextPrevWindow")} />
+		</div>,
+		document.body,
+	);
+
 	return (
 		<div
 			ref={panelRef}
@@ -446,6 +572,9 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 						</>
 					)}
 					<div className="flex-1" />
+					{tmuxHintsInline}
+					{tmuxInfoButton}
+					{tmuxInfoPortal}
 					{devServerButton}
 					<button
 						onClick={toggleCollapsed}
@@ -479,6 +608,9 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 							</>
 						)}
 						<div className="flex-1" />
+						{tmuxHintsInline}
+						{tmuxInfoButton}
+						{tmuxInfoPortal}
 						{devServerButton}
 						<button
 							onClick={toggleCollapsed}

@@ -168,6 +168,21 @@ const es: TranslationRecord & Record<string, string> = {
 	"infoPanel.mergeFailed": "Merge falló: {error}",
 	"infoPanel.mergeNotRebased": "Primero haga rebase",
 
+	// Tmux shortcuts
+	"tmux.splitH": "Dividir",
+	"tmux.splitV": "Dividir vert.",
+	"tmux.zoom": "Zoom",
+	"tmux.infoTitle": "Atajos de terminal",
+	"tmux.infoTooltip": "Atajos de terminal",
+	"tmux.splitHDesc": "Dividir panel horizontalmente",
+	"tmux.splitVDesc": "Dividir panel verticalmente",
+	"tmux.zoomDesc": "Ampliar / reducir panel actual",
+	"tmux.navSection": "Navegación",
+	"tmux.movePanes": "Moverse entre paneles",
+	"tmux.detach": "Desconectar de la sesión",
+	"tmux.newWindow": "Crear nueva ventana",
+	"tmux.nextPrevWindow": "Siguiente / anterior ventana",
+
 	// Status labels
 	"status.todo": "Por hacer",
 	"status.inProgress": "En progreso",

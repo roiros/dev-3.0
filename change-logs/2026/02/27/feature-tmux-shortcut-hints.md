@@ -1,0 +1,1 @@
+Added tmux shortcut hints to TaskInfoPanel header. Three inline hotkey badges (split, vsplit, zoom) are always visible in both collapsed and expanded modes. An info button (ⓘ) opens a full popover with all tmux shortcuts organized in two sections: terminal splits and navigation.
