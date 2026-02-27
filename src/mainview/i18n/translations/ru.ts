@@ -189,6 +189,14 @@ const ru: TranslationRecord & Record<string, string> = {
 	"tmux.selectPaneDesc": "Кликните на панель для выбора",
 	"tmux.resizePaneDesc": "Перетащите границу для ресайза",
 
+	// HelloWorld
+	"hello.greeting": "Привет, мир.",
+	"hello.subtitle": "Терминальное управление проектами для ИИ-агентов",
+	"hello.statTerminal": "Терминалы",
+	"hello.statKanban": "Канбан",
+	"hello.statAgents": "ИИ-агенты",
+	"hello.cta": "Открыть дашборд",
+
 	// Status labels
 	"status.todo": "К выполнению",
 	"status.inProgress": "В работе",

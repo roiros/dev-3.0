@@ -188,6 +188,14 @@ const es: TranslationRecord & Record<string, string> = {
 	"tmux.selectPaneDesc": "Haz clic en un panel para seleccionarlo",
 	"tmux.resizePaneDesc": "Arrastra el borde del panel para redimensionar",
 
+	// HelloWorld
+	"hello.greeting": "Hola, Mundo.",
+	"hello.subtitle": "Gestión de proyectos nativa en terminal para agentes de IA",
+	"hello.statTerminal": "Terminales",
+	"hello.statKanban": "Kanban",
+	"hello.statAgents": "Agentes IA",
+	"hello.cta": "Abrir panel",
+
 	// Status labels
 	"status.todo": "Por hacer",
 	"status.inProgress": "En progreso",

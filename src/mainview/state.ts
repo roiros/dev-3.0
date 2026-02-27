@@ -8,7 +8,8 @@ export type Route =
 	| { screen: "project"; projectId: string }
 	| { screen: "task"; projectId: string; taskId: string }
 	| { screen: "project-settings"; projectId: string }
-	| { screen: "settings" };
+	| { screen: "settings" }
+	| { screen: "hello" };
 
 // ---- State ----
 

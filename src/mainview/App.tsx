@@ -8,6 +8,7 @@ import Dashboard from "./components/Dashboard";
 import ProjectView from "./components/ProjectView";
 import TaskTerminal from "./components/TaskTerminal";
 import ProjectSettings from "./components/ProjectSettings";
+import HelloWorld from "./components/HelloWorld";
 
 function App() {
 	const [state, dispatch] = useAppState();
@@ -148,6 +149,8 @@ function App() {
 				);
 			case "settings":
 				return <GlobalSettings />;
+			case "hello":
+				return <HelloWorld navigate={navigate} />;
 			default:
 				return null;
 		}

@@ -1,0 +1,1 @@
+Added a Hello World page with retro-futuristic terminal aesthetic: typewriter text effect, floating geometric particles with parallax, glass morphism cards, ambient glow orb, and CSS-only animations. Accessible via the "hello" route. Fully localized (en/ru/es).

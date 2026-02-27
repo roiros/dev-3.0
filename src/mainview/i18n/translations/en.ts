@@ -185,6 +185,14 @@ const en = {
 	"tmux.selectPaneDesc": "Click on a pane to select it",
 	"tmux.resizePaneDesc": "Drag pane border to resize",
 
+	// HelloWorld
+	"hello.greeting": "Hello, World.",
+	"hello.subtitle": "Terminal-native project management for AI coding agents",
+	"hello.statTerminal": "Terminals",
+	"hello.statKanban": "Kanban",
+	"hello.statAgents": "AI Agents",
+	"hello.cta": "Open Dashboard",
+
 	// Status labels
 	"status.todo": "To Do",
 	"status.inProgress": "In Progress",
