@@ -92,6 +92,22 @@ export function getSessionProjectId(taskId: string): string | null {
 	return sessions.get(taskId)?.projectId ?? null;
 }
 
+export function capturePane(taskId: string, lines = 24): string | null {
+	if (!sessions.has(taskId)) return null;
+	const tmuxSessionName = `dev3-${shortId(taskId)}`;
+	try {
+		const result = Bun.spawnSync([
+			"tmux", "capture-pane", "-p", "-e", "-t", tmuxSessionName, "-S", `-${lines}`,
+		]);
+		if (result.exitCode === 0 && result.stdout.length > 0) {
+			return new TextDecoder().decode(result.stdout);
+		}
+	} catch {
+		// tmux session might be gone
+	}
+	return null;
+}
+
 export function getPtyPort(): number {
 	return ptyWsPort;
 }

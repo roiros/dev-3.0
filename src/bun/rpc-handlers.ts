@@ -641,6 +641,10 @@ export const handlers = {
 		return result;
 	},
 
+	async captureTerminal(params: { taskId: string; lines?: number }): Promise<string | null> {
+		return pty.capturePane(params.taskId, params.lines ?? 24);
+	},
+
 	async getPtyUrl(params: { taskId: string }): Promise<string> {
 		log.info("→ getPtyUrl", { taskId: params.taskId });
 

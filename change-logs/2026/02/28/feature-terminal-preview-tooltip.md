@@ -1,0 +1,1 @@
+Added terminal preview tooltip on task card hover. When hovering over an active task card on the kanban board, a tooltip appears after 400ms showing the last 24 lines of the terminal output with ANSI colors rendered as styled HTML spans. Includes a lightweight ANSI SGR parser supporting bold/dim/italic, 8/16/256/24-bit colors, and proper stripping of non-SGR escape sequences.

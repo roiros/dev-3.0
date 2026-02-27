@@ -107,6 +107,8 @@ const en = {
 	"task.failedEdit": "Failed to update task: {error}",
 	"task.editHint": "⌘Enter to save",
 	"task.bellTooltip": "Needs attention",
+	"task.previewLoading": "Loading...",
+	"task.previewNoSession": "No terminal session",
 
 	// LaunchVariantsModal
 	"launch.title": "Launch Task",

@@ -109,6 +109,8 @@ const es: TranslationRecord & Record<string, string> = {
 	"task.failedEdit": "Error al actualizar tarea: {error}",
 	"task.editHint": "⌘Enter para guardar",
 	"task.bellTooltip": "Requiere atención",
+	"task.previewLoading": "Cargando...",
+	"task.previewNoSession": "Sin sesión de terminal",
 
 	// LaunchVariantsModal
 	"launch.title": "Lanzar tarea",

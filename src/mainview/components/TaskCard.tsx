@@ -1,10 +1,11 @@
-import { useState, useRef, useEffect, useLayoutEffect, type Dispatch } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useCallback, type Dispatch } from "react";
 import { createPortal } from "react-dom";
 import type { CodingAgent, Project, Task, TaskStatus } from "../../shared/types";
 import { ACTIVE_STATUSES, STATUS_COLORS, getAllowedTransitions } from "../../shared/types";
 import type { AppAction, Route } from "../state";
 import { api } from "../rpc";
 import { useT, statusKey } from "../i18n";
+import TerminalPreview from "./TerminalPreview";
 
 interface TaskCardProps {
 	task: Task;
@@ -30,6 +31,13 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 	const menuRef = useRef<HTMLDivElement>(null);
 	const triggerRef = useRef<HTMLButtonElement>(null);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
+	const cardRef = useRef<HTMLDivElement>(null);
+
+	// Terminal preview state
+	const [previewOpen, setPreviewOpen] = useState(false);
+	const [previewRect, setPreviewRect] = useState<DOMRect | null>(null);
+	const hoverEnterTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const hoverLeaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	const isTodo = task.status === "todo";
 	const isCancelled = task.status === "cancelled";
@@ -83,8 +91,70 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 		setMenuVisible(true);
 	}, [menuOpen]);
 
+	// ---- Terminal preview hover logic ----
+	const closePreview = useCallback(() => {
+		if (hoverEnterTimerRef.current) {
+			clearTimeout(hoverEnterTimerRef.current);
+			hoverEnterTimerRef.current = null;
+		}
+		if (hoverLeaveTimerRef.current) {
+			clearTimeout(hoverLeaveTimerRef.current);
+			hoverLeaveTimerRef.current = null;
+		}
+		setPreviewOpen(false);
+		setPreviewRect(null);
+	}, []);
+
+	function handleCardMouseEnter() {
+		if (!isActive || menuOpen || isEditing) return;
+		if (hoverLeaveTimerRef.current) {
+			clearTimeout(hoverLeaveTimerRef.current);
+			hoverLeaveTimerRef.current = null;
+		}
+		hoverEnterTimerRef.current = setTimeout(() => {
+			if (cardRef.current) {
+				setPreviewRect(cardRef.current.getBoundingClientRect());
+				setPreviewOpen(true);
+			}
+		}, 400);
+	}
+
+	function handleCardMouseLeave() {
+		if (hoverEnterTimerRef.current) {
+			clearTimeout(hoverEnterTimerRef.current);
+			hoverEnterTimerRef.current = null;
+		}
+		hoverLeaveTimerRef.current = setTimeout(() => {
+			setPreviewOpen(false);
+			setPreviewRect(null);
+		}, 150);
+	}
+
+	function handlePreviewMouseEnter() {
+		if (hoverLeaveTimerRef.current) {
+			clearTimeout(hoverLeaveTimerRef.current);
+			hoverLeaveTimerRef.current = null;
+		}
+	}
+
+	function handlePreviewMouseLeave() {
+		hoverLeaveTimerRef.current = setTimeout(() => {
+			setPreviewOpen(false);
+			setPreviewRect(null);
+		}, 150);
+	}
+
+	// Clean up timers on unmount
+	useEffect(() => {
+		return () => {
+			if (hoverEnterTimerRef.current) clearTimeout(hoverEnterTimerRef.current);
+			if (hoverLeaveTimerRef.current) clearTimeout(hoverLeaveTimerRef.current);
+		};
+	}, []);
+
 	function toggleMenu(e: React.MouseEvent) {
 		e.stopPropagation();
+		closePreview();
 		if (!menuOpen && triggerRef.current) {
 			const rect = triggerRef.current.getBoundingClientRect();
 			setMenuPos({ top: rect.bottom + 6, left: rect.left });
@@ -163,6 +233,7 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 	}
 
 	function handleClick() {
+		closePreview();
 		if (isActive && !menuOpen) {
 			navigate({
 				screen: "task",
@@ -173,6 +244,7 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 	}
 
 	function handleDragStart(e: React.DragEvent) {
+		closePreview();
 		e.dataTransfer.setData("text/plain", task.id);
 		e.dataTransfer.effectAllowed = "move";
 		onDragStartProp(task.id);
@@ -226,8 +298,11 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 
 	return (
 		<div
+			ref={cardRef}
 			draggable={!moving && !isEditing}
 			onDragStart={handleDragStart}
+			onMouseEnter={handleCardMouseEnter}
+			onMouseLeave={handleCardMouseLeave}
 			className={`group relative p-3.5 glass-card rounded-xl transition-all border border-transparent border-l-[3px] ${
 				isActive
 					? "cursor-pointer hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/25"
@@ -420,6 +495,16 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 					)}
 				</div>,
 				document.body
+			)}
+
+			{/* Terminal preview tooltip */}
+			{previewOpen && previewRect && (
+				<TerminalPreview
+					taskId={task.id}
+					anchorRect={previewRect}
+					onMouseEnter={handlePreviewMouseEnter}
+					onMouseLeave={handlePreviewMouseLeave}
+				/>
 			)}
 		</div>
 	);
