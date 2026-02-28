@@ -87,6 +87,31 @@ jobs:
           APP_NAME="dev-3.0"
           PLATFORM_PREFIX="stable-macos-arm64"
 
+          # Helper: create DMG with /Applications symlink
+          # Usage: create_dmg <app_path> <dmg_output_path> <vol_name>
+          create_dmg() {
+            local APP_PATH="$1"
+            local DMG_OUT="$2"
+            local VOL_NAME="$3"
+
+            # Unmount any leftover volume from previous runs
+            hdiutil detach "/Volumes/${VOL_NAME}" -force 2>/dev/null || true
+            hdiutil detach "/Volumes/${APP_NAME}" -force 2>/dev/null || true
+
+            # Stage .app + Applications symlink
+            local STAGE_DIR
+            STAGE_DIR=$(mktemp -d)
+            cp -R "$APP_PATH" "$STAGE_DIR/"
+            ln -s /Applications "$STAGE_DIR/Applications"
+
+            hdiutil create -volname "$VOL_NAME" -srcfolder "$STAGE_DIR" \
+              -ov -format UDZO "$DMG_OUT"
+
+            # Cleanup
+            rm -rf "$STAGE_DIR"
+            hdiutil detach "/Volumes/${VOL_NAME}" -force 2>/dev/null || true
+          }
+
           # Electrobun may succeed fully and move artifacts to ./artifacts/,
           # or it may crash after tarring and leave tar/tar.zst in the build dir.
           # We handle both cases.
@@ -123,12 +148,11 @@ jobs:
             echo "{\"version\":\"${VERSION}\",\"hash\":\"${HASH}\",\"os\":\"macos\",\"arch\":\"arm64\"}" \
               > "./artifacts-final/${PLATFORM_PREFIX}-update.json"
 
-            # Use Electrobun's DMG or create one
+            # Use Electrobun's DMG or create one with /Applications symlink
             if [ -n "$EBUN_DMG" ]; then
               cp "$EBUN_DMG" "./artifacts-final/${PLATFORM_PREFIX}-${APP_NAME}.dmg"
             elif [ -d "${BUILD_DIR}/${APP_NAME}.app" ]; then
-              hdiutil create -volname "$APP_NAME" -srcfolder "${BUILD_DIR}/${APP_NAME}.app" \
-                -ov -format UDZO "./artifacts-final/${PLATFORM_PREFIX}-${APP_NAME}.dmg"
+              create_dmg "${BUILD_DIR}/${APP_NAME}.app" "./artifacts-final/${PLATFORM_PREFIX}-${APP_NAME}.dmg" "${APP_NAME} ${VERSION}"
             fi
 
             rm -rf ./artifacts
@@ -173,10 +197,9 @@ jobs:
           echo "{\"version\":\"${VERSION}\",\"hash\":\"${HASH}\",\"os\":\"macos\",\"arch\":\"arm64\"}" \
             > "./artifacts/${PLATFORM_PREFIX}-update.json"
 
-          # Create DMG from recovered .app
+          # Create DMG from recovered .app (with /Applications symlink)
           DMG_PATH="./artifacts/${PLATFORM_PREFIX}-${APP_NAME}.dmg"
-          hdiutil create -volname "$APP_NAME" -srcfolder "${RECOVER_DIR}/${APP_NAME}.app" \
-            -ov -format UDZO "$DMG_PATH"
+          create_dmg "${RECOVER_DIR}/${APP_NAME}.app" "$DMG_PATH" "${APP_NAME} ${VERSION}"
 
           echo "Artifacts created:"
           ls -lh ./artifacts/
