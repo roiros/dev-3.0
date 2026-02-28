@@ -174,6 +174,7 @@ const es: TranslationRecord & Record<string, string> = {
 	"infoPanel.push": "Push",
 	"infoPanel.pushing": "Push...",
 	"infoPanel.pushFailed": "Push falló: {error}",
+	"infoPanel.uncommittedChanges": "+{ins} / −{del}",
 
 	// Tmux hotkey hints
 	"tmux.hSplit": "h-div",

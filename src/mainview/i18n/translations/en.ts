@@ -171,6 +171,7 @@ const en = {
 	"infoPanel.push": "Push",
 	"infoPanel.pushing": "Pushing...",
 	"infoPanel.pushFailed": "Push failed: {error}",
+	"infoPanel.uncommittedChanges": "+{ins} / −{del}",
 
 	// Tmux hotkey hints
 	"tmux.hSplit": "h-split",

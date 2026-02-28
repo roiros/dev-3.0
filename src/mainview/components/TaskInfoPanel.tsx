@@ -496,6 +496,14 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 
 	const comparisonBranch = task.baseBranch || project.defaultBaseBranch || "main";
 
+	const uncommittedBadge = branchStatus && (branchStatus.insertions > 0 || branchStatus.deletions > 0) ? (
+		<span className="flex items-center gap-1 text-[11px] font-medium text-danger flex-shrink-0">
+			<span>+{branchStatus.insertions}</span>
+			<span>/</span>
+			<span>−{branchStatus.deletions}</span>
+		</span>
+	) : null;
+
 	const branchStatusBadge = branchStatus && (branchStatus.ahead > 0 || branchStatus.behind > 0) ? (
 		<span className="flex items-center gap-1.5 text-[11px] flex-shrink-0">
 			{branchStatus.behind > 0 && branchStatus.ahead > 0 ? (
@@ -667,6 +675,12 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 							{branchStatusBadge || branchStatusLoading}
 						</>
 					)}
+					{uncommittedBadge && (
+						<>
+							<span className="text-fg-muted text-xs flex-shrink-0">|</span>
+							{uncommittedBadge}
+						</>
+					)}
 					<div className="flex-1" />
 					{tmuxHintsInline}
 					{tmuxHintsPopover}
@@ -700,6 +714,12 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 							<>
 								<span className="text-fg-muted text-xs flex-shrink-0">|</span>
 								{branchStatusBadge}
+							</>
+						)}
+						{uncommittedBadge && (
+							<>
+								<span className="text-fg-muted text-xs flex-shrink-0">|</span>
+								{uncommittedBadge}
 							</>
 						)}
 						<div className="flex-1" />
