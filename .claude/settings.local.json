@@ -67,7 +67,8 @@
       "Bash(grep dev3:*)",
       "Bash(grep DEV3_:*)",
       "Bash(npx electrobun:*)",
-      "Bash(bunx electrobun:*)"
+      "Bash(bunx electrobun:*)",
+      "Bash(npm ls:*)"
     ]
   }
 }
