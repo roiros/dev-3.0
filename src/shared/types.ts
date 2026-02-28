@@ -180,6 +180,8 @@ export interface BranchStatus {
 	ahead: number;
 	behind: number;
 	canRebase: boolean;
+	insertions: number;
+	deletions: number;
 }
 
 // ---- RPC schema ----

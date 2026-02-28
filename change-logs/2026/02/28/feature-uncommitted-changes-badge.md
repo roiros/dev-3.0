@@ -1,0 +1,1 @@
+Added uncommitted changes indicator (+insertions / -deletions) to the task status line. Shows in red when there are uncommitted changes in the worktree. Data is fetched alongside the existing branch status polling (every 30s).

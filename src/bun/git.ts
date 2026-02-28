@@ -137,6 +137,27 @@ export async function getBranchStatus(
 	};
 }
 
+export async function getUncommittedChanges(
+	worktreePath: string,
+): Promise<{ insertions: number; deletions: number }> {
+	const result = await run(
+		["git", "diff", "--numstat", "HEAD"],
+		worktreePath,
+	);
+	if (!result.ok || !result.stdout.trim()) {
+		return { insertions: 0, deletions: 0 };
+	}
+	let insertions = 0;
+	let deletions = 0;
+	for (const line of result.stdout.trim().split("\n")) {
+		const [ins, del] = line.split("\t");
+		// Binary files show "-" instead of numbers
+		if (ins !== "-") insertions += parseInt(ins, 10) || 0;
+		if (del !== "-") deletions += parseInt(del, 10) || 0;
+	}
+	return { insertions, deletions };
+}
+
 export async function canRebaseCleanly(
 	worktreePath: string,
 	baseBranch: string,

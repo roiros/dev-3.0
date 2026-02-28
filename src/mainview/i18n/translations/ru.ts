@@ -175,6 +175,7 @@ const ru: TranslationRecord & Record<string, string> = {
 	"infoPanel.push": "Push",
 	"infoPanel.pushing": "Push...",
 	"infoPanel.pushFailed": "Push не удался: {error}",
+	"infoPanel.uncommittedChanges": "+{ins} / −{del}",
 
 	// Tmux hotkey hints
 	"tmux.hSplit": "гориз.",
