@@ -1,0 +1,1 @@
+Fix DMG creation in release workflow: unmount leftover volumes before hdiutil create to prevent "Operation not permitted" errors on self-hosted runner, add /Applications symlink to DMG for drag-and-drop install UX, and use dynamic volume names (e.g. "dev-3.0 0.1.16") to avoid conflicts between builds.
