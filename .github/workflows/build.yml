@@ -26,10 +26,3 @@ jobs:
 
       - name: Build application
         run: bun run build
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: dev-3.0-macos-${{ github.sha }}
-          path: build/
-          retention-days: 7
