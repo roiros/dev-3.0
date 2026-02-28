@@ -75,6 +75,8 @@ const es: TranslationRecord & Record<string, string> = {
 	"settings.dropToTopDesc": "Las tareas movidas aparecen arriba",
 	"settings.dropToBottom": "Abajo",
 	"settings.dropToBottomDesc": "Las tareas movidas aparecen abajo",
+	"settings.updateChannel": "Canal de actualización",
+	"settings.updateChannelDesc": "Canal de lanzamiento para actualizaciones automáticas",
 
 	// KanbanColumn
 	"kanban.noTasks": "Sin tareas",
@@ -133,8 +135,6 @@ const es: TranslationRecord & Record<string, string> = {
 	"projectSettings.baseBranch": "Rama base",
 	"projectSettings.baseBranchDesc":
 		"Rama desde la cual se crean los worktrees",
-	"projectSettings.updateChannel": "Canal de actualización",
-	"projectSettings.updateChannelDesc": "Canal de lanzamiento utilizado para actualizaciones en este proyecto",
 	"projectSettings.save": "Guardar configuración",
 	"projectSettings.saving": "Guardando...",
 	"projectSettings.failedSave": "Error al guardar configuración: {error}",

@@ -1,1 +1,1 @@
-Added "Update Channel" dropdown (stable/canary) to Project Settings. The value is persisted in the project model but has no functional effect yet — will be used later to determine which release channel to follow for updates.
+Added "Update Channel" dropdown (stable/canary) to Global Settings. The value is persisted in settings.json but has no functional effect yet — will be used later for app auto-update channel selection.

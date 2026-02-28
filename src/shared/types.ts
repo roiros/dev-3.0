@@ -129,6 +129,7 @@ export interface GlobalSettings {
 	defaultAgentId: string;
 	defaultConfigId: string;
 	taskDropPosition: "top" | "bottom";
+	updateChannel: "stable" | "canary";
 }
 
 export interface Project {
@@ -139,7 +140,6 @@ export interface Project {
 	devScript: string;
 	cleanupScript: string;
 	defaultBaseBranch: string;
-	updateChannel: "stable" | "canary";
 	createdAt: string;
 }
 
@@ -213,7 +213,6 @@ export type AppRPCSchema = {
 					devScript: string;
 					cleanupScript: string;
 					defaultBaseBranch: string;
-					updateChannel: "stable" | "canary";
 				};
 				response: Project;
 			};
