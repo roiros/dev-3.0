@@ -72,17 +72,80 @@ jobs:
           # and recover the artifacts manually.
           bunx electrobun build --env=stable || echo "::warning::electrobun build exited with $? (known post-tar codesign bug, recovering artifacts)"
 
+      - name: Debug build output
+        if: always()
+        run: |
+          echo "=== ./build/ ==="
+          find ./build -maxdepth 3 -type f 2>/dev/null || echo "(empty)"
+          echo ""
+          echo "=== ./artifacts/ ==="
+          ls -lhR ./artifacts/ 2>/dev/null || echo "(empty)"
+
       - name: Create release artifacts
         run: |
           BUILD_DIR="./build/stable-macos-arm64"
           APP_NAME="dev-3.0"
           PLATFORM_PREFIX="stable-macos-arm64"
+
+          # Electrobun may succeed fully and move artifacts to ./artifacts/,
+          # or it may crash after tarring and leave tar/tar.zst in the build dir.
+          # We handle both cases.
+
+          # Case 1: Electrobun succeeded and created its own artifacts
+          EBUN_TAR_ZST=$(find ./artifacts -name "*.app.tar.zst" 2>/dev/null | head -1)
+          EBUN_DMG=$(find ./artifacts -name "*.dmg" 2>/dev/null | head -1)
+          EBUN_UPDATE=$(find ./artifacts -name "update.json" -o -name "*-update.json" 2>/dev/null | head -1)
+
+          if [ -n "$EBUN_TAR_ZST" ]; then
+            echo "Electrobun created artifacts successfully, using them directly"
+            ls -lh ./artifacts/
+
+            # Rename to our naming convention if needed
+            mkdir -p ./artifacts-final
+            cp "$EBUN_TAR_ZST" "./artifacts-final/${PLATFORM_PREFIX}-${APP_NAME}.app.tar.zst"
+
+            # Get version info from Electrobun's update.json or from the .app
+            if [ -n "$EBUN_UPDATE" ]; then
+              HASH=$(bun -e "const j=await Bun.file('${EBUN_UPDATE}').json();console.log(j.hash)")
+              VERSION=$(bun -e "const j=await Bun.file('${EBUN_UPDATE}').json();console.log(j.version)")
+            else
+              # Extract from tar.zst
+              RECOVER_DIR="${BUILD_DIR}/recovered"
+              mkdir -p "$RECOVER_DIR"
+              tar -xf <(zstd -d "$EBUN_TAR_ZST" --stdout) -C "$RECOVER_DIR"
+              VERSION_JSON="${RECOVER_DIR}/${APP_NAME}.app/Contents/Resources/version.json"
+              HASH=$(bun -e "const j=await Bun.file('${VERSION_JSON}').json();console.log(j.hash)")
+              VERSION=$(bun -e "const j=await Bun.file('${VERSION_JSON}').json();console.log(j.version)")
+            fi
+            echo "Bundle hash: $HASH, version: $VERSION"
+
+            # Create our update.json with platform prefix
+            echo "{\"version\":\"${VERSION}\",\"hash\":\"${HASH}\",\"os\":\"macos\",\"arch\":\"arm64\"}" \
+              > "./artifacts-final/${PLATFORM_PREFIX}-update.json"
+
+            # Use Electrobun's DMG or create one
+            if [ -n "$EBUN_DMG" ]; then
+              cp "$EBUN_DMG" "./artifacts-final/${PLATFORM_PREFIX}-${APP_NAME}.dmg"
+            elif [ -d "${BUILD_DIR}/${APP_NAME}.app" ]; then
+              hdiutil create -volname "$APP_NAME" -srcfolder "${BUILD_DIR}/${APP_NAME}.app" \
+                -ov -format UDZO "./artifacts-final/${PLATFORM_PREFIX}-${APP_NAME}.dmg"
+            fi
+
+            rm -rf ./artifacts
+            mv ./artifacts-final ./artifacts
+            echo "Final artifacts:"
+            ls -lh ./artifacts/
+            exit 0
+          fi
+
+          # Case 2: Electrobun crashed — recover from tar in build dir
+          echo "Electrobun artifacts not found, recovering from build dir..."
           TAR_ZST="${BUILD_DIR}/${APP_NAME}.app.tar.zst"
           TAR="${BUILD_DIR}/${APP_NAME}.app.tar"
 
-          # Verify the tar.zst was created before the crash
           if [ ! -f "$TAR_ZST" ] && [ ! -f "$TAR" ]; then
             echo "::error::Neither tar.zst nor tar found — build failed before tarring"
+            find ./build -maxdepth 3 -type f 2>/dev/null || true
             exit 1
           fi
 
