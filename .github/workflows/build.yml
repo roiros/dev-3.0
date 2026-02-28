@@ -28,6 +28,15 @@ jobs:
       - name: Run tests
         run: bun run test
 
+      - name: Set unique app name for PR builds
+        if: github.event_name == 'pull_request'
+        run: |
+          BRANCH="${{ github.head_ref }}"
+          SLUG=$(echo "$BRANCH" | sed 's|^dev3/||; s|^task-||' | sed 's|[^a-zA-Z0-9]|-|g' | cut -c1-30 | sed 's|-$||')
+          APP_NAME="dev-3.0-${SLUG}"
+          sed -i '' "s/name: \"dev-3.0\"/name: \"${APP_NAME}\"/" electrobun.config.ts
+          echo "Patched app name to: ${APP_NAME}"
+
       - name: Build application
         run: bunx vite build && bunx electrobun build --env=canary
 
@@ -44,6 +53,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           S3_BASE="https://h0x91b-releases.s3.eu-west-1.amazonaws.com/dev-3.0/${{ github.sha }}"
+          DMG=$(ls ./artifacts/canary-macos-*-*.dmg 2>/dev/null | head -1 | xargs basename)
+          APP=$(echo "$DMG" | sed 's/^canary-macos-[^-]*-//; s/\.dmg$//')
 
           {
             echo "## Build Artifacts"
@@ -58,8 +69,8 @@ jobs:
             echo "PR builds are not code-signed. After mounting the DMG and copying the app:"
             echo ""
             echo '```bash'
-            echo 'xattr -cr /Applications/dev-3.0-canary.app'
-            echo 'codesign --force --deep --sign - /Applications/dev-3.0-canary.app'
+            echo "xattr -cr /Applications/${APP}.app"
+            echo "codesign --force --deep --sign - /Applications/${APP}.app"
             echo '```'
           } > /tmp/pr-comment.md
 
