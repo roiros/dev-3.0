@@ -241,6 +241,7 @@ export const handlers = {
 		devScript: string;
 		cleanupScript: string;
 		defaultBaseBranch: string;
+		updateChannel: "stable" | "canary";
 	}): Promise<Project> {
 		console.log("[updateProjectSettings] params received:", JSON.stringify(params));
 		log.info("→ updateProjectSettings", { projectId: params.projectId });
@@ -249,6 +250,7 @@ export const handlers = {
 			devScript: params.devScript,
 			cleanupScript: params.cleanupScript,
 			defaultBaseBranch: params.defaultBaseBranch,
+			updateChannel: params.updateChannel,
 		});
 		console.log("[updateProjectSettings] saved project:", JSON.stringify(project));
 		log.info("← updateProjectSettings done");

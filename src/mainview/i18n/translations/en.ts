@@ -130,6 +130,8 @@ const en = {
 		"Runs when a task is moved to Cancelled (or Archived in the future)",
 	"projectSettings.baseBranch": "Base Branch",
 	"projectSettings.baseBranchDesc": "Branch to create worktrees from",
+	"projectSettings.updateChannel": "Update Channel",
+	"projectSettings.updateChannelDesc": "Release channel used for updates in this project",
 	"projectSettings.save": "Save Settings",
 	"projectSettings.saving": "Saving...",
 	"projectSettings.failedSave": "Failed to save settings: {error}",

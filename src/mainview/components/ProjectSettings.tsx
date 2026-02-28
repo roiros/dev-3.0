@@ -26,6 +26,9 @@ function ProjectSettings({
 	const [defaultBaseBranch, setDefaultBaseBranch] = useState(
 		project?.defaultBaseBranch || "main",
 	);
+	const [updateChannel, setUpdateChannel] = useState<"stable" | "canary">(
+		project?.updateChannel || "stable",
+	);
 	const [saving, setSaving] = useState(false);
 
 	if (!project) {
@@ -45,6 +48,7 @@ function ProjectSettings({
 				devScript,
 				cleanupScript,
 				defaultBaseBranch,
+				updateChannel,
 			});
 			dispatch({ type: "updateProject", project: updated });
 			navigate({ screen: "project", projectId });
@@ -124,6 +128,24 @@ function ProjectSettings({
 							placeholder="main"
 							className="w-full px-4 py-3 bg-raised border border-edge rounded-xl text-fg text-sm placeholder-fg-muted outline-none focus:border-accent/40 transition-colors"
 						/>
+					</div>
+
+					{/* Update Channel */}
+					<div>
+						<label className="block text-fg text-sm font-semibold mb-2">
+							{t("projectSettings.updateChannel")}
+						</label>
+						<p className="text-fg-3 text-sm mb-3">
+							{t("projectSettings.updateChannelDesc")}
+						</p>
+						<select
+							value={updateChannel}
+							onChange={(e) => setUpdateChannel(e.target.value as "stable" | "canary")}
+							className="w-full px-4 py-3 bg-raised border border-edge rounded-xl text-fg text-sm outline-none focus:border-accent/40 transition-colors appearance-none cursor-pointer"
+						>
+							<option value="stable">Stable</option>
+							<option value="canary">Canary</option>
+						</select>
 					</div>
 
 					{/* Save Button */}

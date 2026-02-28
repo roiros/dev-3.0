@@ -32,6 +32,10 @@ export async function loadProjects(): Promise<Project[]> {
 			return [];
 		}
 		const projects: Project[] = await file.json();
+		// Backfill defaults for fields added after initial release
+		for (const p of projects) {
+			if (!p.updateChannel) p.updateChannel = "stable";
+		}
 		log.info(`Loaded ${projects.length} project(s)`);
 		return projects;
 	} catch (err) {
@@ -61,6 +65,7 @@ export async function addProject(
 		devScript: "",
 		cleanupScript: "",
 		defaultBaseBranch: "main",
+		updateChannel: "stable",
 		createdAt: new Date().toISOString(),
 	};
 	projects.push(project);

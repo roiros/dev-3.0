@@ -134,6 +134,8 @@ const ru: TranslationRecord & Record<string, string> = {
 		"Запускается при переводе таски в статус Cancelled (или Archived в будущем)",
 	"projectSettings.baseBranch": "Базовая ветка",
 	"projectSettings.baseBranchDesc": "Ветка, от которой создаются worktree",
+	"projectSettings.updateChannel": "Канал обновлений",
+	"projectSettings.updateChannelDesc": "Канал релизов для обновлений в этом проекте",
 	"projectSettings.save": "Сохранить настройки",
 	"projectSettings.saving": "Сохранение...",
 	"projectSettings.failedSave": "Не удалось сохранить настройки: {error}",
