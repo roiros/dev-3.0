@@ -33,3 +33,30 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: eu-west-1
         run: aws s3 sync ./artifacts/ s3://h0x91b-releases/dev-3.0/${{ github.sha }}/
+
+      - name: Comment on PR with artifact links
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          S3_BASE="https://h0x91b-releases.s3.eu-west-1.amazonaws.com/dev-3.0/${{ github.sha }}"
+
+          {
+            echo "## Build Artifacts"
+            echo ""
+            for file in ./artifacts/*; do
+              name=$(basename "$file")
+              echo "- [\`$name\`]($S3_BASE/$name)"
+            done
+            echo ""
+            echo "### Running unsigned builds"
+            echo ""
+            echo "PR builds are not code-signed. After mounting the DMG and copying the app:"
+            echo ""
+            echo '```bash'
+            echo 'xattr -cr /Applications/dev-3.0-canary.app'
+            echo 'codesign --force --deep --sign - /Applications/dev-3.0-canary.app'
+            echo '```'
+          } > /tmp/pr-comment.md
+
+          gh pr comment ${{ github.event.pull_request.number }} --body-file /tmp/pr-comment.md
