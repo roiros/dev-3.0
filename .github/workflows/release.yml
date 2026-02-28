@@ -23,7 +23,7 @@ jobs:
         run: bun run test
 
       - name: Build stable release
-        run: vite build && electrobun build --env=stable
+        run: bunx vite build && bunx electrobun build --env=stable
 
       - name: Upload to S3
         env:
