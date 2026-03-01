@@ -12,6 +12,57 @@ function TerminalView({ ptyUrl, taskId }: TerminalViewProps) {
 	const termRef = useRef<Terminal | null>(null);
 	const wsRef = useRef<WebSocket | null>(null);
 
+	// ── Terminal reset via app menu (View > Soft/Hard Reset Terminal) ──
+	useEffect(() => {
+		function handleSoftReset() {
+			const ws = wsRef.current;
+			if (ws?.readyState !== WebSocket.OPEN) return;
+			// \x0f       = Shift In (select G0 charset)
+			// \x1b(B     = Designate G0 as US-ASCII
+			// \x1b)B     = Designate G1 as US-ASCII
+			// \x1b[!p    = DECSTR (Soft Terminal Reset)
+			ws.send("\x0f\x1b(B\x1b)B\x1b[!p");
+			console.log("[TerminalView] Soft reset sent");
+		}
+
+		function handleHardReset() {
+			const term = termRef.current;
+			const ws = wsRef.current;
+
+			// 1. Full frontend reset (recreates WASM terminal)
+			if (term) {
+				term.reset();
+				term.renderer?.remeasureFont();
+				console.log("[TerminalView] Hard reset: term.reset() + remeasureFont()");
+			}
+
+			if (ws?.readyState !== WebSocket.OPEN) return;
+
+			// 2. Send RIS (Reset to Initial State) to PTY/tmux
+			ws.send("\x1bc");
+
+			// 3. Force tmux redraw via resize nudge
+			if (term) {
+				const cols = term.cols;
+				const rows = term.rows;
+				ws.send(`\x1b]resize;${Math.max(2, cols - 1)};${rows}\x07`);
+				setTimeout(() => {
+					if (ws.readyState === WebSocket.OPEN) {
+						ws.send(`\x1b]resize;${cols};${rows}\x07`);
+					}
+				}, 50);
+			}
+			console.log("[TerminalView] Hard reset sent");
+		}
+
+		window.addEventListener("rpc:terminalSoftReset", handleSoftReset);
+		window.addEventListener("rpc:terminalHardReset", handleHardReset);
+		return () => {
+			window.removeEventListener("rpc:terminalSoftReset", handleSoftReset);
+			window.removeEventListener("rpc:terminalHardReset", handleHardReset);
+		};
+	}, []);
+
 	useEffect(() => {
 		let disposed = false;
 		let fitAddon: FitAddon | null = null;
