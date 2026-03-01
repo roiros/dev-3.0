@@ -255,6 +255,8 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 	const [rebasing, setRebasing] = useState(false);
 	const [merging, setMerging] = useState(false);
 	const [pushing, setPushing] = useState(false);
+	const [refreshingStatus, setRefreshingStatus] = useState(false);
+	const fetchStatusRef = useRef<(() => Promise<void>) | null>(null);
 
 	useEffect(() => {
 		if (!isTaskActive || !task.worktreePath) return;
@@ -273,13 +275,21 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 			}
 		}
 
+		fetchStatusRef.current = fetchStatus;
 		fetchStatus();
-		const interval = setInterval(fetchStatus, 30_000);
+		const interval = setInterval(fetchStatus, 15_000);
 		return () => {
 			cancelled = true;
 			clearInterval(interval);
 		};
 	}, [task.id, project.id, isTaskActive, task.worktreePath]);
+
+	async function handleRefreshStatus() {
+		if (refreshingStatus || !fetchStatusRef.current) return;
+		setRefreshingStatus(true);
+		await fetchStatusRef.current();
+		setRefreshingStatus(false);
+	}
 
 	async function handleRebase() {
 		if (rebasing) return;
@@ -568,6 +578,22 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 					{merging ? t("infoPanel.merging") : t("infoPanel.merge")}
 				</button>
 			)}
+			<button
+				onClick={handleRefreshStatus}
+				disabled={refreshingStatus}
+				className="p-0.5 rounded text-fg-muted hover:text-fg hover:bg-elevated transition-colors disabled:opacity-40"
+				title={t("infoPanel.refreshStatus")}
+			>
+				<svg
+					className={`w-3 h-3 ${refreshingStatus ? "animate-spin" : ""}`}
+					fill="none"
+					stroke="currentColor"
+					viewBox="0 0 24 24"
+				>
+					<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+						d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+				</svg>
+			</button>
 		</span>
 	) : null;
 

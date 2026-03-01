@@ -178,6 +178,7 @@ const es: TranslationRecord & Record<string, string> = {
 	"infoPanel.pushFailed": "Push falló: {error}",
 	"infoPanel.devServerFailed": "Error al iniciar el servidor de desarrollo: {error}",
 	"infoPanel.uncommittedChanges": "+{ins} / −{del}",
+	"infoPanel.refreshStatus": "Actualizar estado de la rama",
 
 	// Tmux hotkey hints
 	"tmux.hSplit": "h-div",
