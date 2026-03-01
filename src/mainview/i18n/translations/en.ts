@@ -175,6 +175,7 @@ const en = {
 	"infoPanel.pushFailed": "Push failed: {error}",
 	"infoPanel.devServerFailed": "Failed to start dev server: {error}",
 	"infoPanel.uncommittedChanges": "+{ins} / −{del}",
+	"infoPanel.refreshStatus": "Refresh branch status",
 
 	// Tmux hotkey hints
 	"tmux.hSplit": "h-split",

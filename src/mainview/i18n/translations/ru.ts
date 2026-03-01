@@ -179,6 +179,7 @@ const ru: TranslationRecord & Record<string, string> = {
 	"infoPanel.pushFailed": "Push не удался: {error}",
 	"infoPanel.devServerFailed": "Не удалось запустить dev-сервер: {error}",
 	"infoPanel.uncommittedChanges": "+{ins} / −{del}",
+	"infoPanel.refreshStatus": "Обновить статус ветки",
 
 	// Tmux hotkey hints
 	"tmux.hSplit": "гориз.",

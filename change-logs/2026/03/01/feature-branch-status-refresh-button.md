@@ -1,0 +1,1 @@
+Add manual refresh button and faster polling for branch status. A small icon button now appears next to the rebase/push/merge buttons to trigger an instant status refresh. The polling interval was reduced from 30s to 15s.
