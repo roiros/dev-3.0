@@ -225,6 +225,23 @@ const ru: TranslationRecord & Record<string, string> = {
 	"changelog.docs": "документация",
 	"changelog.chore": "служебное",
 
+	// Tmux Session Manager
+	"tmuxSessions.title": "Сессии tmux",
+	"tmuxSessions.empty": "Нет активных сессий dev3",
+	"tmuxSessions.sessionCount_one": "{count} сессия",
+	"tmuxSessions.sessionCount_few": "{count} сессии",
+	"tmuxSessions.sessionCount_many": "{count} сессий",
+	"tmuxSessions.sessionCount_other": "{count} сессий",
+	"tmuxSessions.copied": "Скопировано!",
+	"tmuxSessions.kill": "Убить",
+	"tmuxSessions.killConfirmTitle": "Убить сессию tmux",
+	"tmuxSessions.killConfirmMessage": "Убить сессию «{name}»? Все процессы в ней будут завершены.",
+	"tmuxSessions.killFailed": "Не удалось убить сессию: {error}",
+	"tmuxSessions.cleanup": "очистка",
+	"tmuxSessions.killAll": "Убить все",
+	"tmuxSessions.killAllConfirmTitle": "Убить все сессии tmux",
+	"tmuxSessions.killAllConfirmMessage": "Убить все {count} сессий dev3? Все процессы будут завершены.",
+
 	// Status labels
 	"status.todo": "К выполнению",
 	"status.inProgress": "В работе",

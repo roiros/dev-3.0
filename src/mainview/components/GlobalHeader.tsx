@@ -2,6 +2,7 @@ import { Fragment } from "react";
 import type { Project, Task } from "../../shared/types";
 import type { Route } from "../state";
 import { useT } from "../i18n";
+import TmuxSessionManager from "./TmuxSessionManager";
 
 interface GlobalHeaderProps {
 	route: Route;
@@ -107,8 +108,11 @@ function GlobalHeader({ route, projects, tasks, navigate }: GlobalHeaderProps) {
 				))}
 			</div>
 
-			{/* Actions — changelog, project settings, global settings */}
+			{/* Actions — tmux sessions, changelog, project settings, global settings */}
 			<div className="flex items-center gap-1.5 flex-shrink-0">
+				{/* Tmux Session Manager */}
+				<TmuxSessionManager />
+
 				{/* Changelog */}
 				{route.screen !== "changelog" && (
 					<button

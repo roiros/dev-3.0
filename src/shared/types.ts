@@ -195,6 +195,16 @@ export interface BranchStatus {
 	deletions: number;
 }
 
+// ---- Tmux sessions ----
+
+export interface TmuxSessionInfo {
+	name: string;
+	cwd: string;
+	createdAt: number;
+	windowCount: number;
+	isCleanup: boolean;
+}
+
 // ---- System requirements ----
 
 export interface RequirementCheckResult {
@@ -340,6 +350,14 @@ export type AppRPCSchema = {
 			getChangelogs: {
 				params: void;
 				response: ChangelogEntry[];
+			};
+			listTmuxSessions: {
+				params: void;
+				response: TmuxSessionInfo[];
+			};
+			killTmuxSession: {
+				params: { sessionName: string };
+				response: void;
 			};
 		};
 		messages: {

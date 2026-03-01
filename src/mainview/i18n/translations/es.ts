@@ -224,6 +224,21 @@ const es: TranslationRecord & Record<string, string> = {
 	"changelog.docs": "docs",
 	"changelog.chore": "chore",
 
+	// Tmux Session Manager
+	"tmuxSessions.title": "Sesiones tmux",
+	"tmuxSessions.empty": "No hay sesiones dev3 activas",
+	"tmuxSessions.sessionCount_one": "{count} sesión",
+	"tmuxSessions.sessionCount_other": "{count} sesiones",
+	"tmuxSessions.copied": "¡Copiado!",
+	"tmuxSessions.kill": "Terminar",
+	"tmuxSessions.killConfirmTitle": "Terminar sesión tmux",
+	"tmuxSessions.killConfirmMessage": "¿Terminar sesión \"{name}\"? Esto cerrará todos los procesos.",
+	"tmuxSessions.killFailed": "Error al terminar sesión: {error}",
+	"tmuxSessions.cleanup": "limpieza",
+	"tmuxSessions.killAll": "Terminar todas",
+	"tmuxSessions.killAllConfirmTitle": "Terminar todas las sesiones tmux",
+	"tmuxSessions.killAllConfirmMessage": "¿Terminar las {count} sesiones dev3? Esto cerrará todos los procesos.",
+
 	// Status labels
 	"status.todo": "Por hacer",
 	"status.inProgress": "En progreso",

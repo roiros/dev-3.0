@@ -221,6 +221,21 @@ const en = {
 	"changelog.docs": "docs",
 	"changelog.chore": "chore",
 
+	// Tmux Session Manager
+	"tmuxSessions.title": "tmux Sessions",
+	"tmuxSessions.empty": "No active dev3 sessions",
+	"tmuxSessions.sessionCount_one": "{count} session",
+	"tmuxSessions.sessionCount_other": "{count} sessions",
+	"tmuxSessions.copied": "Copied!",
+	"tmuxSessions.kill": "Kill",
+	"tmuxSessions.killConfirmTitle": "Kill tmux session",
+	"tmuxSessions.killConfirmMessage": "Kill session \"{name}\"? This will terminate all processes in it.",
+	"tmuxSessions.killFailed": "Failed to kill session: {error}",
+	"tmuxSessions.cleanup": "cleanup",
+	"tmuxSessions.killAll": "Kill All",
+	"tmuxSessions.killAllConfirmTitle": "Kill all tmux sessions",
+	"tmuxSessions.killAllConfirmMessage": "Kill all {count} dev3 tmux sessions? This will terminate all processes in them.",
+
 	// Status labels
 	"status.todo": "To Do",
 	"status.inProgress": "In Progress",

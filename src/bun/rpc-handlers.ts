@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { Utils } from "electrobun/bun";
-import type { ChangelogEntry, CodingAgent, GlobalSettings, Project, RequirementCheckResult, Task, TaskStatus } from "../shared/types";
+import type { ChangelogEntry, CodingAgent, GlobalSettings, Project, RequirementCheckResult, Task, TaskStatus, TmuxSessionInfo } from "../shared/types";
 import { ACTIVE_STATUSES, titleFromDescription } from "../shared/types";
 import * as data from "./data";
 import * as git from "./git";
@@ -1138,6 +1138,59 @@ export const handlers = {
 		entries.sort((a, b) => b.date.localeCompare(a.date));
 		log.info("<- getChangelogs", { count: entries.length });
 		return entries;
+	},
+
+	async listTmuxSessions(): Promise<TmuxSessionInfo[]> {
+		log.info("→ listTmuxSessions");
+		const proc = spawn(
+			["tmux", "list-sessions", "-F", "#{session_name}|#{pane_current_path}|#{session_windows}|#{session_created}"],
+			{ stdout: "pipe", stderr: "pipe" },
+		);
+		const output = await new Response(proc.stdout).text();
+		const exitCode = await proc.exited;
+
+		if (exitCode !== 0) {
+			log.info("← listTmuxSessions (no tmux server or error)");
+			return [];
+		}
+
+		const sessions: TmuxSessionInfo[] = [];
+		for (const line of output.trim().split("\n")) {
+			if (!line) continue;
+			const [name, cwd, windowsStr, createdStr] = line.split("|");
+			if (!name.startsWith("dev3-")) continue;
+
+			sessions.push({
+				name,
+				cwd: cwd || "",
+				createdAt: parseInt(createdStr, 10) || 0,
+				windowCount: parseInt(windowsStr, 10) || 1,
+				isCleanup: name.startsWith("dev3-cl-"),
+			});
+		}
+
+		sessions.sort((a, b) => b.createdAt - a.createdAt);
+		log.info("← listTmuxSessions", { count: sessions.length });
+		return sessions;
+	},
+
+	async killTmuxSession(params: { sessionName: string }): Promise<void> {
+		log.info("→ killTmuxSession", { sessionName: params.sessionName });
+		if (!params.sessionName.startsWith("dev3-")) {
+			throw new Error("Can only kill dev3-* sessions");
+		}
+		const proc = spawn(
+			["tmux", "kill-session", "-t", params.sessionName],
+			{ stdout: "pipe", stderr: "pipe" },
+		);
+		const stderr = await new Response(proc.stderr).text();
+		const exitCode = await proc.exited;
+
+		if (exitCode !== 0) {
+			log.error("killTmuxSession failed", { sessionName: params.sessionName, stderr: stderr.trim() });
+			throw new Error(`Failed to kill session: ${stderr.trim()}`);
+		}
+		log.info("← killTmuxSession done", { sessionName: params.sessionName });
 	},
 
 	async checkSystemRequirements(): Promise<RequirementCheckResult[]> {

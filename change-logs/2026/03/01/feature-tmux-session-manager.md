@@ -1,0 +1,1 @@
+Added tmux session manager panel to the global header. Shows a count badge of active dev3-* tmux sessions and opens a popover listing all sessions with their working directory, a copyable attach command, and a force kill button with confirmation. Helps track and manage background tmux sessions that persist after the app closes.
