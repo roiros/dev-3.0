@@ -4,6 +4,20 @@ This file provides guidance to AI coding agents when working with code in this r
 
 > **Note:** `CLAUDE.md` is a symbolic link to this file (`AGENTS.md`). This is intentional — it ensures all agents (Claude Code, Cursor, Codex, etc.) read the same instructions regardless of which filename convention they follow. If you see both files changed in a diff, that's expected.
 
+## Language policy
+
+**All code-related content MUST be in English — no exceptions.**
+
+This applies to:
+- Commit messages
+- Changelog files (`change-logs/`)
+- Code comments and docstrings
+- Decision records (`decisions/`)
+- PR titles and descriptions
+- Any text written inside source files
+
+The user may communicate with agents in Russian, but everything written into the codebase or git history must be in English only.
+
 ## Multi-agent workflow
 
 Multiple AI agents may work on this project in parallel. Each agent MUST:
