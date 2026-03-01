@@ -1,0 +1,1 @@
+Fixed system requirements check for tmux (and any other tool) not finding binaries installed via Homebrew. The `checkSystemRequirements` handler was using `Bun.spawnSync` directly instead of the `spawnSync` wrapper from `spawn.ts`, which meant the child process inherited the minimal macOS .app PATH (`/usr/bin:/bin:/usr/sbin:/sbin`) instead of the user's full PATH.
