@@ -176,6 +176,7 @@ const es: TranslationRecord & Record<string, string> = {
 	"infoPanel.push": "Push",
 	"infoPanel.pushing": "Push...",
 	"infoPanel.pushFailed": "Push falló: {error}",
+	"infoPanel.devServerFailed": "Error al iniciar el servidor de desarrollo: {error}",
 	"infoPanel.uncommittedChanges": "+{ins} / −{del}",
 
 	// Tmux hotkey hints

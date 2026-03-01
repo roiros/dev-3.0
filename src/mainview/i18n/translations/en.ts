@@ -173,6 +173,7 @@ const en = {
 	"infoPanel.push": "Push",
 	"infoPanel.pushing": "Pushing...",
 	"infoPanel.pushFailed": "Push failed: {error}",
+	"infoPanel.devServerFailed": "Failed to start dev server: {error}",
 	"infoPanel.uncommittedChanges": "+{ins} / −{del}",
 
 	// Tmux hotkey hints

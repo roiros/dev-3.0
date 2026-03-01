@@ -1,0 +1,1 @@
+Fixed dev server button silently failing in production builds. Added try/catch with logging to the `runDevServer` backend handler (including stderr capture and exit code checks for the tmux spawn), and made the renderer's `handleDevServer` async with proper error handling that shows an alert on failure. Added `infoPanel.devServerFailed` i18n key in all 3 locales.

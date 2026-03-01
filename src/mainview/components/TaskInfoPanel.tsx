@@ -241,9 +241,12 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 	const isTaskActive = ACTIVE_STATUSES.includes(task.status);
 	const devServerDisabled = !hasDevScript || !isTaskActive;
 
-	function handleDevServer() {
-		if (!devServerDisabled) {
-			api.request.runDevServer({ taskId: task.id, projectId: project.id });
+	async function handleDevServer() {
+		if (devServerDisabled) return;
+		try {
+			await api.request.runDevServer({ taskId: task.id, projectId: project.id });
+		} catch (err) {
+			alert(t("infoPanel.devServerFailed", { error: String(err) }));
 		}
 	}
 
