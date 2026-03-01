@@ -1135,7 +1135,7 @@ export const handlers = {
 	async checkSystemRequirements(): Promise<RequirementCheckResult[]> {
 		log.info("-> checkSystemRequirements");
 		const results: RequirementCheckResult[] = SYSTEM_REQUIREMENTS.map((req) => {
-			const proc = Bun.spawnSync(["which", req.checkCommand]);
+			const proc = spawnSync(["which", req.checkCommand]);
 			const installed = proc.exitCode === 0;
 			log.info(`  ${req.id}: ${installed ? "found" : "NOT found"}`);
 			return {
