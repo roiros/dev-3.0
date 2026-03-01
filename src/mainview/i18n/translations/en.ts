@@ -198,6 +198,16 @@ const en = {
 	"update.laterBtn": "Later",
 	"update.errorTitle": "Update Check Failed",
 
+	// Requirements
+	"requirements.title": "System Requirements",
+	"requirements.subtitle": "The following tools must be installed to use dev-3.0",
+	"requirements.installed": "Installed",
+	"requirements.missing": "Not found",
+	"requirements.refresh": "Re-check",
+	"requirements.copied": "Copied!",
+	"requirements.installGit": "Install via Xcode CLI tools:",
+	"requirements.installTmux": "Install via Homebrew:",
+
 	// Status labels
 	"status.todo": "To Do",
 	"status.inProgress": "In Progress",

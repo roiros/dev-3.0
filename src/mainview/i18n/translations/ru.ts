@@ -202,6 +202,16 @@ const ru: TranslationRecord & Record<string, string> = {
 	"update.laterBtn": "Позже",
 	"update.errorTitle": "Ошибка проверки обновлений",
 
+	// Requirements
+	"requirements.title": "Системные требования",
+	"requirements.subtitle": "Для работы dev-3.0 необходимы следующие инструменты",
+	"requirements.installed": "Установлено",
+	"requirements.missing": "Не найдено",
+	"requirements.refresh": "Проверить снова",
+	"requirements.copied": "Скопировано!",
+	"requirements.installGit": "Установить через Xcode CLI tools:",
+	"requirements.installTmux": "Установить через Homebrew:",
+
 	// Status labels
 	"status.todo": "К выполнению",
 	"status.inProgress": "В работе",
