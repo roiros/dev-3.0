@@ -57,8 +57,19 @@ function killPortOwner(port: number) {
 	} catch {}
 }
 
+async function generateBuildInfo(): Promise<void> {
+	const result = Bun.spawnSync(["bun", "scripts/generate-build-info.ts"], {
+		stdio: ["inherit", "inherit", "inherit"],
+		cwd: projectRoot,
+	});
+	if (result.exitCode !== 0) {
+		warn("generate-build-info failed, continuing anyway...");
+	}
+}
+
 async function buildBun(): Promise<void> {
 	log("Building bun process...");
+	await generateBuildInfo();
 	const result = Bun.spawnSync(BUILD_CMD, {
 		stdio: ["inherit", "inherit", "inherit"],
 		cwd: projectRoot,
@@ -123,6 +134,7 @@ for (const dir of WATCH_DIRS) {
 		{ recursive: true },
 		(event: WatchEventType, filename: string | null) => {
 			if (!filename) return;
+			if (filename.endsWith(".generated.ts")) return;
 			scheduleRestart(`File changed: ${dir}/${filename}`);
 		},
 	);

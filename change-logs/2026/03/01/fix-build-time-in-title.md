@@ -1,0 +1,1 @@
+App title now shows the actual build time instead of the startup time. A prebuild script generates `src/shared/build-info.generated.ts` with the timestamp baked in at build time, so it stays constant across restarts.

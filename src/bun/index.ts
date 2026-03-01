@@ -14,6 +14,7 @@ import { DEV3_HOME } from "./paths";
 import { resolveShellPath } from "./shell-env";
 import { spawn } from "./spawn";
 import electrobunConfig from "../../electrobun.config";
+import { BUILD_TIME } from "../shared/build-info.generated";
 
 const log = createLogger("main");
 
@@ -65,7 +66,7 @@ const formatDateTime = (d: Date) => {
 
 const makeTitle = (dt: string) => `dev-3.0 v${APP_VERSION} [${dt}]`;
 
-let lastBuildTime = formatDateTime(new Date());
+let lastBuildTime = BUILD_TIME;
 
 log.info(`=== dev-3.0 starting [${lastBuildTime}] ===`);
 log.info("All data at", { dir: DEV3_HOME });
