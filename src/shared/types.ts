@@ -141,6 +141,20 @@ export interface GlobalSettings {
 	updateChannel: "stable" | "canary";
 }
 
+// ---- Labels ----
+
+export interface Label {
+	id: string;
+	name: string;
+	color: string; // hex color from LABEL_COLORS palette
+}
+
+export const LABEL_COLORS = [
+	"#ef4444", "#f97316", "#eab308", "#22c55e",
+	"#14b8a6", "#06b6d4", "#3b82f6", "#6366f1",
+	"#8b5cf6", "#ec4899", "#f43f5e", "#84cc16",
+] as const;
+
 export interface Project {
 	id: string;
 	name: string;
@@ -151,6 +165,7 @@ export interface Project {
 	defaultBaseBranch: string;
 	createdAt: string;
 	deleted?: boolean;
+	labels?: Label[];
 }
 
 export interface Task {
@@ -171,6 +186,7 @@ export interface Task {
 	updatedAt: string;
 	movedAt?: string;
 	tmuxSocket?: string | null;
+	labelIds?: string[];
 }
 
 /** Generate a short title from a description (first ~maxLen chars, word-boundary truncated). */
@@ -364,6 +380,22 @@ export type AppRPCSchema = {
 			killTmuxSession: {
 				params: { sessionName: string };
 				response: void;
+			};
+			createLabel: {
+				params: { projectId: string; name: string; color?: string };
+				response: Label;
+			};
+			updateLabel: {
+				params: { projectId: string; labelId: string; name?: string; color?: string };
+				response: Label;
+			};
+			deleteLabel: {
+				params: { projectId: string; labelId: string };
+				response: void;
+			};
+			setTaskLabels: {
+				params: { taskId: string; projectId: string; labelIds: string[] };
+				response: Task;
 			};
 		};
 		messages: {

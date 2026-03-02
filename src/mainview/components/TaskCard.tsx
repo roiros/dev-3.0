@@ -7,6 +7,8 @@ import { api } from "../rpc";
 import { useT, statusKey } from "../i18n";
 import { ansiToHtml } from "../utils/ansi-to-html";
 import { trackEvent } from "../analytics";
+import LabelChip from "./LabelChip";
+import LabelPicker from "./LabelPicker";
 
 interface TaskCardProps {
 	task: Task;
@@ -30,6 +32,8 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 	const [isEditing, setIsEditing] = useState(false);
 	const [editValue, setEditValue] = useState("");
 	const [saving, setSaving] = useState(false);
+	const [pickerOpen, setPickerOpen] = useState(false);
+	const pickerAnchorRef = useRef<HTMLButtonElement>(null);
 	const menuRef = useRef<HTMLDivElement>(null);
 	const triggerRef = useRef<HTMLButtonElement>(null);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -469,6 +473,56 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 					{task.title}
 				</div>
 			)}
+
+			{/* Label chips row */}
+			{(() => {
+				const projectLabels = project.labels ?? [];
+				const taskLabelIds = task.labelIds ?? [];
+				const assignedLabels = taskLabelIds
+					.map((id) => projectLabels.find((l) => l.id === id))
+					.filter(Boolean) as typeof projectLabels;
+
+				if (assignedLabels.length === 0 && projectLabels.length === 0) return null;
+
+				return (
+					<div className="flex items-center flex-wrap gap-1 mt-2 min-h-[20px]">
+						{assignedLabels.map((label) => (
+							<LabelChip
+								key={label.id}
+								label={label}
+								size="xs"
+								onClick={(e) => {
+									e.stopPropagation();
+									setPickerOpen(true);
+								}}
+							/>
+						))}
+						<button
+							ref={pickerAnchorRef}
+							type="button"
+							onClick={(e) => {
+								e.stopPropagation();
+								setPickerOpen(true);
+							}}
+							className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded-full bg-fg/8 text-fg-3 hover:bg-fg/15 hover:text-fg transition-all flex-shrink-0"
+							title="Add label"
+						>
+							<svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+								<path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+							</svg>
+						</button>
+						{pickerOpen && pickerAnchorRef.current && (
+							<LabelPicker
+								project={project}
+								task={task}
+								dispatch={dispatch}
+								onClose={() => setPickerOpen(false)}
+								anchorEl={pickerAnchorRef.current}
+							/>
+						)}
+					</div>
+				);
+			})()}
 
 			{/* Bottom row */}
 			<div className="flex items-center justify-between mt-3 gap-2">
