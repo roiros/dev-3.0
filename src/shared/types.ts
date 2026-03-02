@@ -170,6 +170,7 @@ export interface Task {
 	updatedAt: string;
 	movedAt?: string;
 	tmuxSocket?: string | null;
+	labels: string[];
 }
 
 /** Generate a short title from a description (first ~maxLen chars, word-boundary truncated). */
@@ -268,7 +269,11 @@ export type AppRPCSchema = {
 				response: Task[];
 			};
 			createTask: {
-				params: { projectId: string; description: string; status?: TaskStatus };
+				params: { projectId: string; description: string; status?: TaskStatus; labels?: string[] };
+				response: Task;
+			};
+			setTaskLabels: {
+				params: { taskId: string; projectId: string; labels: string[] };
 				response: Task;
 			};
 			moveTask: {

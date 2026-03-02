@@ -1,0 +1,1 @@
+Add free-form labels (tags) to tasks. Labels can be assigned when creating a task, via a tag button on the task card, or in edit mode. Colors are auto-derived from the label name for visual distinction. A filter bar above the Kanban board appears when any task has labels and allows filtering by one or more labels (OR logic).

@@ -16,9 +16,10 @@ interface KanbanBoardProps {
 	dispatch: Dispatch<AppAction>;
 	navigate: (route: Route) => void;
 	bellCounts: Map<string, number>;
+	activeLabels?: string[];
 }
 
-function KanbanBoard({ project, tasks, dispatch, navigate, bellCounts }: KanbanBoardProps) {
+function KanbanBoard({ project, tasks, dispatch, navigate, bellCounts, activeLabels = [] }: KanbanBoardProps) {
 	const t = useT();
 	const [showCreateModal, setShowCreateModal] = useState(false);
 	const [agents, setAgents] = useState<CodingAgent[]>([]);
@@ -84,11 +85,18 @@ function KanbanBoard({ project, tasks, dispatch, navigate, bellCounts }: KanbanB
 		}
 	}
 
+	const allProjectLabels = [...new Set(tasks.flatMap((t) => t.labels ?? []))];
+
+	const visibleTasks =
+		activeLabels.length > 0
+			? tasks.filter((t) => t.labels?.some((l) => activeLabels.includes(l)))
+			: tasks;
+
 	const tasksByStatus = new Map<TaskStatus, Task[]>();
 	for (const status of ALL_STATUSES) {
 		tasksByStatus.set(status, []);
 	}
-	for (const task of tasks) {
+	for (const task of visibleTasks) {
 		tasksByStatus.get(task.status)?.push(task);
 	}
 
@@ -122,6 +130,7 @@ function KanbanBoard({ project, tasks, dispatch, navigate, bellCounts }: KanbanB
 						onDragStart={handleDragStart}
 					onTaskMoved={recordMove}
 						bellCounts={bellCounts}
+						allProjectLabels={allProjectLabels}
 					/>
 				))}
 			</div>
@@ -131,6 +140,7 @@ function KanbanBoard({ project, tasks, dispatch, navigate, bellCounts }: KanbanB
 					project={project}
 					dispatch={dispatch}
 					onClose={() => setShowCreateModal(false)}
+					allProjectLabels={allProjectLabels}
 				/>
 			)}
 

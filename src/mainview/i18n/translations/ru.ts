@@ -244,6 +244,13 @@ const ru: TranslationRecord & Record<string, string> = {
 	"tmuxSessions.killAllConfirmTitle": "Убить все сессии tmux",
 	"tmuxSessions.killAllConfirmMessage": "Убить все {count} сессий dev3? Все процессы будут завершены.",
 
+	// Labels
+	"labels.filter": "Фильтр:",
+	"labels.clearFilter": "Сбросить",
+	"labels.addLabel": "Добавить метку...",
+	"labels.noLabels": "Нет меток",
+	"labels.labels": "Метки",
+
 	// Status labels
 	"status.todo": "К выполнению",
 	"status.inProgress": "В работе",

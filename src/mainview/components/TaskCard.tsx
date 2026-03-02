@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useLayoutEffect, useCallback, type Dispatch } from "react";
+import React, { useState, useRef, useEffect, useLayoutEffect, useCallback, type Dispatch } from "react";
 import { createPortal } from "react-dom";
 import type { CodingAgent, Project, Task, TaskStatus } from "../../shared/types";
 import { ACTIVE_STATUSES, STATUS_COLORS, getAllowedTransitions } from "../../shared/types";
@@ -7,6 +7,8 @@ import { api } from "../rpc";
 import { useT, statusKey } from "../i18n";
 import { ansiToHtml } from "../utils/ansi-to-html";
 import { trackEvent } from "../analytics";
+import { labelColor } from "../utils/label-color";
+import LabelPicker from "./LabelPicker";
 
 interface TaskCardProps {
 	task: Task;
@@ -18,9 +20,10 @@ interface TaskCardProps {
 	onDragStart: (taskId: string) => void;
 	onTaskMoved: (taskId: string) => void;
 	bellCount?: number;
+	allProjectLabels: string[];
 }
 
-function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants, onDragStart: onDragStartProp, onTaskMoved, bellCount = 0 }: TaskCardProps) {
+function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants, onDragStart: onDragStartProp, onTaskMoved, bellCount = 0, allProjectLabels }: TaskCardProps) {
 	const t = useT();
 	const [moving, setMoving] = useState(false);
 	const [menuOpen, setMenuOpen] = useState(false);
@@ -29,9 +32,11 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 	const [isEditing, setIsEditing] = useState(false);
 	const [editValue, setEditValue] = useState("");
 	const [saving, setSaving] = useState(false);
+	const [labelPickerOpen, setLabelPickerOpen] = useState(false);
 	const menuRef = useRef<HTMLDivElement>(null);
 	const triggerRef = useRef<HTMLButtonElement>(null);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
+	const labelBtnRef = useRef<HTMLButtonElement>(null);
 
 	// Terminal preview state
 	const [previewOpen, setPreviewOpen] = useState(false);
@@ -229,6 +234,19 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 
 	function handleEditCancel() {
 		setIsEditing(false);
+	}
+
+	async function handleLabelSave(newLabels: string[]) {
+		try {
+			const updated = await api.request.setTaskLabels({
+				taskId: task.id,
+				projectId: project.id,
+				labels: newLabels,
+			});
+			dispatch({ type: "updateTask", task: updated });
+		} catch (err) {
+			alert(t("task.failedEdit", { error: String(err) }));
+		}
 	}
 
 	function handleEditKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -464,6 +482,65 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 				</div>
 			)}
 
+			{/* Label chips — shown when not editing */}
+			{!isEditing && task.labels && task.labels.length > 0 && (
+				<div className="flex flex-wrap gap-1 mt-2">
+					{task.labels.map((label) => {
+						const c = labelColor(label);
+						return (
+							<span
+								key={label}
+								className="text-[10px] font-medium px-1.5 py-0.5 rounded-full border"
+								style={{ color: c, borderColor: c + "50", backgroundColor: c + "18" }}
+							>
+								{label}
+							</span>
+						);
+					})}
+				</div>
+			)}
+
+			{/* Labels in edit mode */}
+			{isEditing && (
+				<div className="mt-2" onClick={(e) => e.stopPropagation()}>
+					<div className="flex flex-wrap gap-1 items-center">
+						{task.labels.map((label) => {
+							const c = labelColor(label);
+							return (
+								<span
+									key={label}
+									className="flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full border cursor-pointer hover:opacity-70"
+									style={{ color: c, borderColor: c + "50", backgroundColor: c + "18" }}
+									onClick={() => handleLabelSave(task.labels.filter((l) => l !== label))}
+									title="Remove"
+								>
+									{label}
+									<svg width="8" height="8" viewBox="0 0 8 8" fill="none" style={{ flexShrink: 0 }}>
+										<path d="M1 1l6 6M7 1L1 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+									</svg>
+								</span>
+							);
+						})}
+						<button
+							ref={labelBtnRef}
+							onClick={() => setLabelPickerOpen(true)}
+							className="text-[10px] px-1.5 py-0.5 rounded-full border border-dashed border-edge text-fg-muted hover:border-accent/50 hover:text-accent transition-colors"
+						>
+							+ label
+						</button>
+					</div>
+					{labelPickerOpen && (
+						<LabelPicker
+							currentLabels={task.labels}
+							allProjectLabels={allProjectLabels}
+							anchorRef={labelBtnRef as React.RefObject<HTMLElement>}
+							onSave={(newLabels) => handleLabelSave(newLabels)}
+							onClose={() => setLabelPickerOpen(false)}
+						/>
+					)}
+				</div>
+			)}
+
 			{/* Bottom row */}
 			<div className="flex items-center justify-between mt-3 gap-2">
 				{/* Status dropdown trigger */}
@@ -483,23 +560,50 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 				</button>
 
 				{/* Right side actions */}
-				{isTodo ? (
-					/* Run button for TODO cards */
-					<button
-						onClick={(e) => {
-							e.stopPropagation();
-							onLaunchVariants(task, "in-progress");
-						}}
-						className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-500 text-white shadow-sm shadow-green-900/30 transition-colors"
-						title={t("task.run")}
-						disabled={moving}
-					>
-						<svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
-							<path d="M8 5v14l11-7z" />
-						</svg>
-						{t("task.run")}
-					</button>
-				) : null}
+				<div className="flex items-center gap-1">
+					{/* Tag/label button — visible on hover */}
+					{!isEditing && (
+						<>
+							<button
+								ref={labelBtnRef}
+								onClick={(e) => { e.stopPropagation(); setLabelPickerOpen((v) => !v); }}
+								className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded-md text-fg-3 hover:text-accent hover:bg-accent/10 transition-all"
+								title={t("labels.labels")}
+								disabled={moving}
+							>
+								<svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+									<path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+								</svg>
+							</button>
+							{labelPickerOpen && (
+								<LabelPicker
+									currentLabels={task.labels}
+									allProjectLabels={allProjectLabels}
+									anchorRef={labelBtnRef as React.RefObject<HTMLElement>}
+									onSave={(newLabels) => handleLabelSave(newLabels)}
+									onClose={() => setLabelPickerOpen(false)}
+								/>
+							)}
+						</>
+					)}
+					{isTodo ? (
+						/* Run button for TODO cards */
+						<button
+							onClick={(e) => {
+								e.stopPropagation();
+								onLaunchVariants(task, "in-progress");
+							}}
+							className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-500 text-white shadow-sm shadow-green-900/30 transition-colors"
+							title={t("task.run")}
+							disabled={moving}
+						>
+							<svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+								<path d="M8 5v14l11-7z" />
+							</svg>
+							{t("task.run")}
+						</button>
+					) : null}
+				</div>
 			</div>
 
 			{/* Status dropdown menu — portal + smart viewport clamping */}

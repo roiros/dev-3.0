@@ -129,6 +129,7 @@ export async function loadTasks(project: Project): Promise<Task[]> {
 			if ((task as any).variantIndex === undefined) task.variantIndex = null;
 			if ((task as any).agentId === undefined) task.agentId = null;
 			if ((task as any).configId === undefined) task.configId = null;
+			if ((task as any).labels === undefined) task.labels = [];
 		}
 
 		// Backfill seq for tasks created before seq existed
@@ -182,7 +183,7 @@ export async function addTask(
 	project: Project,
 	description: string,
 	status: TaskStatus = "todo",
-	extras?: { groupId?: string; variantIndex?: number; agentId?: string | null; configId?: string | null; seq?: number },
+	extras?: { groupId?: string; variantIndex?: number; agentId?: string | null; configId?: string | null; seq?: number; labels?: string[] },
 ): Promise<Task> {
 	const title = titleFromDescription(description);
 	log.info("Creating task", { projectId: project.id, title, status });
@@ -205,6 +206,7 @@ export async function addTask(
 		createdAt: now,
 		updatedAt: now,
 		tmuxSocket: "dev3",
+		labels: extras?.labels ?? [],
 	};
 	tasks.push(task);
 	await saveTasks(project, tasks);

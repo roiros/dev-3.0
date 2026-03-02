@@ -443,11 +443,12 @@ export const handlers = {
 		projectId: string;
 		description: string;
 		status?: TaskStatus;
+		labels?: string[];
 	}): Promise<Task> {
 		log.info("→ createTask", params);
 		const project = await data.getProject(params.projectId);
 		const status = params.status || "todo";
-		const task = await data.addTask(project, params.description, status);
+		const task = await data.addTask(project, params.description, status, { labels: params.labels ?? [] });
 
 		// If created directly into an active status, set up worktree + PTY
 		if (isActive(status)) {
@@ -646,6 +647,14 @@ export const handlers = {
 			title,
 		});
 		log.info("← editTask done", { taskId: task.id });
+		return updated;
+	},
+
+	async setTaskLabels(params: { taskId: string; projectId: string; labels: string[] }): Promise<Task> {
+		log.info("→ setTaskLabels", { taskId: params.taskId, labels: params.labels });
+		const project = await data.getProject(params.projectId);
+		const updated = await data.updateTask(project, params.taskId, { labels: params.labels });
+		log.info("← setTaskLabels done", { taskId: params.taskId });
 		return updated;
 	},
 

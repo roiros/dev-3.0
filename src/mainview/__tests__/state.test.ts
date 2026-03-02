@@ -27,6 +27,7 @@ const mockTask: Task = {
 	variantIndex: null,
 	agentId: null,
 	configId: null,
+	labels: [],
 	createdAt: "2025-01-01T00:00:00Z",
 	updatedAt: "2025-01-01T00:00:00Z",
 };

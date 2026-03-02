@@ -52,6 +52,7 @@ function makeTask(overrides?: Partial<Task>): Task {
 		variantIndex: null,
 		agentId: null,
 		configId: null,
+		labels: [],
 		createdAt: "2025-01-01T00:00:00Z",
 		updatedAt: "2025-01-01T00:00:00Z",
 		...overrides,
@@ -70,6 +71,7 @@ function renderCard(task: Task) {
 				onLaunchVariants={vi.fn()}
 				onDragStart={vi.fn()}
 				onTaskMoved={vi.fn()}
+				allProjectLabels={[]}
 			/>
 		</I18nProvider>,
 	);

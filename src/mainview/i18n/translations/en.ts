@@ -238,6 +238,13 @@ const en = {
 	"tmuxSessions.killAllConfirmTitle": "Kill all tmux sessions",
 	"tmuxSessions.killAllConfirmMessage": "Kill all {count} dev3 tmux sessions? This will terminate all processes in them.",
 
+	// Labels
+	"labels.filter": "Filter:",
+	"labels.clearFilter": "Clear",
+	"labels.addLabel": "Add label...",
+	"labels.noLabels": "No labels",
+	"labels.labels": "Labels",
+
 	// Status labels
 	"status.todo": "To Do",
 	"status.inProgress": "In Progress",
