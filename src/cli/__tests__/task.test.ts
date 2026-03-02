@@ -335,10 +335,10 @@ describe("task move", () => {
 	});
 
 	it("auto-detects projectId from context", async () => {
-		const moved = { ...FAKE_TASK, status: "completed" as const };
+		const moved = { ...FAKE_TASK, status: "review-by-user" as const };
 		mockSend.mockResolvedValue(okResp(moved));
 
-		await handleTask("move", args(["aaaaaaaa"], { status: "completed" }), SOCKET, CTX);
+		await handleTask("move", args(["aaaaaaaa"], { status: "review-by-user" }), SOCKET, CTX);
 
 		const params = mockSend.mock.calls[0]![2]!;
 		expect(params.projectId).toBe(CTX.projectId);
@@ -372,22 +372,39 @@ describe("task move", () => {
 		).rejects.toThrow("EXIT_3");
 	});
 
+	it("blocks completed status (destroys worktree)", async () => {
+		await expect(
+			handleTask("move", args(["aaaaaaaa"], { status: "completed" }), SOCKET, null),
+		).rejects.toThrow("EXIT_1");
+		expect(stderrOutput).toContain("Cannot move to");
+		expect(stderrOutput).toContain("destroys the worktree");
+		expect(mockSend).not.toHaveBeenCalled();
+	});
+
+	it("blocks cancelled status (destroys worktree)", async () => {
+		await expect(
+			handleTask("move", args(["aaaaaaaa"], { status: "cancelled" }), SOCKET, null),
+		).rejects.toThrow("EXIT_1");
+		expect(stderrOutput).toContain("Cannot move to");
+		expect(mockSend).not.toHaveBeenCalled();
+	});
+
 	it("exits on server error (e.g. invalid transition)", async () => {
 		mockSend.mockResolvedValue(errResp("Invalid status transition"));
 
 		await expect(
-			handleTask("move", args(["aaaaaaaa"], { status: "completed" }), SOCKET, null),
+			handleTask("move", args(["aaaaaaaa"], { status: "todo" }), SOCKET, null),
 		).rejects.toThrow("EXIT_1");
 		expect(stderrOutput).toContain("Invalid status transition");
 	});
 
 	it("prints arrow notation with status label", async () => {
-		const moved = { ...FAKE_TASK, status: "completed" as const };
+		const moved = { ...FAKE_TASK, status: "review-by-ai" as const };
 		mockSend.mockResolvedValue(okResp(moved));
 
-		await handleTask("move", args(["aaaaaaaa"], { status: "completed" }), SOCKET, null);
+		await handleTask("move", args(["aaaaaaaa"], { status: "review-by-ai" }), SOCKET, null);
 
-		expect(stdoutOutput).toMatch(/→.*Completed/);
+		expect(stdoutOutput).toMatch(/→.*Review by AI/);
 	});
 });
 

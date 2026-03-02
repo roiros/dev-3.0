@@ -6,32 +6,67 @@ import { handleTasks } from "./commands/tasks";
 import { handleTask } from "./commands/task";
 import { handleCurrent } from "./commands/current";
 
-const HELP = `dev3 — CLI for dev-3.0 project manager
+const HELP = `dev3 — control the dev-3.0 Kanban UI from the terminal
 
-Usage:
-  dev3 <command> <subcommand> [options]
+You are running inside a dev-3.0 managed worktree. This CLI lets you
+communicate with the desktop app: update your task status, change the
+title, create follow-up tasks, and more. Changes appear in the Kanban
+board instantly.
 
-Commands:
-  current                                Show current project/task context
-  projects list                          List all projects
-  tasks list [--project <id>] [--status] List tasks in a project
-  task show [<id>] [--project <id>]      Show task details
-  task create --project <id> --title "…" Create a new task
-  task update [<id>] --title "…"         Update task title/description
-  task move [<id>] --status <status>     Change task status
+When run from a worktree, --project and task <id> are auto-detected.
+You almost never need to specify them explicitly.
 
-Statuses:
-  todo, in-progress, user-questions, review-by-ai,
-  review-by-user, completed, cancelled
+━━━ Quick start (run these first) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Options:
-  --project <id>  Specify project (auto-detected from worktree)
-  --help          Show this help message
-  --version       Show version
+  dev3 current                     Show your current project, task, and status
+  dev3 task show                   Show full details of your current task
 
-When run from inside a dev3 worktree, --project and task <id>
-are auto-detected from the .dev3-marker file or worktree path.
+━━━ Update your task ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  dev3 task move --status review-by-ai
+      Signal that your work is done and ready for AI review.
+
+  dev3 task move --status user-questions
+      You have questions for the user / need human input.
+
+  dev3 task update --title "Fix auth race condition"
+      Change the task title (shown on the Kanban card).
+
+  dev3 task update --description "Refactored the login flow to..."
+      Set a longer description (title auto-generated if omitted).
+
+  dev3 task update --title "Fix auth" --description "Details here..."
+      Update both at once.
+
+━━━ Create follow-up tasks ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  dev3 task create --title "Add unit tests for auth module"
+      Create a new task in To Do (same project, auto-detected).
+
+━━━ Browse ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  dev3 tasks list                  List all tasks in your project
+  dev3 tasks list --status todo    Filter by status
+  dev3 projects list               List all projects
+
+━━━ Allowed statuses for "task move" ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  todo              Move back to backlog
+  in-progress       Actively working on it
+  user-questions    Need human input / blocked on a question
+  review-by-ai      Done, ready for automated review
+  review-by-user    Done, ready for human review
+
+  Note: "completed" and "cancelled" are not available via CLI because
+  they destroy the worktree and terminal session.
+
+━━━ Options ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  --project <id>    Override auto-detected project
+  --help            Show this help
+  --version         Show CLI version
 `;
+
 
 async function main(): Promise<void> {
 	const rawArgs = process.argv.slice(2);

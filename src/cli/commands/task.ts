@@ -1,9 +1,14 @@
-import type { Task } from "../../shared/types";
+import type { Task, TaskStatus } from "../../shared/types";
 import { STATUS_LABELS, ALL_STATUSES } from "../../shared/types";
 import { sendRequest } from "../socket-client";
 import { printDetail, exitError, exitUsage } from "../output";
 import type { ParsedArgs } from "../args";
 import type { CliContext } from "../context";
+
+// Statuses that destroy the worktree + terminal are forbidden via CLI.
+// An agent running inside a worktree must not be able to kill its own session.
+const DESTRUCTIVE_STATUSES: TaskStatus[] = ["completed", "cancelled"];
+const CLI_ALLOWED_STATUSES = ALL_STATUSES.filter((s) => !DESTRUCTIVE_STATUSES.includes(s));
 
 function formatDate(iso: string): string {
 	const d = new Date(iso);
@@ -110,7 +115,13 @@ async function moveTask(args: ParsedArgs, socketPath: string, context: CliContex
 
 	const newStatus = args.flags.status;
 	if (!newStatus) {
-		exitUsage(`--status is required. Valid: ${ALL_STATUSES.join(", ")}`);
+		exitUsage(`--status is required. Valid: ${CLI_ALLOWED_STATUSES.join(", ")}`);
+	}
+	if (DESTRUCTIVE_STATUSES.includes(newStatus as TaskStatus)) {
+		exitError(
+			`Cannot move to "${newStatus}" via CLI`,
+			`This status destroys the worktree and terminal session.\nUse the desktop app UI to mark tasks as ${newStatus}.`,
+		);
 	}
 
 	const params: Record<string, unknown> = { taskId, newStatus };
