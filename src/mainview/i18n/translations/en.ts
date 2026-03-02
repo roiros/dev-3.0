@@ -240,6 +240,7 @@ const en = {
 	"tmuxSessions.killAll": "Kill All",
 	"tmuxSessions.killAllConfirmTitle": "Kill all tmux sessions",
 	"tmuxSessions.killAllConfirmMessage": "Kill all {count} dev3 tmux sessions? This will terminate all processes in them.",
+	"tmuxSessions.refresh": "Refresh",
 
 	// Labels
 	"labels.filterTitle": "Labels",
