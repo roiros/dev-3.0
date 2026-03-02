@@ -5,6 +5,7 @@ import { api } from "../rpc";
 import { useT } from "../i18n";
 import KanbanBoard from "./KanbanBoard";
 import TaskTerminal from "./TaskTerminal";
+import TaskInfoPanel from "./TaskInfoPanel";
 import SplitLayout from "./SplitLayout";
 
 interface ProjectViewProps {
@@ -49,29 +50,34 @@ function ProjectView({
 	}
 
 	if (activeTaskId) {
+		const activeTask = tasks.find((t) => t.id === activeTaskId);
 		return (
-			<SplitLayout
-				kanbanContent={
-					<KanbanBoard
-						project={project}
-						tasks={tasks}
-						dispatch={dispatch}
-						navigate={navigate}
-						bellCounts={bellCounts}
-						activeTaskId={activeTaskId}
-					/>
-				}
-				terminalContent={
-					<TaskTerminal
-						projectId={projectId}
-						taskId={activeTaskId}
-						tasks={tasks}
-						projects={projects}
-						navigate={navigate}
-						dispatch={dispatch}
-					/>
-				}
-			/>
+			<div className="flex-1 min-h-0 flex flex-col">
+				{activeTask && <TaskInfoPanel task={activeTask} project={project} dispatch={dispatch} navigate={navigate} />}
+				<SplitLayout
+					kanbanContent={
+						<KanbanBoard
+							project={project}
+							tasks={tasks}
+							dispatch={dispatch}
+							navigate={navigate}
+							bellCounts={bellCounts}
+							activeTaskId={activeTaskId}
+						/>
+					}
+					terminalContent={
+						<TaskTerminal
+							projectId={projectId}
+							taskId={activeTaskId}
+							tasks={tasks}
+							projects={projects}
+							navigate={navigate}
+							dispatch={dispatch}
+							hideInfoPanel
+						/>
+					}
+				/>
+			</div>
 		);
 	}
 
