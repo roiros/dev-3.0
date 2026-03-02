@@ -147,23 +147,25 @@ jobs:
           path: ~/.bun-x64
           key: bun-x64-binary-1.3.10
 
-      - name: Restore x64 node_modules cache
-        id: cache-x64-deps
+      # Vite (via rollup) requires arm64 native binaries even on the x64 runner,
+      # because system Node.js is arm64. Install arm64 deps first for vite build.
+      - name: Restore arm64 node_modules cache (for vite)
+        id: cache-arm64-deps-x64job
         uses: actions/cache/restore@v4
         with:
           path: ./node_modules
-          key: bun-deps-x64-${{ hashFiles('bun.lockb') }}
+          key: bun-deps-arm64-${{ hashFiles('bun.lockb') }}
 
-      - name: Install x64 dependencies (Rosetta)
-        if: steps.cache-x64-deps.outputs.cache-hit != 'true'
-        run: arch -x86_64 $HOME/.bun-x64/bin/bun install
+      - name: Install arm64 dependencies (for vite)
+        if: steps.cache-arm64-deps-x64job.outputs.cache-hit != 'true'
+        run: bun install
 
-      - name: Save x64 node_modules cache
-        if: steps.cache-x64-deps.outputs.cache-hit != 'true'
+      - name: Save arm64 node_modules cache
+        if: steps.cache-arm64-deps-x64job.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: ./node_modules
-          key: bun-deps-x64-${{ hashFiles('bun.lockb') }}
+          key: bun-deps-arm64-${{ hashFiles('bun.lockb') }}
 
       - name: Import code signing certificate
         env:
@@ -191,7 +193,34 @@ jobs:
       - name: Clean build directory
         run: rm -rf ./build ./artifacts
 
-      - name: Build x64 release (Rosetta, signed + notarized)
+      - name: Build vite (arm64 node_modules)
+        run: |
+          bun scripts/generate-build-info.ts
+          bun scripts/generate-changelog.ts
+          bunx vite build
+
+      - name: Switch to x64 node_modules for electrobun
+        run: rm -rf ./node_modules
+
+      - name: Restore x64 node_modules cache
+        id: cache-x64-deps
+        uses: actions/cache/restore@v4
+        with:
+          path: ./node_modules
+          key: bun-deps-x64-${{ hashFiles('bun.lockb') }}
+
+      - name: Install x64 dependencies (Rosetta)
+        if: steps.cache-x64-deps.outputs.cache-hit != 'true'
+        run: arch -x86_64 $HOME/.bun-x64/bin/bun install
+
+      - name: Save x64 node_modules cache
+        if: steps.cache-x64-deps.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ./node_modules
+          key: bun-deps-x64-${{ hashFiles('bun.lockb') }}
+
+      - name: Build electrobun x64 (Rosetta, signed + notarized)
         env:
           ELECTROBUN_DEVELOPER_ID: ${{ secrets.ELECTROBUN_DEVELOPER_ID }}
           ELECTROBUN_TEAMID: ${{ secrets.ELECTROBUN_TEAMID }}
@@ -200,9 +229,6 @@ jobs:
           COPYFILE_DISABLE: "1"
           COPY_EXTENDED_ATTRIBUTES_DISABLE: "1"
         run: |
-          bun scripts/generate-build-info.ts
-          bun scripts/generate-changelog.ts
-          arch -x86_64 $HOME/.bun-x64/bin/bunx vite build
           arch -x86_64 $HOME/.bun-x64/bin/bunx electrobun build --env=stable || echo "::warning::electrobun build exited with $? (known post-tar codesign bug, recovering artifacts)"
 
       - name: Debug x64 build output
