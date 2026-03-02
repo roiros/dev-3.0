@@ -1093,7 +1093,14 @@ export const handlers = {
 
 		const changeLogsDir = join(root, "change-logs");
 		if (!existsSync(changeLogsDir)) {
-			log.info("<- getChangelogs (no change-logs dir)");
+			// Production fallback: read baked JSON from the app bundle
+			const jsonPath = join(import.meta.dir, "..", "changelog.json");
+			if (existsSync(jsonPath)) {
+				const entries: ChangelogEntry[] = JSON.parse(await Bun.file(jsonPath).text());
+				log.info("<- getChangelogs (from bundled JSON)", { count: entries.length });
+				return entries;
+			}
+			log.info("<- getChangelogs (no change-logs dir, no bundled JSON)");
 			return [];
 		}
 
