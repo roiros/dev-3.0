@@ -1,0 +1,1 @@
+Added task notes — a per-task scratchpad for markdown notes. Each note has a source (user or AI), timestamps, and auto-saves as you type. Notes are stored inline in tasks.json and accessible from the expanded TaskInfoPanel.
