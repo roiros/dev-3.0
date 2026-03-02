@@ -10,7 +10,6 @@ import * as updater from "./updater";
 import { loadSettings, saveSettings } from "./settings";
 import { createLogger } from "./logger";
 import { spawn, spawnSync } from "./spawn";
-import { CHANGELOG_ENTRIES } from "../shared/changelog.generated";
 
 const log = createLogger("rpc");
 
@@ -1094,8 +1093,15 @@ export const handlers = {
 
 		const changeLogsDir = join(root, "change-logs");
 		if (!existsSync(changeLogsDir)) {
-			log.info("<- getChangelogs (no change-logs dir, using built-in data)", { count: CHANGELOG_ENTRIES.length });
-			return CHANGELOG_ENTRIES;
+			// Production fallback: read baked JSON from the app bundle
+			const jsonPath = join(import.meta.dir, "..", "changelog.json");
+			if (existsSync(jsonPath)) {
+				const entries: ChangelogEntry[] = JSON.parse(await Bun.file(jsonPath).text());
+				log.info("<- getChangelogs (from bundled JSON)", { count: entries.length });
+				return entries;
+			}
+			log.info("<- getChangelogs (no change-logs dir, no bundled JSON)");
+			return [];
 		}
 
 		const entries: ChangelogEntry[] = [];
