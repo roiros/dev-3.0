@@ -1,0 +1,1 @@
+Cache node_modules (arm64 and x64 separately) and x64 Bun binary in CI release workflow to speed up subsequent builds. Uses explicit cache/restore + cache/save actions to avoid arm64/x64 cross-contamination in a single job.

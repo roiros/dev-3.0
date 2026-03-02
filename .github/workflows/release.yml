@@ -9,30 +9,36 @@ permissions:
   contents: write
 
 jobs:
-  release:
-    runs-on: [self-hosted, macOS]
-
+  # ========================================
+  # Job A: arm64 build (native, Apple Silicon)
+  # ========================================
+  build-arm64:
+    runs-on: [self-hosted, macOS, ARM64]
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Bun (arm64)
+      - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: "1.3.10"
 
-      - name: Download x64 Bun binary
-        run: |
-          mkdir -p $HOME/.bun-x64/bin
-          curl -fsSL -o /tmp/bun-x64.zip "https://github.com/oven-sh/bun/releases/download/bun-v1.3.10/bun-darwin-x64-baseline.zip"
-          unzip -o /tmp/bun-x64.zip -d /tmp/bun-x64
-          cp /tmp/bun-x64/bun-darwin-x64-baseline/bun $HOME/.bun-x64/bin/bun
-          chmod +x $HOME/.bun-x64/bin/bun
-          ln -sf $HOME/.bun-x64/bin/bun $HOME/.bun-x64/bin/bunx
-          echo "x64 Bun version:"
-          arch -x86_64 $HOME/.bun-x64/bin/bun --version
+      - name: Restore arm64 node_modules cache
+        id: cache-arm64-deps
+        uses: actions/cache/restore@v4
+        with:
+          path: ./node_modules
+          key: bun-deps-arm64-${{ hashFiles('bun.lockb') }}
 
       - name: Install dependencies
+        if: steps.cache-arm64-deps.outputs.cache-hit != 'true'
         run: bun install
+
+      - name: Save arm64 node_modules cache
+        if: steps.cache-arm64-deps.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ./node_modules
+          key: bun-deps-arm64-${{ hashFiles('bun.lockb') }}
 
       - name: Run tests
         run: bun run test
@@ -44,17 +50,13 @@ jobs:
         run: |
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
           KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
-
           echo "$MAC_CERTIFICATE_P12" | base64 --decode > $RUNNER_TEMP/certificate.p12
-
           security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
           security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-
           security import $RUNNER_TEMP/certificate.p12 -P "$MAC_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
           security list-keychain -d user -s $KEYCHAIN_PATH
-
           rm $RUNNER_TEMP/certificate.p12
 
       - name: Enable code signing in config
@@ -63,10 +65,6 @@ jobs:
           sed -i '' 's/notarize: false/notarize: true/' electrobun.config.ts
           echo "Patched electrobun.config.ts for signing:"
           grep -E 'codesign|notarize' electrobun.config.ts
-
-      # ========================================
-      # Phase A: arm64 build (native)
-      # ========================================
 
       - name: Clean build directory
         run: rm -rf ./build ./artifacts
@@ -90,15 +88,13 @@ jobs:
         run: |
           echo "=== ./build/ ==="
           find ./build -maxdepth 3 -type f 2>/dev/null || echo "(empty)"
-          echo ""
           echo "=== ./artifacts/ ==="
           ls -lhR ./artifacts/ 2>/dev/null || echo "(empty)"
 
       - name: Create arm64 release artifacts
         run: bash ./scripts/create-release-artifacts.sh arm64
 
-      # Upload arm64 immediately so auto-update works even if x64 build fails
-      - name: Upload arm64 artifacts to S3 (early)
+      - name: Upload arm64 artifacts to S3 (early, for auto-updater)
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -106,25 +102,96 @@ jobs:
         run: |
           aws s3 sync ./artifacts-arm64/ s3://h0x91b-releases/dev-3.0/${{ github.ref_name }}/
           aws s3 sync ./artifacts-arm64/ s3://h0x91b-releases/dev-3.0/ --exclude "*.dmg"
-          echo "arm64 artifacts uploaded to S3 (early upload)"
+          echo "arm64 artifacts uploaded to S3"
 
-      # ========================================
-      # Phase B: x64 build (Rosetta)
-      # ========================================
+      - name: Upload arm64 artifacts for release job
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifacts-arm64
+          path: ./artifacts-arm64/
 
-      - name: Clean for x64 build
-        continue-on-error: true
-        run: rm -rf ./build ./artifacts ./node_modules
+  # ========================================
+  # Job B: x64 build (Rosetta, Intel)
+  # ========================================
+  build-x64:
+    runs-on: [self-hosted, macOS, X64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun (arm64, for scripts/vite)
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.10"
+
+      - name: Restore x64 Bun binary cache
+        id: cache-bun-x64
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.bun-x64
+          key: bun-x64-binary-1.3.10
+
+      - name: Download x64 Bun binary
+        if: steps.cache-bun-x64.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p $HOME/.bun-x64/bin
+          curl -fsSL -o /tmp/bun-x64.zip "https://github.com/oven-sh/bun/releases/download/bun-v1.3.10/bun-darwin-x64-baseline.zip"
+          unzip -o /tmp/bun-x64.zip -d /tmp/bun-x64
+          cp /tmp/bun-x64/bun-darwin-x64-baseline/bun $HOME/.bun-x64/bin/bun
+          chmod +x $HOME/.bun-x64/bin/bun
+          ln -sf $HOME/.bun-x64/bin/bun $HOME/.bun-x64/bin/bunx
+
+      - name: Save x64 Bun binary cache
+        if: steps.cache-bun-x64.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.bun-x64
+          key: bun-x64-binary-1.3.10
+
+      - name: Restore x64 node_modules cache
+        id: cache-x64-deps
+        uses: actions/cache/restore@v4
+        with:
+          path: ./node_modules
+          key: bun-deps-x64-${{ hashFiles('bun.lockb') }}
 
       - name: Install x64 dependencies (Rosetta)
-        id: x64_install
-        continue-on-error: true
+        if: steps.cache-x64-deps.outputs.cache-hit != 'true'
         run: arch -x86_64 $HOME/.bun-x64/bin/bun install
 
+      - name: Save x64 node_modules cache
+        if: steps.cache-x64-deps.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ./node_modules
+          key: bun-deps-x64-${{ hashFiles('bun.lockb') }}
+
+      - name: Import code signing certificate
+        env:
+          MAC_CERTIFICATE_P12: ${{ secrets.MAC_CERTIFICATE_P12 }}
+          MAC_CERTIFICATE_PASSWORD: ${{ secrets.MAC_CERTIFICATE_PASSWORD }}
+        run: |
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
+          echo "$MAC_CERTIFICATE_P12" | base64 --decode > $RUNNER_TEMP/certificate.p12
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security import $RUNNER_TEMP/certificate.p12 -P "$MAC_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+          rm $RUNNER_TEMP/certificate.p12
+
+      - name: Enable code signing in config
+        run: |
+          sed -i '' 's/codesign: false/codesign: true/' electrobun.config.ts
+          sed -i '' 's/notarize: false/notarize: true/' electrobun.config.ts
+          echo "Patched electrobun.config.ts for signing:"
+          grep -E 'codesign|notarize' electrobun.config.ts
+
+      - name: Clean build directory
+        run: rm -rf ./build ./artifacts
+
       - name: Build x64 release (Rosetta, signed + notarized)
-        id: x64_build
-        if: steps.x64_install.outcome == 'success'
-        continue-on-error: true
         env:
           ELECTROBUN_DEVELOPER_ID: ${{ secrets.ELECTROBUN_DEVELOPER_ID }}
           ELECTROBUN_TEAMID: ${{ secrets.ELECTROBUN_TEAMID }}
@@ -133,34 +200,57 @@ jobs:
           COPYFILE_DISABLE: "1"
           COPY_EXTENDED_ATTRIBUTES_DISABLE: "1"
         run: |
-          # Vite output (dist/) is platform-independent JS/CSS — reuse from arm64 phase.
-          # Only electrobun build needs to run per-arch (creates native .app bundle).
+          bun scripts/generate-build-info.ts
+          bun scripts/generate-changelog.ts
+          arch -x86_64 $HOME/.bun-x64/bin/bunx vite build
           arch -x86_64 $HOME/.bun-x64/bin/bunx electrobun build --env=stable || echo "::warning::electrobun build exited with $? (known post-tar codesign bug, recovering artifacts)"
 
       - name: Debug x64 build output
-        if: steps.x64_build.outcome == 'success'
+        if: always()
         run: |
           echo "=== ./build/ ==="
           find ./build -maxdepth 3 -type f 2>/dev/null || echo "(empty)"
-          echo ""
           echo "=== ./artifacts/ ==="
           ls -lhR ./artifacts/ 2>/dev/null || echo "(empty)"
 
       - name: Create x64 release artifacts
-        id: x64_artifacts
-        if: steps.x64_build.outcome == 'success'
-        continue-on-error: true
         run: bash ./scripts/create-release-artifacts.sh x64
 
-      # ========================================
-      # Merge & Upload
-      # ========================================
+      - name: Upload x64 artifacts for release job
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifacts-x64
+          path: ./artifacts-x64/
+
+  # ========================================
+  # Job C: merge + publish (waits for both)
+  # ========================================
+  release:
+    needs: [build-arm64, build-x64]
+    if: always() && needs.build-arm64.result == 'success'
+    runs-on: [self-hosted, macOS, ARM64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download arm64 artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: artifacts-arm64
+          path: ./artifacts-arm64/
+
+      - name: Download x64 artifacts
+        id: download-x64
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: artifacts-x64
+          path: ./artifacts-x64/
 
       - name: Merge artifacts
         run: |
           mkdir -p ./artifacts
           cp ./artifacts-arm64/* ./artifacts/
-          if [ -d ./artifacts-x64 ]; then
+          if [ -d ./artifacts-x64 ] && ls ./artifacts-x64/* 2>/dev/null; then
             cp ./artifacts-x64/* ./artifacts/
             echo "Merged arm64 + x64 artifacts"
           else
@@ -188,7 +278,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           S3_BASE="https://h0x91b-releases.s3.eu-west-1.amazonaws.com/dev-3.0/${{ github.ref_name }}"
-          X64_OK="${{ steps.x64_artifacts.outcome }}"
+          X64_OK="${{ steps.download-x64.outcome }}"
 
           {
             echo "## Download"

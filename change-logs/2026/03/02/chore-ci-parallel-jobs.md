@@ -1,0 +1,1 @@
+Split release CI into three parallel-friendly jobs: build-arm64 (ARM64 runner), build-x64 (X64 runner), and release (merge + publish). arm64 and x64 builds now run simultaneously, cutting total time roughly in half. Artifacts passed between jobs via actions/upload-artifact + download-artifact.
