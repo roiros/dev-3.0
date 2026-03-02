@@ -482,6 +482,19 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 					.map((id) => projectLabels.find((l) => l.id === id))
 					.filter(Boolean) as typeof projectLabels;
 
+				async function removeLabel(labelId: string) {
+					try {
+						const updated = await api.request.setTaskLabels({
+							taskId: task.id,
+							projectId: project.id,
+							labelIds: taskLabelIds.filter((id) => id !== labelId),
+						});
+						dispatch({ type: "updateTask", task: updated });
+					} catch {
+						// ignore
+					}
+				}
+
 				return (
 					<div className="flex items-center flex-wrap gap-1 mt-2 min-h-[18px]">
 						{assignedLabels.map((label) => (
@@ -492,6 +505,10 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 								onClick={(e) => {
 									e.stopPropagation();
 									setPickerOpen(true);
+								}}
+								onRemove={(e) => {
+									e.stopPropagation();
+									removeLabel(label.id);
 								}}
 							/>
 						))}
