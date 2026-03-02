@@ -1,10 +1,4 @@
-import {
-	useState,
-	useRef,
-	useEffect,
-	useLayoutEffect,
-	type RefObject,
-} from "react";
+import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { labelColor } from "../utils/label-color";
 import { useT } from "../i18n";
@@ -12,7 +6,6 @@ import { useT } from "../i18n";
 interface LabelPickerProps {
 	currentLabels: string[];
 	allProjectLabels: string[];
-	anchorRef: RefObject<HTMLElement | null>;
 	onSave: (labels: string[]) => void;
 	onClose: () => void;
 }
@@ -20,15 +13,11 @@ interface LabelPickerProps {
 function LabelPicker({
 	currentLabels,
 	allProjectLabels,
-	anchorRef,
 	onSave,
 	onClose,
 }: LabelPickerProps) {
 	const t = useT();
 	const [query, setQuery] = useState("");
-	const [pos, setPos] = useState({ top: 0, left: 0 });
-	const [visible, setVisible] = useState(false);
-	const popupRef = useRef<HTMLDivElement>(null);
 	const inputRef = useRef<HTMLInputElement>(null);
 
 	const filtered = allProjectLabels.filter((l) =>
@@ -41,44 +30,10 @@ function LabelPicker({
 			(l) => l.toLowerCase() === queryTrimmed.toLowerCase(),
 		);
 
-	// Position popup below anchor
-	useLayoutEffect(() => {
-		if (!anchorRef.current || !popupRef.current) return;
-		const anchor = anchorRef.current.getBoundingClientRect();
-		const popup = popupRef.current.getBoundingClientRect();
-		const vw = window.innerWidth;
-		const vh = window.innerHeight;
-		const pad = 8;
-
-		let top = anchor.bottom + 4;
-		let left = anchor.left;
-
-		if (top + popup.height > vh - pad) top = anchor.top - popup.height - 4;
-		if (left + popup.width > vw - pad) left = vw - popup.width - pad;
-		if (left < pad) left = pad;
-		if (top < pad) top = pad;
-
-		setPos({ top, left });
-		setVisible(true);
-	}, [anchorRef]);
-
-	// Close on outside click
 	useEffect(() => {
-		function handle(e: MouseEvent) {
-			if (
-				popupRef.current &&
-				!popupRef.current.contains(e.target as Node) &&
-				anchorRef.current &&
-				!anchorRef.current.contains(e.target as Node)
-			) {
-				onClose();
-			}
-		}
-		document.addEventListener("mousedown", handle);
-		return () => document.removeEventListener("mousedown", handle);
-	}, [onClose, anchorRef]);
+		inputRef.current?.focus();
+	}, []);
 
-	// Close on Escape
 	useEffect(() => {
 		function handle(e: KeyboardEvent) {
 			if (e.key === "Escape") onClose();
@@ -86,10 +41,6 @@ function LabelPicker({
 		document.addEventListener("keydown", handle);
 		return () => document.removeEventListener("keydown", handle);
 	}, [onClose]);
-
-	useEffect(() => {
-		inputRef.current?.focus();
-	}, []);
 
 	function toggle(label: string) {
 		const next = currentLabels.includes(label)
@@ -100,94 +51,129 @@ function LabelPicker({
 
 	function addNew() {
 		if (!queryTrimmed) return;
-		const normalized = queryTrimmed;
-		if (!currentLabels.includes(normalized)) {
-			onSave([...currentLabels, normalized]);
+		if (!currentLabels.includes(queryTrimmed)) {
+			onSave([...currentLabels, queryTrimmed]);
 		}
 		setQuery("");
 	}
 
 	return createPortal(
 		<div
-			ref={popupRef}
-			style={{ top: pos.top, left: pos.left, visibility: visible ? "visible" : "hidden" }}
-			className="fixed z-50 w-52 bg-overlay border border-edge rounded-xl shadow-2xl py-2"
+			className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+			onMouseDown={(e) => {
+				if (e.target === e.currentTarget) onClose();
+			}}
+			onClick={(e) => e.stopPropagation()}
 		>
-			{/* Search / add input */}
-			<div className="px-2 pb-2">
-				<input
-					ref={inputRef}
-					type="text"
-					value={query}
-					onChange={(e) => setQuery(e.target.value)}
-					onKeyDown={(e) => {
-						if (e.key === "Enter") {
-							e.preventDefault();
-							if (canAdd) addNew();
-							else if (filtered.length === 1) toggle(filtered[0]);
-						}
-					}}
-					placeholder={t("labels.addLabel")}
-					className="w-full px-2 py-1 bg-elevated border border-edge-active rounded-lg text-fg text-xs placeholder-fg-muted outline-none focus:border-accent/50"
-				/>
-			</div>
+			<div
+				className="bg-overlay border border-edge rounded-2xl shadow-2xl w-[380px] p-5 space-y-4"
+				onClick={(e) => e.stopPropagation()}
+			>
+				{/* Header */}
+				<div className="flex items-center justify-between">
+					<h3 className="text-fg text-base font-semibold">{t("labels.labels")}</h3>
+					<button
+						onClick={onClose}
+						className="w-7 h-7 flex items-center justify-center rounded-lg text-fg-3 hover:text-fg hover:bg-fg/8 transition-colors"
+					>
+						<svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+							<path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+						</svg>
+					</button>
+				</div>
 
-			{/* Existing labels list */}
-			<div className="max-h-48 overflow-y-auto">
-				{filtered.length === 0 && !canAdd && (
-					<div className="px-3 py-1.5 text-fg-muted text-xs">
-						{t("labels.noLabels")}
+				{/* Current labels */}
+				{currentLabels.length > 0 && (
+					<div className="flex flex-wrap gap-1.5">
+						{currentLabels.map((label) => {
+							const c = labelColor(label);
+							return (
+								<span
+									key={label}
+									className="flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full border"
+									style={{ color: c, borderColor: `${c}50`, backgroundColor: `${c}18` }}
+								>
+									{label}
+									<button
+										onClick={() => toggle(label)}
+										className="hover:opacity-70 transition-opacity"
+									>
+										<svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+											<path d="M1 1l6 6M7 1L1 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+										</svg>
+									</button>
+								</span>
+							);
+						})}
 					</div>
 				)}
-				{filtered.map((label) => {
-					const active = currentLabels.includes(label);
-					const color = labelColor(label);
-					return (
-						<button
-							key={label}
-							onMouseDown={(e) => {
+
+				{/* Search / add input */}
+				<div>
+					<input
+						ref={inputRef}
+						type="text"
+						value={query}
+						onChange={(e) => setQuery(e.target.value)}
+						onKeyDown={(e) => {
+							if (e.key === "Enter") {
 								e.preventDefault();
-								toggle(label);
-							}}
-							className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-raised-hover transition-colors text-left"
+								if (canAdd) addNew();
+								else if (filtered.length === 1) toggle(filtered[0]);
+							}
+						}}
+						placeholder={t("labels.addLabel")}
+						className="w-full px-3 py-2 bg-elevated border border-edge-active rounded-xl text-fg text-sm placeholder-fg-muted outline-none focus:border-accent/50 transition-colors"
+					/>
+				</div>
+
+				{/* Label list */}
+				<div className="max-h-52 overflow-y-auto -mx-1">
+					{filtered.length === 0 && !canAdd && (
+						<div className="px-3 py-2 text-fg-muted text-sm">
+							{t("labels.noLabels")}
+						</div>
+					)}
+					{filtered.map((label) => {
+						const active = currentLabels.includes(label);
+						const color = labelColor(label);
+						return (
+							<button
+								key={label}
+								onClick={() => toggle(label)}
+								className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-raised-hover transition-colors text-left"
+							>
+								<span
+									className="w-4 h-4 rounded border-2 flex-shrink-0 flex items-center justify-center"
+									style={{
+										borderColor: color,
+										backgroundColor: active ? color : "transparent",
+									}}
+								>
+									{active && (
+										<svg width="9" height="7" viewBox="0 0 9 7" fill="none">
+											<path d="M1 3.5l2.5 2.5 4.5-5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+										</svg>
+									)}
+								</span>
+								<span className="text-sm font-medium" style={{ color }}>
+									{label}
+								</span>
+							</button>
+						);
+					})}
+					{canAdd && (
+						<button
+							onClick={addNew}
+							className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-raised-hover transition-colors text-left"
 						>
-							{/* Checkbox indicator */}
-							<span
-								className="w-3 h-3 rounded-sm border flex-shrink-0 flex items-center justify-center"
-								style={{
-									borderColor: color,
-									backgroundColor: active ? color : "transparent",
-								}}
-							>
-								{active && (
-									<svg width="8" height="6" viewBox="0 0 8 6" fill="none">
-										<path d="M1 3l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-									</svg>
-								)}
-							</span>
-							<span
-								className="text-xs font-medium truncate"
-								style={{ color }}
-							>
-								{label}
+							<span className="w-4 h-4 rounded border-2 border-dashed border-edge flex-shrink-0" />
+							<span className="text-sm text-fg-2">
+								+ {queryTrimmed}
 							</span>
 						</button>
-					);
-				})}
-				{canAdd && (
-					<button
-						onMouseDown={(e) => {
-							e.preventDefault();
-							addNew();
-						}}
-						className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-raised-hover transition-colors text-left"
-					>
-						<span className="text-fg-muted text-xs">+</span>
-						<span className="text-fg-2 text-xs truncate">
-							{queryTrimmed}
-						</span>
-					</button>
-				)}
+					)}
+				</div>
 			</div>
 		</div>,
 		document.body,

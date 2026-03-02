@@ -36,7 +36,6 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 	const menuRef = useRef<HTMLDivElement>(null);
 	const triggerRef = useRef<HTMLButtonElement>(null);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
-	const labelBtnRef = useRef<HTMLButtonElement>(null);
 
 	// Terminal preview state
 	const [previewOpen, setPreviewOpen] = useState(false);
@@ -522,7 +521,6 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 							);
 						})}
 						<button
-							ref={labelBtnRef}
 							onClick={() => setLabelPickerOpen(true)}
 							className="text-[10px] px-1.5 py-0.5 rounded-full border border-dashed border-edge text-fg-muted hover:border-accent/50 hover:text-accent transition-colors"
 						>
@@ -533,8 +531,7 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 						<LabelPicker
 							currentLabels={task.labels}
 							allProjectLabels={allProjectLabels}
-							anchorRef={labelBtnRef as React.RefObject<HTMLElement>}
-							onSave={(newLabels) => handleLabelSave(newLabels)}
+								onSave={(newLabels) => handleLabelSave(newLabels)}
 							onClose={() => setLabelPickerOpen(false)}
 						/>
 					)}
@@ -565,7 +562,6 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 					{!isEditing && (
 						<>
 							<button
-								ref={labelBtnRef}
 								onClick={(e) => { e.stopPropagation(); setLabelPickerOpen((v) => !v); }}
 								className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded-md text-fg-3 hover:text-accent hover:bg-accent/10 transition-all"
 								title={t("labels.labels")}
@@ -579,7 +575,6 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 								<LabelPicker
 									currentLabels={task.labels}
 									allProjectLabels={allProjectLabels}
-									anchorRef={labelBtnRef as React.RefObject<HTMLElement>}
 									onSave={(newLabels) => handleLabelSave(newLabels)}
 									onClose={() => setLabelPickerOpen(false)}
 								/>
