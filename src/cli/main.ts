@@ -1,5 +1,3 @@
-#!/usr/bin/env bun
-
 import { parseArgs } from "./args";
 import { detectContext, resolveSocketPath } from "./context";
 import { exitAppNotRunning, exitUsage } from "./output";

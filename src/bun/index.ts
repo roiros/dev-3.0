@@ -106,43 +106,26 @@ if (shellEnv.lang) {
 const cliSocketPath = startSocketServer();
 log.info("CLI socket server ready", { path: cliSocketPath });
 
-// ── CLI script ──
-// Write ~/.dev3.0/bin/dev3 launcher script. PATH is injected into
-// worktree tmux sessions (see launchTaskPty), so no system symlink needed.
+// ── CLI binary ──
+// Copy the compiled CLI binary from app bundle to ~/.dev3.0/bin/dev3.
+// Overwritten on every start to ensure it matches the running app version.
 {
-	const { existsSync: fExists, mkdirSync: fMkdir, writeFileSync: fWrite, chmodSync: fChmod } = await import("node:fs");
-	const { resolve: fResolve, dirname: fDirname, join: fJoin } = await import("node:path");
+	const { existsSync: fExists, mkdirSync: fMkdir, copyFileSync: fCopy, chmodSync: fChmod } = await import("node:fs");
+	const { resolve: fResolve } = await import("node:path");
 
 	const cliBinDir = `${DEV3_HOME}/bin`;
-	const cliScript = `${cliBinDir}/dev3`;
+	const cliDest = `${cliBinDir}/dev3`;
+	const bundledCli = fResolve(import.meta.dir, "..", "cli", "dev3");
 
 	try {
 		fMkdir(cliBinDir, { recursive: true });
-
-		// Find the project root by walking up from the app bundle.
-		// In dev mode: import.meta.dir is inside build/.../app/ (Electrobun bundle).
-		// We walk up until we find vite.config.ts to locate the source tree.
-		let projectRoot = import.meta.dir;
-		for (let i = 0; i < 20; i++) {
-			if (fExists(fJoin(projectRoot, "vite.config.ts"))) break;
-			const parent = fDirname(projectRoot);
-			if (parent === projectRoot) break;
-			projectRoot = parent;
-		}
-
-		let cliMainPath: string;
-		const devCliPath = fJoin(projectRoot, "src", "cli", "main.ts");
-		if (fExists(devCliPath)) {
-			cliMainPath = devCliPath;
+		if (fExists(bundledCli)) {
+			fCopy(bundledCli, cliDest);
+			fChmod(cliDest, 0o755);
+			log.info("CLI binary installed", { from: bundledCli, to: cliDest });
 		} else {
-			// Production fallback: CLI bundled next to the app module
-			cliMainPath = fResolve(import.meta.dir, "..", "cli", "main.js");
+			log.warn("CLI binary not found in bundle (skip)", { expected: bundledCli });
 		}
-
-		const scriptContent = `#!/usr/bin/env bun\nimport "${cliMainPath}";\n`;
-		fWrite(cliScript, scriptContent, "utf-8");
-		fChmod(cliScript, 0o755);
-		log.info("CLI script written", { path: cliScript, cliMainPath });
 	} catch (err) {
 		log.warn("CLI setup failed (non-fatal)", { error: String(err) });
 	}
