@@ -3,7 +3,7 @@ import { createLogger } from "./logger";
 
 const log = createLogger("updater");
 
-const CHECK_INTERVAL_MS = 3 * 60 * 60 * 1000; // 3 hours
+const CHECK_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
 const BASE_URL = "https://h0x91b-releases.s3.eu-west-1.amazonaws.com/dev-3.0";
 
 interface UpdateJson {
