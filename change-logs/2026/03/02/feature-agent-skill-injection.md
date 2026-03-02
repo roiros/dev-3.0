@@ -1,0 +1,1 @@
+On every app start, dev-3.0 now installs a `dev3` skill file into all supported AI agent directories (`~/.claude/skills/dev3/`, `~/.codex/skills/dev3/`, `~/.gemini/skills/dev3/`, `~/.opencode/skills/dev3/`). The skill instructs agents to run `dev3 --help` at session start and manage task status (in-progress, user-questions, review-by-user) throughout the session.
