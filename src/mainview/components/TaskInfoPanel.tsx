@@ -750,10 +750,21 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 	const tmuxHintsInline = (
 		<div
 			ref={hintsTriggerRef}
-			className="flex items-center flex-shrink-0"
+			className="flex items-center gap-1.5 flex-shrink-0"
 			onMouseEnter={showHints}
 			onMouseLeave={hideHints}
 		>
+			<span className="flex items-center gap-1 text-[10px] text-fg-muted">
+				<kbd className={tmuxKbd}>⌃B -</kbd>{t("tmux.hSplit")}
+			</span>
+			<span className="text-fg-muted/30">·</span>
+			<span className="flex items-center gap-1 text-[10px] text-fg-muted">
+				<kbd className={tmuxKbd}>⌃B |</kbd>{t("tmux.vSplit")}
+			</span>
+			<span className="text-fg-muted/30">·</span>
+			<span className="flex items-center gap-1 text-[10px] text-fg-muted">
+				<kbd className={tmuxKbd}>⌃B z</kbd>{t("tmux.zoom")}
+			</span>
 			<button
 				className="w-5 h-5 rounded-full text-fg-muted hover:text-fg-2 hover:bg-elevated flex items-center justify-center transition-colors flex-shrink-0"
 				onClick={(e) => { e.stopPropagation(); setHintsOpen((o) => !o); }}
@@ -807,7 +818,7 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 			{collapsed ? (
 				/* ---- Collapsed: two rows ---- */
 				<div className="flex flex-col h-full px-4">
-					{/* Top row: status + labels + utility buttons */}
+					{/* Top row: status + labels + info hints */}
 					<div className="flex items-center gap-1.5 min-w-0 pt-1">
 						{statusDropdownButton}
 						{statusDropdownPortal}
@@ -816,9 +827,9 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 							return label ? <LabelChip key={id} label={label} size="xs" /> : null;
 						})}
 						<div className="flex-1" />
-						{devServerButton}
 						{tmuxHintsInline}
 						{tmuxHintsPopover}
+						{devServerButton}
 						<button
 							onClick={() => navigate({ screen: "task", projectId: project.id, taskId: task.id })}
 							className="flex-shrink-0 p-1 rounded hover:bg-elevated transition-colors text-fg-3 hover:text-fg"
@@ -838,7 +849,7 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 							</svg>
 						</button>
 					</div>
-					{/* Bottom row: git info + low-priority tmux hints */}
+					{/* Bottom row: git (full width) */}
 					<div className="flex items-center gap-1.5 min-w-0 pb-1">
 						{task.branchName && (
 							<span className="text-fg-3 text-xs font-mono flex-shrink-0 truncate max-w-[200px]">
@@ -857,16 +868,6 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 								{uncommittedBadge}
 							</>
 						)}
-						{/* Tmux hints — lowest priority, disappear when there is no space */}
-						<div className="flex-1 min-w-0 overflow-hidden flex items-center justify-end gap-1.5">
-							<span className="flex items-center gap-1 text-[10px] text-fg-muted whitespace-nowrap">
-								<kbd className={tmuxKbd}>⌃B -</kbd>{t("tmux.hSplit")}
-							</span>
-							<span className="text-fg-muted/30 whitespace-nowrap">·</span>
-							<span className="flex items-center gap-1 text-[10px] text-fg-muted whitespace-nowrap">
-								<kbd className={tmuxKbd}>⌃B |</kbd>{t("tmux.vSplit")}
-							</span>
-						</div>
 					</div>
 				</div>
 			) : (
@@ -874,7 +875,7 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 				<div className="flex flex-col h-full">
 					{/* Header rows with controls */}
 					<div className="flex flex-col px-4">
-						{/* Top row: status + labels + utility buttons */}
+						{/* Top row: status + labels + info hints */}
 						<div className="flex items-center gap-1.5 min-w-0 pt-1">
 							{statusDropdownButton}
 							{statusDropdownPortal}
@@ -883,9 +884,9 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 								return label ? <LabelChip key={id} label={label} size="xs" /> : null;
 							})}
 							<div className="flex-1" />
-							{devServerButton}
 							{tmuxHintsInline}
 							{tmuxHintsPopover}
+							{devServerButton}
 							<button
 								onClick={() => navigate({ screen: "task", projectId: project.id, taskId: task.id })}
 								className="flex-shrink-0 p-1 rounded hover:bg-elevated transition-colors text-fg-3 hover:text-fg"
@@ -905,7 +906,7 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 								</svg>
 							</button>
 						</div>
-						{/* Bottom row: git info + low-priority tmux hints */}
+						{/* Bottom row: git (full width) */}
 						<div className="flex items-center gap-1.5 min-w-0 pb-1">
 							{task.branchName && (
 								<span className="text-fg-3 text-xs font-mono flex-shrink-0 truncate max-w-[200px]">
@@ -924,16 +925,6 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 									{uncommittedBadge}
 								</>
 							)}
-							{/* Tmux hints — lowest priority, disappear when there is no space */}
-							<div className="flex-1 min-w-0 overflow-hidden flex items-center justify-end gap-1.5">
-								<span className="flex items-center gap-1 text-[10px] text-fg-muted whitespace-nowrap">
-									<kbd className={tmuxKbd}>⌃B -</kbd>{t("tmux.hSplit")}
-								</span>
-								<span className="text-fg-muted/30 whitespace-nowrap">·</span>
-								<span className="flex items-center gap-1 text-[10px] text-fg-muted whitespace-nowrap">
-									<kbd className={tmuxKbd}>⌃B |</kbd>{t("tmux.vSplit")}
-								</span>
-							</div>
 						</div>
 					</div>
 
