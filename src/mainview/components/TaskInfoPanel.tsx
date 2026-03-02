@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect, useLayoutEffect, type Dispatch } from "react";
 import { createPortal } from "react-dom";
 import type { Task, TaskNote, Project, TaskStatus, BranchStatus } from "../../shared/types";
+import LabelChip from "./LabelChip";
 import { ACTIVE_STATUSES, STATUS_COLORS, getAllowedTransitions } from "../../shared/types";
 import type { AppAction, Route } from "../state";
 import { api } from "../rpc";
@@ -15,7 +16,7 @@ interface TaskInfoPanelProps {
 	navigate: (route: Route) => void;
 }
 
-const COLLAPSED_HEIGHT = 36;
+const COLLAPSED_HEIGHT = 62;
 const DEFAULT_HEIGHT = 200;
 const MIN_HEIGHT = 80;
 const MAX_RATIO = 0.33;
@@ -815,80 +816,16 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 			style={{ height }}
 		>
 			{collapsed ? (
-				/* ---- Collapsed: single row ---- */
-				<div className="flex items-center h-full px-4 gap-1.5 min-w-0">
-					{statusDropdownButton}
-					{statusDropdownPortal}
-					{task.branchName && (
-						<>
-							<span className="text-fg-muted text-xs flex-shrink-0">|</span>
-							<span className="text-fg-3 text-xs font-mono truncate max-w-[200px] flex-shrink-0">
-								{task.branchName}
-							</span>
-						</>
-					)}
-					{(branchStatusBadge || branchStatusLoading) && (
-						<>
-							<span className="text-fg-muted text-xs flex-shrink-0">|</span>
-							{branchStatusBadge || branchStatusLoading}
-						</>
-					)}
-					{uncommittedBadge && (
-						<>
-							<span className="text-fg-muted text-xs flex-shrink-0">|</span>
-							{uncommittedBadge}
-						</>
-					)}
-					<div className="flex-1" />
-					{tmuxHintsInline}
-					{tmuxHintsPopover}
-					{devServerButton}
-					<button
-						onClick={() => navigate({ screen: "task", projectId: project.id, taskId: task.id })}
-						className="flex-shrink-0 p-1 rounded hover:bg-elevated transition-colors text-fg-3 hover:text-fg"
-						title={t("infoPanel.fullScreen")}
-					>
-						<svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4" />
-						</svg>
-					</button>
-					<button
-						onClick={toggleCollapsed}
-						className="flex-shrink-0 p-1 rounded hover:bg-elevated transition-colors text-fg-3 hover:text-fg"
-						title={t("infoPanel.expand")}
-					>
-						<svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-						</svg>
-					</button>
-				</div>
-			) : (
-				/* ---- Expanded ---- */
-				<div className="flex flex-col h-full">
-					{/* Header row with controls */}
-					<div className="flex items-center px-4 py-2 gap-2 min-w-0">
+				/* ---- Collapsed: two rows ---- */
+				<div className="flex flex-col h-full px-4">
+					{/* Top row: status + labels + info hints */}
+					<div className="flex items-center gap-1.5 min-w-0 pt-1">
 						{statusDropdownButton}
 						{statusDropdownPortal}
-						{task.branchName && (
-							<>
-								<span className="text-fg-muted text-xs flex-shrink-0">|</span>
-								<span className="text-fg-3 text-xs font-mono truncate max-w-[200px] flex-shrink-0">
-									{task.branchName}
-								</span>
-							</>
-						)}
-						{branchStatusBadge && (
-							<>
-								<span className="text-fg-muted text-xs flex-shrink-0">|</span>
-								{branchStatusBadge}
-							</>
-						)}
-						{uncommittedBadge && (
-							<>
-								<span className="text-fg-muted text-xs flex-shrink-0">|</span>
-								{uncommittedBadge}
-							</>
-						)}
+						{(task.labelIds ?? []).map((id) => {
+							const label = (project.labels ?? []).find((l) => l.id === id);
+							return label ? <LabelChip key={id} label={label} size="xs" /> : null;
+						})}
 						<div className="flex-1" />
 						{tmuxHintsInline}
 						{tmuxHintsPopover}
@@ -905,12 +842,90 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 						<button
 							onClick={toggleCollapsed}
 							className="flex-shrink-0 p-1 rounded hover:bg-elevated transition-colors text-fg-3 hover:text-fg"
-							title={t("infoPanel.collapse")}
+							title={t("infoPanel.expand")}
 						>
 							<svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
 							</svg>
 						</button>
+					</div>
+					{/* Bottom row: git (full width) */}
+					<div className="flex items-center gap-1.5 min-w-0 pb-1">
+						{task.branchName && (
+							<span className="text-fg-3 text-xs font-mono flex-shrink-0 truncate max-w-[200px]">
+								{task.branchName}
+							</span>
+						)}
+						{(branchStatusBadge || branchStatusLoading) && (
+							<>
+								{task.branchName && <span className="text-fg-muted text-xs flex-shrink-0">|</span>}
+								{branchStatusBadge || branchStatusLoading}
+							</>
+						)}
+						{uncommittedBadge && (
+							<>
+								<span className="text-fg-muted text-xs flex-shrink-0">|</span>
+								{uncommittedBadge}
+							</>
+						)}
+					</div>
+				</div>
+			) : (
+				/* ---- Expanded ---- */
+				<div className="flex flex-col h-full">
+					{/* Header rows with controls */}
+					<div className="flex flex-col px-4">
+						{/* Top row: status + labels + info hints */}
+						<div className="flex items-center gap-1.5 min-w-0 pt-1">
+							{statusDropdownButton}
+							{statusDropdownPortal}
+							{(task.labelIds ?? []).map((id) => {
+								const label = (project.labels ?? []).find((l) => l.id === id);
+								return label ? <LabelChip key={id} label={label} size="xs" /> : null;
+							})}
+							<div className="flex-1" />
+							{tmuxHintsInline}
+							{tmuxHintsPopover}
+							{devServerButton}
+							<button
+								onClick={() => navigate({ screen: "task", projectId: project.id, taskId: task.id })}
+								className="flex-shrink-0 p-1 rounded hover:bg-elevated transition-colors text-fg-3 hover:text-fg"
+								title={t("infoPanel.fullScreen")}
+							>
+								<svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4" />
+								</svg>
+							</button>
+							<button
+								onClick={toggleCollapsed}
+								className="flex-shrink-0 p-1 rounded hover:bg-elevated transition-colors text-fg-3 hover:text-fg"
+								title={t("infoPanel.collapse")}
+							>
+								<svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+								</svg>
+							</button>
+						</div>
+						{/* Bottom row: git (full width) */}
+						<div className="flex items-center gap-1.5 min-w-0 pb-1">
+							{task.branchName && (
+								<span className="text-fg-3 text-xs font-mono flex-shrink-0 truncate max-w-[200px]">
+									{task.branchName}
+								</span>
+							)}
+							{branchStatusBadge && (
+								<>
+									{task.branchName && <span className="text-fg-muted text-xs flex-shrink-0">|</span>}
+									{branchStatusBadge}
+								</>
+							)}
+							{uncommittedBadge && (
+								<>
+									<span className="text-fg-muted text-xs flex-shrink-0">|</span>
+									{uncommittedBadge}
+								</>
+							)}
+						</div>
 					</div>
 
 					{/* Metadata grid */}
