@@ -1,0 +1,1 @@
+Add GitHub Pages landing page for the open-source launch. Single self-contained HTML file in docs/ with dark glassmorphic design matching the app's aesthetic, animated hero with floating orbs, feature cards, how-it-works flow, screenshot gallery placeholders, tech stack section, and getting started terminal block.
