@@ -52,9 +52,14 @@ create_dmg() {
 # We handle both cases.
 
 # Case 1: Electrobun succeeded and created its own artifacts
-EBUN_TAR_ZST=$(find ./artifacts -name "*.app.tar.zst" 2>/dev/null | head -1)
-EBUN_DMG=$(find ./artifacts -name "*.dmg" 2>/dev/null | head -1)
-EBUN_UPDATE=$(find ./artifacts -name "update.json" -o -name "*-update.json" 2>/dev/null | head -1)
+EBUN_TAR_ZST=""
+EBUN_DMG=""
+EBUN_UPDATE=""
+if [ -d ./artifacts ]; then
+  EBUN_TAR_ZST=$(find ./artifacts -name "*.app.tar.zst" 2>/dev/null | head -1)
+  EBUN_DMG=$(find ./artifacts -name "*.dmg" 2>/dev/null | head -1)
+  EBUN_UPDATE=$(find ./artifacts -name "update.json" -o -name "*-update.json" 2>/dev/null | head -1)
+fi
 
 if [ -n "$EBUN_TAR_ZST" ]; then
   echo "Electrobun created artifacts successfully, using them directly"

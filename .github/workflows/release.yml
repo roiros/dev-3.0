@@ -80,6 +80,8 @@ jobs:
           COPYFILE_DISABLE: "1"
           COPY_EXTENDED_ATTRIBUTES_DISABLE: "1"
         run: |
+          bun scripts/generate-build-info.ts
+          bun scripts/generate-changelog.ts
           bunx vite build
           bunx electrobun build --env=stable || echo "::warning::electrobun build exited with $? (known post-tar codesign bug, recovering artifacts)"
 
