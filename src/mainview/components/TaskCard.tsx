@@ -474,7 +474,7 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 				</div>
 			)}
 
-			{/* Label chips row */}
+			{/* Label chips row — always rendered so "+" is discoverable on hover */}
 			{(() => {
 				const projectLabels = project.labels ?? [];
 				const taskLabelIds = task.labelIds ?? [];
@@ -482,10 +482,8 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 					.map((id) => projectLabels.find((l) => l.id === id))
 					.filter(Boolean) as typeof projectLabels;
 
-				if (assignedLabels.length === 0 && projectLabels.length === 0) return null;
-
 				return (
-					<div className="flex items-center flex-wrap gap-1 mt-2 min-h-[20px]">
+					<div className="flex items-center flex-wrap gap-1 mt-2 min-h-[18px]">
 						{assignedLabels.map((label) => (
 							<LabelChip
 								key={label.id}
@@ -504,7 +502,7 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 								e.stopPropagation();
 								setPickerOpen(true);
 							}}
-							className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded-full bg-fg/8 text-fg-3 hover:bg-fg/15 hover:text-fg transition-all flex-shrink-0"
+							className="opacity-0 group-hover:opacity-60 hover:!opacity-100 w-4 h-4 flex items-center justify-center rounded-full bg-fg/8 text-fg-3 hover:bg-fg/15 hover:text-fg transition-all flex-shrink-0"
 							title="Add label"
 						>
 							<svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>

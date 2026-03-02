@@ -256,6 +256,7 @@ const en = {
 	"labels.failedUpdate": "Failed to update label: {error}",
 	"labels.failedDelete": "Failed to delete label: {error}",
 	"labels.failedSetLabels": "Failed to update task labels: {error}",
+	"labels.taskLabels": "Labels",
 
 	// Status labels
 	"status.todo": "To Do",

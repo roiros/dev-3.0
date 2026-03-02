@@ -259,6 +259,7 @@ const es: TranslationRecord & Record<string, string> = {
 	"labels.failedUpdate": "Error al actualizar etiqueta: {error}",
 	"labels.failedDelete": "Error al eliminar etiqueta: {error}",
 	"labels.failedSetLabels": "Error al actualizar etiquetas de tarea: {error}",
+	"labels.taskLabels": "Etiquetas",
 
 	// Status labels
 	"status.todo": "Por hacer",

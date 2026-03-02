@@ -262,6 +262,7 @@ const ru: TranslationRecord & Record<string, string> = {
 	"labels.failedUpdate": "Не удалось обновить метку: {error}",
 	"labels.failedDelete": "Не удалось удалить метку: {error}",
 	"labels.failedSetLabels": "Не удалось обновить метки задачи: {error}",
+	"labels.taskLabels": "Метки",
 
 	// Status labels
 	"status.todo": "К выполнению",
