@@ -86,7 +86,7 @@ function SplitLayout({ kanbanContent, terminalContent }: SplitLayoutProps) {
 			{/* Left: Kanban */}
 			<div
 				ref={panelRef}
-				className="flex-shrink-0 overflow-hidden transition-[width] duration-200"
+				className="flex-shrink-0 flex flex-col overflow-hidden transition-[width] duration-200"
 				style={{ width: kanbanWidth }}
 			>
 				{kanbanContent}
