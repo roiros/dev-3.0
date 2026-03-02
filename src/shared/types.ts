@@ -149,10 +149,21 @@ export interface Label {
 	color: string; // hex color from LABEL_COLORS palette
 }
 
+// Colors ordered to maximize perceptual distance between consecutive picks
+// (each step jumps ~150° around the color wheel: warm→cool→warm→cool…)
 export const LABEL_COLORS = [
-	"#ef4444", "#f97316", "#eab308", "#22c55e",
-	"#14b8a6", "#06b6d4", "#3b82f6", "#6366f1",
-	"#8b5cf6", "#ec4899", "#f43f5e", "#84cc16",
+	"#ef4444", // red       0°
+	"#14b8a6", // teal    174°
+	"#f97316", // orange   25°
+	"#8b5cf6", // violet  258°
+	"#84cc16", // lime     80°
+	"#ec4899", // pink    322°
+	"#06b6d4", // cyan    188°
+	"#eab308", // yellow   50°
+	"#3b82f6", // blue    217°
+	"#22c55e", // green   142°
+	"#f43f5e", // rose    350°
+	"#6366f1", // indigo  239°
 ] as const;
 
 export interface Project {

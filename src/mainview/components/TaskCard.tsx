@@ -502,12 +502,12 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 								e.stopPropagation();
 								setPickerOpen(true);
 							}}
-							className="opacity-0 group-hover:opacity-60 hover:!opacity-100 w-4 h-4 flex items-center justify-center rounded-full bg-fg/8 text-fg-3 hover:bg-fg/15 hover:text-fg transition-all flex-shrink-0"
-							title="Add label"
+							className="opacity-0 group-hover:opacity-70 hover:!opacity-100 flex items-center gap-1 px-1.5 py-0.5 rounded-md text-fg-3 hover:text-fg hover:bg-fg/8 transition-all flex-shrink-0"
 						>
-							<svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+							<svg className="w-2.5 h-2.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
 								<path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
 							</svg>
+							<span className="text-[10px] font-medium leading-none">Add label</span>
 						</button>
 						{pickerOpen && pickerAnchorRef.current && (
 							<LabelPicker
