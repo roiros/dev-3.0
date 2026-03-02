@@ -224,6 +224,14 @@ body, #root {
 	background: rgb(var(--text-muted));
 }
 
+/* ---- Always-visible horizontal scrollbar for kanban board ---- */
+
+.kanban-scroll::-webkit-scrollbar-track:horizontal {
+	background: rgb(var(--border-default) / 0.3);
+	border-radius: 4px;
+	margin: 0 16px;
+}
+
 /* ---- Font smoothing ---- */
 
 * {

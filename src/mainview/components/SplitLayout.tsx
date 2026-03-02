@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect, type ReactNode } from "react";
 
-const DEFAULT_KANBAN_WIDTH = 420;
+const DEFAULT_KANBAN_WIDTH = 320;
 const MIN_KANBAN_WIDTH = 300;
 const MAX_KANBAN_RATIO = 0.6;
 const LS_KEY = "dev3-split-kanban-width";
@@ -86,7 +86,7 @@ function SplitLayout({ kanbanContent, terminalContent }: SplitLayoutProps) {
 			{/* Left: Kanban */}
 			<div
 				ref={panelRef}
-				className="flex-shrink-0 overflow-hidden transition-[width] duration-200"
+				className="flex-shrink-0 flex flex-col overflow-hidden transition-[width] duration-200"
 				style={{ width: kanbanWidth }}
 			>
 				{kanbanContent}

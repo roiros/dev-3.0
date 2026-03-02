@@ -1,0 +1,1 @@
+Fixed kanban board horizontal scrollbar visibility in split view. The scrollbar track is now always visible with a subtle background, making it clear that more columns exist beyond the visible area. Also fixed the kanban panel flex layout so the scrollbar is never clipped by the parent container.
