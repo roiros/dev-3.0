@@ -1,0 +1,1 @@
+Added testing requirements to AGENTS.md: code coverage thresholds (70% overall, 85% critical modules), mandatory unit/component/e2e test categories, test writing rules, and coverage exclusions for bootstrap files.

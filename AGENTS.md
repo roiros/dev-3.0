@@ -261,20 +261,40 @@ Call with `t.plural("dashboard.projectCount", count)`.
 
 ## Testing
 
-**Framework: Vitest** with `happy-dom` environment and React Testing Library. Config in `vitest.config.ts`.
+**Framework: Vitest** with `happy-dom` environment and React Testing Library. Three configs: `vitest.config.ts` (mainview), `vitest.config.bun.ts` (backend), `vitest.config.cli.ts` (CLI).
 
 ```bash
-# TypeScript type-check (must pass before committing)
-bun run lint
-
-# Run all tests once
-bun run test
-
-# Watch mode (re-runs on file changes)
-bun run test:watch
+bun run lint          # TypeScript type-check (must pass before committing)
+bun run test          # Mainview tests
+bun run test:bun      # Backend tests
+bun run test:cli      # CLI tests
+bun run test:watch    # Watch mode
 ```
 
 > **Rule:** Always run both `bun run lint` **and** `bun run test` before committing. A commit that breaks type-checking is not acceptable, even if tests pass. Fix all TypeScript errors before pushing.
+
+### Coverage requirements
+
+Overall thresholds: **70% lines, 65% branches, 70% functions**.
+
+Critical modules must reach **85% lines, 80% branches**: `state.ts`, `src/shared/types.ts` (helpers), `src/mainview/i18n/`, `src/cli/`, `src/bun/data.ts`, `src/bun/git.ts`, `src/mainview/utils/`.
+
+Excluded from coverage (bootstrap/wrappers that only make sense in e2e): `src/bun/index.ts`, `src/bun/updater.ts`, `src/bun/shell-env.ts`, `src/bun/spawn.ts`, `src/mainview/rpc.ts`, `src/mainview/main.tsx`.
+
+### What to test
+
+**Unit tests (mandatory):** state reducer actions + edge cases, all pure functions/utils/parsers, every RPC handler (happy path + 2-3 error cases), CLI commands (parsing + validation + output), data layer CRUD + corrupt data handling, git operations with mocked spawn, i18n interpolation + pluralization for all locales.
+
+**Component tests (mandatory):** KanbanBoard (drag-drop status transitions), TaskCard (click, context menu, drag), CreateTaskModal (validation, submit), TaskInfoPanel (fields, notes editing, labels), Dashboard (add/remove project), GlobalSettings (save, validation). Always use `userEvent` (not `fireEvent`). Test behavior, not implementation.
+
+**E2E tests (CLI-based):** Full lifecycle through CLI + Unix socket against a real app process with tmpdir. Scenarios: task lifecycle (create → move statuses → complete), project CRUD, worktree creation + cleanup, notes CRUD, CLI context auto-detection, concurrent writes (no data corruption).
+
+### Test writing rules
+
+- One logical assertion per test. No dependencies between tests.
+- Mock only external boundaries (git, tmux, fs, Electrobun), not internal modules.
+- No `sleep`/timers — use proper async/await.
+- Every new feature or bug fix must include tests. PRs that decrease coverage below thresholds are rejected.
 
 ### Where tests live
 
