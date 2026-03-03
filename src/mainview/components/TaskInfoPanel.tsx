@@ -202,6 +202,27 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 		const fromStatus = task.status;
 		setMovingStatus(true);
 		setStatusMenuOpen(false);
+
+		// completed/cancelled: navigate immediately, cleanup in background
+		if (newStatus === "completed" || newStatus === "cancelled") {
+			dispatch({ type: "updateTask", task: { ...task, status: newStatus, worktreePath: null, branchName: null } });
+			trackEvent("task_moved", { from_status: fromStatus, to_status: newStatus });
+			navigate({ screen: "project", projectId: project.id });
+			api.request.moveTask({
+				taskId: task.id,
+				projectId: project.id,
+				newStatus,
+			}).catch(() => {
+				api.request.moveTask({
+					taskId: task.id,
+					projectId: project.id,
+					newStatus,
+					force: true,
+				}).catch((err) => console.error("Background moveTask failed:", err));
+			});
+			return;
+		}
+
 		try {
 			const updated = await api.request.moveTask({
 				taskId: task.id,
@@ -460,24 +481,21 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 				});
 				if (shouldComplete) {
 					const fromStatus = task.status;
-					try {
-						const updated = await api.request.moveTask({
-							taskId: task.id,
-							projectId: project.id,
-							newStatus: "completed",
-						});
-						dispatch({ type: "updateTask", task: updated });
-					} catch {
-						const updated = await api.request.moveTask({
+					dispatch({ type: "updateTask", task: { ...task, status: "completed", worktreePath: null, branchName: null } });
+					trackEvent("task_moved", { from_status: fromStatus, to_status: "completed" });
+					navigate({ screen: "project", projectId: project.id });
+					api.request.moveTask({
+						taskId: task.id,
+						projectId: project.id,
+						newStatus: "completed",
+					}).catch(() => {
+						api.request.moveTask({
 							taskId: task.id,
 							projectId: project.id,
 							newStatus: "completed",
 							force: true,
-						});
-						dispatch({ type: "updateTask", task: updated });
-					}
-					trackEvent("task_moved", { from_status: fromStatus, to_status: "completed" });
-					navigate({ screen: "project", projectId: project.id });
+						}).catch((err) => console.error("Background moveTask (post-merge) failed:", err));
+					});
 				}
 			}
 		}

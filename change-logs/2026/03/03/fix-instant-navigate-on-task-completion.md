@@ -1,0 +1,1 @@
+Moving a task to completed/cancelled from inside the task view now navigates back to the Kanban board instantly. The worktree cleanup and PTY destruction happen in the background, eliminating the "Worktree not found" error flash that previously appeared for several seconds.
