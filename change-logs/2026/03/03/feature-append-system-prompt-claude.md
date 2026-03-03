@@ -1,0 +1,1 @@
+All Claude-based agent configurations now inject `--append-system-prompt` with a short mandatory reminder to invoke the `/dev3` skill. This reinforces the existing skill installation mechanism (`~/.claude/skills/dev3/SKILL.md`) which is not always picked up reliably. The UI command preview also reflects the new flag.

@@ -115,6 +115,22 @@ export function interpolateTemplate(template: string, ctx: TemplateContext): str
 
 // ---- Command Resolution ----
 
+/**
+ * Short system-prompt reminder injected via --append-system-prompt for all
+ * Claude-based agents.  Belt-and-suspenders: the full skill lives in
+ * ~/.claude/skills/dev3/SKILL.md, but the skill trigger is not 100 %
+ * reliable, so we reinforce it at the CLI level.
+ */
+export const DEV3_SYSTEM_PROMPT =
+	"MANDATORY: You are inside a dev-3.0 managed worktree. " +
+	"Invoke the /dev3 skill BEFORE doing any other work. Do NOT skip this step.";
+
+/** Returns true when the resolved base command is the Claude CLI. */
+export function isClaudeCommand(baseCmd: string): boolean {
+	const name = baseCmd.split("/").pop() ?? "";
+	return name === "claude";
+}
+
 export function shellEscape(s: string): string {
 	return "'" + s.replace(/'/g, "'\\''") + "'";
 }
@@ -141,6 +157,11 @@ export function resolveAgentCommand(
 
 	if (config?.maxBudgetUsd != null && config.maxBudgetUsd > 0) {
 		args.push("--max-budget-usd", String(config.maxBudgetUsd));
+	}
+
+	// Inject --append-system-prompt for Claude-based agents
+	if (isClaudeCommand(baseCmd)) {
+		args.push("--append-system-prompt", shellEscape(DEV3_SYSTEM_PROMPT));
 	}
 
 	if (config?.additionalArgs) {

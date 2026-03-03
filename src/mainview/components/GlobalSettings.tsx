@@ -485,6 +485,14 @@ function buildCommandPreview(
 		parts.push("--max-budget-usd", String(config.maxBudgetUsd));
 	}
 
+	// Mirror --append-system-prompt injection for Claude-based agents
+	{
+		const name = baseCmd.split("/").pop() ?? "";
+		if (name === "claude") {
+			parts.push("--append-system-prompt", "'…dev3 prompt…'");
+		}
+	}
+
 	if (config.additionalArgs) {
 		for (const arg of config.additionalArgs) {
 			if (arg) parts.push(arg);
