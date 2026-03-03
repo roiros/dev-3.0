@@ -3,7 +3,7 @@ import { STATUS_LABELS, ALL_STATUSES } from "../../shared/types";
 import { sendRequest } from "../socket-client";
 import { printDetail, exitError, exitUsage } from "../output";
 import type { ParsedArgs } from "../args";
-import type { CliContext } from "../context";
+import { expandShortId, type CliContext } from "../context";
 
 // Statuses that destroy the worktree + terminal are forbidden via CLI.
 // An agent running inside a worktree must not be able to kill its own session.
@@ -51,8 +51,14 @@ function printTask(task: Task): void {
 	}
 }
 
+function resolveTaskId(args: ParsedArgs, context: CliContext | null): string | undefined {
+	const raw = args.positional[0] || args.flags.id || context?.taskId;
+	if (!raw) return undefined;
+	return expandShortId(raw, context);
+}
+
 async function showTask(args: ParsedArgs, socketPath: string, context: CliContext | null): Promise<void> {
-	const taskId = args.positional[0] || context?.taskId;
+	const taskId = resolveTaskId(args, context);
 	if (!taskId) {
 		exitUsage("Usage: dev3 task show <id>");
 	}
@@ -73,12 +79,15 @@ async function createTask(args: ParsedArgs, socketPath: string, context: CliCont
 		exitUsage("--project <id> is required (or run from inside a worktree)");
 	}
 
-	const title = args.flags.title;
+	const title = args.flags.title?.trim();
 	if (!title) {
 		exitUsage("--title is required");
 	}
 
-	const resp = await sendRequest(socketPath, "task.create", { projectId, title });
+	const params: Record<string, unknown> = { projectId, title };
+	if (args.flags.description) params.description = args.flags.description;
+
+	const resp = await sendRequest(socketPath, "task.create", params);
 	if (!resp.ok) exitError(resp.error || "Failed to create task");
 
 	const task = resp.data as Task;
@@ -86,7 +95,7 @@ async function createTask(args: ParsedArgs, socketPath: string, context: CliCont
 }
 
 async function updateTask(args: ParsedArgs, socketPath: string, context: CliContext | null): Promise<void> {
-	const taskId = args.positional[0] || context?.taskId;
+	const taskId = resolveTaskId(args, context);
 	if (!taskId) {
 		exitUsage("Usage: dev3 task update <id> --title '...' [--description '...']");
 	}
@@ -94,8 +103,10 @@ async function updateTask(args: ParsedArgs, socketPath: string, context: CliCont
 	const params: Record<string, unknown> = { taskId };
 	if (args.flags.project) params.projectId = args.flags.project;
 	else if (context?.projectId) params.projectId = context.projectId;
-	if (args.flags.title) params.title = args.flags.title;
-	if (args.flags.description) params.description = args.flags.description;
+	const trimmedTitle = args.flags.title?.trim();
+	const trimmedDesc = args.flags.description?.trim();
+	if (trimmedTitle) params.title = trimmedTitle;
+	if (trimmedDesc) params.description = trimmedDesc;
 
 	if (!params.title && !params.description) {
 		exitUsage("Provide --title or --description to update");
@@ -109,7 +120,7 @@ async function updateTask(args: ParsedArgs, socketPath: string, context: CliCont
 }
 
 async function moveTask(args: ParsedArgs, socketPath: string, context: CliContext | null): Promise<void> {
-	const taskId = args.positional[0] || context?.taskId;
+	const taskId = resolveTaskId(args, context);
 	if (!taskId) {
 		exitUsage("Usage: dev3 task move <id> --status <status>");
 	}
@@ -123,6 +134,9 @@ async function moveTask(args: ParsedArgs, socketPath: string, context: CliContex
 			`Cannot move to "${newStatus}" via CLI`,
 			`This status destroys the worktree and terminal session.\nUse the desktop app UI to mark tasks as ${newStatus}.`,
 		);
+	}
+	if (!CLI_ALLOWED_STATUSES.includes(newStatus as TaskStatus)) {
+		exitUsage(`Invalid status: "${newStatus}". Valid: ${CLI_ALLOWED_STATUSES.join(", ")}`);
 	}
 
 	const params: Record<string, unknown> = { taskId, newStatus };

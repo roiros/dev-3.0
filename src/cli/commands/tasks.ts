@@ -1,5 +1,5 @@
 import type { Task } from "../../shared/types";
-import { STATUS_LABELS } from "../../shared/types";
+import { STATUS_LABELS, ALL_STATUSES } from "../../shared/types";
 import { sendRequest } from "../socket-client";
 import { printTable, exitError, exitUsage } from "../output";
 import type { ParsedArgs } from "../args";
@@ -19,7 +19,17 @@ export async function handleTasks(
 
 		const params: Record<string, unknown> = { projectId };
 		if (args.flags.status) {
+			if (!ALL_STATUSES.includes(args.flags.status as typeof ALL_STATUSES[number])) {
+				exitUsage(`Invalid status: "${args.flags.status}". Valid: ${ALL_STATUSES.join(", ")}`);
+			}
 			params.status = args.flags.status;
+		}
+		if (args.flags.limit) {
+			const limit = Number(args.flags.limit);
+			if (!Number.isInteger(limit) || limit <= 0) {
+				exitUsage(`Invalid --limit: "${args.flags.limit}". Must be a positive integer.`);
+			}
+			params.limit = limit;
 		}
 
 		const resp = await sendRequest(socketPath, "tasks.list", params);

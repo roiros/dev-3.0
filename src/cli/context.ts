@@ -115,6 +115,32 @@ export function resolveSocketPath(cwd?: string): string | null {
 }
 
 /**
+ * Expand a short task ID (e.g. 8-char prefix from `tasks list`) to full UUID.
+ * First checks the current context, then falls back to reading data files.
+ */
+export function expandShortId(id: string, context: CliContext | null): string {
+	// Already a full UUID
+	if (id.length >= 36) return id;
+	// Check if context task matches the prefix
+	if (context?.taskId?.startsWith(id)) return context.taskId;
+	// Fall back to scanning data files across all projects
+	try {
+		const projects = JSON.parse(readFileSync(PROJECTS_FILE, "utf-8")) as Array<{ id: string; path: string }>;
+		for (const project of projects) {
+			const slug = project.path.replace(/^\//, "").replaceAll("/", "-");
+			const tasksFile = `${DEV3_HOME}/data/${slug}/tasks.json`;
+			if (!existsSync(tasksFile)) continue;
+			const tasks = JSON.parse(readFileSync(tasksFile, "utf-8")) as Array<{ id: string }>;
+			const match = tasks.find((t) => t.id.startsWith(id));
+			if (match) return match.id;
+		}
+	} catch {
+		// Data files not available — return as-is
+	}
+	return id;
+}
+
+/**
  * Read project info directly from data files (no socket needed).
  */
 export function readProjectDirect(projectId: string): { id: string; name: string; path: string } | null {

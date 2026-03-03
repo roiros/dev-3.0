@@ -182,3 +182,68 @@ describe("tasks list", () => {
 		expect(stderrOutput).toContain("Unknown subcommand");
 	});
 });
+
+// ─── tasks list: status validation ───────────────────────────────────────────
+// CLI doesn't validate --status value before sending to server.
+// Invalid values should be caught early with a helpful error message.
+
+describe("tasks list status validation", () => {
+	it("rejects invalid --status values before sending to server", async () => {
+		await expect(
+			handleTasks("list", { positional: [], flags: { project: "proj-001", status: "garbage" } }, SOCKET, null),
+		).rejects.toThrow("EXIT_3");
+		expect(stderrOutput).toContain("Invalid status");
+		expect(mockSend).not.toHaveBeenCalled();
+	});
+
+	it("rejects typo'd status (e.g. 'inprogress')", async () => {
+		await expect(
+			handleTasks("list", { positional: [], flags: { project: "proj-001", status: "inprogress" } }, SOCKET, null),
+		).rejects.toThrow("EXIT_3");
+		expect(mockSend).not.toHaveBeenCalled();
+	});
+});
+
+// ─── tasks list: --limit support ─────────────────────────────────────────────
+
+describe("tasks list --limit", () => {
+	it("passes --limit to server request", async () => {
+		mockSend.mockResolvedValue(okResp(TASKS));
+
+		await handleTasks("list", { positional: [], flags: { project: "proj-001", limit: "10" } }, SOCKET, null);
+
+		expect(mockSend).toHaveBeenCalledWith(SOCKET, "tasks.list", {
+			projectId: "proj-001",
+			limit: 10,
+		});
+	});
+});
+
+// ─── tasks list: --limit validation ─────────────────────────────────────────
+// parseInt("abc", 10) returns NaN, parseInt("10abc", 10) returns 10.
+// Both are wrong — the CLI should reject non-numeric and negative values
+// instead of silently sending garbage to the server.
+
+describe("tasks list --limit validation", () => {
+	it("rejects non-numeric --limit (e.g. 'abc') before sending to server", async () => {
+		await expect(
+			handleTasks("list", { positional: [], flags: { project: "proj-001", limit: "abc" } }, SOCKET, null),
+		).rejects.toThrow("EXIT_3");
+		expect(stderrOutput).toContain("--limit");
+		expect(mockSend).not.toHaveBeenCalled();
+	});
+
+	it("rejects negative --limit (e.g. '-5')", async () => {
+		await expect(
+			handleTasks("list", { positional: [], flags: { project: "proj-001", limit: "-5" } }, SOCKET, null),
+		).rejects.toThrow("EXIT_3");
+		expect(mockSend).not.toHaveBeenCalled();
+	});
+
+	it("rejects partial number --limit (e.g. '10abc') — parseInt silently truncates", async () => {
+		await expect(
+			handleTasks("list", { positional: [], flags: { project: "proj-001", limit: "10abc" } }, SOCKET, null),
+		).rejects.toThrow("EXIT_3");
+		expect(mockSend).not.toHaveBeenCalled();
+	});
+});

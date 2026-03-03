@@ -408,6 +408,295 @@ describe("task move", () => {
 	});
 });
 
+// ─── --id flag support ───────────────────────────────────────────────────────
+// The CLI should accept --id <taskId> as an alternative to positional arg.
+// This lets agents update/show/move ANY task, not just the current one.
+
+describe("task show --id flag", () => {
+	it("uses --id flag when no positional arg given", async () => {
+		mockSend.mockResolvedValue(okResp(FAKE_TASK));
+
+		await handleTask("show", args([], { id: "bbbbbbbb" }), SOCKET, null);
+
+		expect(mockSend).toHaveBeenCalledWith(SOCKET, "task.show", {
+			taskId: "bbbbbbbb",
+		});
+	});
+
+	it("--id flag takes priority over context taskId", async () => {
+		mockSend.mockResolvedValue(okResp(FAKE_TASK));
+
+		await handleTask("show", args([], { id: "bbbbbbbb" }), SOCKET, CTX);
+
+		const params = mockSend.mock.calls[0]![2]!;
+		expect(params.taskId).toBe("bbbbbbbb");
+	});
+
+	it("positional arg takes priority over --id flag", async () => {
+		mockSend.mockResolvedValue(okResp(FAKE_TASK));
+
+		await handleTask("show", args(["cccccccc"], { id: "bbbbbbbb" }), SOCKET, null);
+
+		const params = mockSend.mock.calls[0]![2]!;
+		expect(params.taskId).toBe("cccccccc");
+	});
+});
+
+describe("task update --id flag", () => {
+	it("uses --id flag when no positional arg given", async () => {
+		const updated = { ...FAKE_TASK, title: "Updated" };
+		mockSend.mockResolvedValue(okResp(updated));
+
+		await handleTask("update", args([], { id: "bbbbbbbb", title: "Updated" }), SOCKET, null);
+
+		expect(mockSend).toHaveBeenCalledWith(SOCKET, "task.update", {
+			taskId: "bbbbbbbb",
+			title: "Updated",
+		});
+	});
+
+	it("--id flag takes priority over context taskId", async () => {
+		mockSend.mockResolvedValue(okResp(FAKE_TASK));
+
+		await handleTask("update", args([], { id: "bbbbbbbb", title: "T" }), SOCKET, CTX);
+
+		const params = mockSend.mock.calls[0]![2]!;
+		expect(params.taskId).toBe("bbbbbbbb");
+	});
+
+	it("--id flag should NOT silently fall back to context", async () => {
+		// If --id is provided, the request must use that ID, never the context task
+		mockSend.mockResolvedValue(okResp(FAKE_TASK));
+
+		await handleTask("update", args([], { id: "different-task", title: "T" }), SOCKET, CTX);
+
+		const params = mockSend.mock.calls[0]![2]!;
+		expect(params.taskId).not.toBe(CTX.taskId);
+		expect(params.taskId).toBe("different-task");
+	});
+});
+
+describe("task move --id flag", () => {
+	it("uses --id flag when no positional arg given", async () => {
+		const moved = { ...FAKE_TASK, status: "todo" as const };
+		mockSend.mockResolvedValue(okResp(moved));
+
+		await handleTask("move", args([], { id: "bbbbbbbb", status: "todo" }), SOCKET, null);
+
+		expect(mockSend).toHaveBeenCalledWith(SOCKET, "task.move", {
+			taskId: "bbbbbbbb",
+			newStatus: "todo",
+		});
+	});
+
+	it("--id flag takes priority over context taskId", async () => {
+		const moved = { ...FAKE_TASK, status: "todo" as const };
+		mockSend.mockResolvedValue(okResp(moved));
+
+		await handleTask("move", args([], { id: "bbbbbbbb", status: "todo" }), SOCKET, CTX);
+
+		const params = mockSend.mock.calls[0]![2]!;
+		expect(params.taskId).toBe("bbbbbbbb");
+	});
+});
+
+// ─── task create --description ───────────────────────────────────────────────
+// create should support --description to set initial description
+
+describe("task create --description", () => {
+	const createdTask: Task = { ...FAKE_TASK, status: "todo", seq: 50, title: "With desc", description: "Full description here" };
+
+	it("sends description to server when --description is provided", async () => {
+		mockSend.mockResolvedValue(okResp(createdTask));
+
+		await handleTask(
+			"create",
+			args([], { project: "proj-001", title: "With desc", description: "Full description here" }),
+			SOCKET,
+			null,
+		);
+
+		expect(mockSend).toHaveBeenCalledWith(SOCKET, "task.create", {
+			projectId: "proj-001",
+			title: "With desc",
+			description: "Full description here",
+		});
+	});
+
+	it("works without --description (backward compat)", async () => {
+		mockSend.mockResolvedValue(okResp(createdTask));
+
+		await handleTask(
+			"create",
+			args([], { project: "proj-001", title: "No desc" }),
+			SOCKET,
+			null,
+		);
+
+		const params = mockSend.mock.calls[0]![2]!;
+		expect(params).not.toHaveProperty("description");
+	});
+});
+
+// ─── task move: status validation ────────────────────────────────────────────
+// CLI only blocks "completed" and "cancelled" but doesn't validate that the
+// status is actually in the allowed list. "garbage" passes CLI validation and
+// hits the server, which is wasteful and confusing.
+
+describe("task move status validation", () => {
+	it("rejects unknown status values before hitting the server", async () => {
+		await expect(
+			handleTask("move", args(["aaaaaaaa"], { status: "garbage" }), SOCKET, null),
+		).rejects.toThrow("EXIT_3");
+		expect(stderrOutput).toContain("Valid:");
+		expect(mockSend).not.toHaveBeenCalled();
+	});
+
+	it("rejects typo'd status (e.g. 'in_progress' instead of 'in-progress')", async () => {
+		await expect(
+			handleTask("move", args(["aaaaaaaa"], { status: "in_progress" }), SOCKET, null),
+		).rejects.toThrow("EXIT_3");
+		expect(mockSend).not.toHaveBeenCalled();
+	});
+
+	it("rejects empty string status", async () => {
+		await expect(
+			handleTask("move", args(["aaaaaaaa"], { status: "" }), SOCKET, null),
+		).rejects.toThrow("EXIT_3");
+		expect(mockSend).not.toHaveBeenCalled();
+	});
+});
+
+// ─── task create: cross-project ──────────────────────────────────────────────
+
+describe("task create cross-project", () => {
+	const createdTask = {
+		...FAKE_TASK,
+		status: "todo" as const,
+		seq: 50,
+		projectId: "other-proj",
+	};
+
+	it("--project flag allows creating task in a different project", async () => {
+		mockSend.mockResolvedValue(okResp(createdTask));
+
+		await handleTask(
+			"create",
+			args([], { project: "other-proj", title: "Cross-project task" }),
+			SOCKET,
+			CTX,
+		);
+
+		const params = mockSend.mock.calls[0]![2]!;
+		expect(params.projectId).toBe("other-proj");
+		// context projectId should NOT override explicit --project
+		expect(params.projectId).not.toBe(CTX.projectId);
+	});
+});
+
+// ─── task update: no project, no context ─────────────────────────────────────
+// When updating a foreign task by explicit ID without --project and without
+// context, the request should still work (server resolves by task ID alone),
+// but projectId should not be silently injected from a wrong context.
+
+describe("task update foreign task without project", () => {
+	it("sends request without projectId when updating by explicit ID, no context", async () => {
+		mockSend.mockResolvedValue(okResp(FAKE_TASK));
+
+		await handleTask(
+			"update",
+			args(["bbbbbbbb"], { title: "Foreign update" }),
+			SOCKET,
+			null,
+		);
+
+		const params = mockSend.mock.calls[0]![2]!;
+		expect(params.taskId).toBe("bbbbbbbb");
+		expect(params).not.toHaveProperty("projectId");
+	});
+});
+
+// ─── short ID resolution ─────────────────────────────────────────────────────
+// `tasks list` displays 8-char short IDs (t.id.slice(0, 8)).
+// When the user copies that ID and uses it with task show/update/move,
+// the CLI must resolve it to the full UUID before sending to the server.
+// Currently the CLI passes the 8-char string as-is, and the server returns
+// "Task not found" because it only matches on full UUIDs.
+//
+// We observed this bug live:
+//   $ dev3 task show --id 5f01f223
+//   error: Task not found: 5f01f223
+
+describe("task show: short ID resolution", () => {
+	it("resolves 8-char short ID to full UUID before sending to server", async () => {
+		mockSend.mockResolvedValue(okResp(FAKE_TASK));
+
+		const shortId = FAKE_TASK.id.slice(0, 8); // "aaaaaaaa"
+		await handleTask("show", args([shortId]), SOCKET, CTX);
+
+		const sentId = (mockSend.mock.calls[0]![2]! as Record<string, unknown>).taskId;
+		// The server should receive the FULL UUID, not the 8-char prefix
+		expect(sentId).toBe(FAKE_TASK.id);
+	});
+});
+
+describe("task update: short ID resolution", () => {
+	it("resolves 8-char short ID to full UUID before sending to server", async () => {
+		mockSend.mockResolvedValue(okResp(FAKE_TASK));
+
+		const shortId = FAKE_TASK.id.slice(0, 8);
+		await handleTask("update", args([shortId], { title: "Updated" }), SOCKET, CTX);
+
+		const sentId = (mockSend.mock.calls[0]![2]! as Record<string, unknown>).taskId;
+		expect(sentId).toBe(FAKE_TASK.id);
+	});
+});
+
+describe("task move: short ID resolution", () => {
+	it("resolves 8-char short ID to full UUID before sending to server", async () => {
+		const moved = { ...FAKE_TASK, status: "todo" as const };
+		mockSend.mockResolvedValue(okResp(moved));
+
+		const shortId = FAKE_TASK.id.slice(0, 8);
+		await handleTask("move", args([shortId], { status: "todo" }), SOCKET, CTX);
+
+		const sentId = (mockSend.mock.calls[0]![2]! as Record<string, unknown>).taskId;
+		expect(sentId).toBe(FAKE_TASK.id);
+	});
+});
+
+// ─── whitespace validation ───────────────────────────────────────────────────
+// Whitespace-only strings are truthy ("   ".length > 0), so they pass basic
+// `if (!title)` checks. But creating a task with "   " as the title or updating
+// to a whitespace-only value is never intentional — it's always a user error
+// that should be caught early.
+
+describe("task create whitespace validation", () => {
+	it("rejects whitespace-only --title", async () => {
+		await expect(
+			handleTask("create", args([], { project: "proj-001", title: "   " }), SOCKET, null),
+		).rejects.toThrow("EXIT_3");
+		expect(stderrOutput).toContain("--title");
+		expect(mockSend).not.toHaveBeenCalled();
+	});
+});
+
+describe("task update whitespace validation", () => {
+	it("rejects whitespace-only --title when it's the only update field", async () => {
+		await expect(
+			handleTask("update", args(["aaaaaaaa"], { title: "   " }), SOCKET, null),
+		).rejects.toThrow("EXIT_3");
+		expect(mockSend).not.toHaveBeenCalled();
+	});
+
+	it("rejects whitespace-only --description when it's the only update field", async () => {
+		await expect(
+			handleTask("update", args(["aaaaaaaa"], { description: "   " }), SOCKET, null),
+		).rejects.toThrow("EXIT_3");
+		expect(mockSend).not.toHaveBeenCalled();
+	});
+});
+
 // ─── unknown subcommand ──────────────────────────────────────────────────────
 
 describe("task (unknown subcommand)", () => {

@@ -2,7 +2,7 @@ import type { Task, TaskNote, NoteSource } from "../../shared/types";
 import { sendRequest } from "../socket-client";
 import { printTable, exitError, exitUsage } from "../output";
 import type { ParsedArgs } from "../args";
-import type { CliContext } from "../context";
+import { expandShortId, type CliContext } from "../context";
 
 const VALID_SOURCES: NoteSource[] = ["user", "ai"];
 
@@ -24,12 +24,13 @@ function truncate(text: string, maxLen: number): string {
 }
 
 async function addNote(args: ParsedArgs, socketPath: string, context: CliContext | null): Promise<void> {
-	const taskId = args.flags.task || context?.taskId;
-	if (!taskId) {
+	const rawTaskId = args.flags.task || context?.taskId;
+	if (!rawTaskId) {
 		exitUsage("Usage: dev3 note add \"content\" (or run from inside a worktree)");
 	}
+	const taskId = expandShortId(rawTaskId, context);
 
-	const content = args.positional[0] || args.flags.content;
+	const content = (args.positional[0] || args.flags.content || "").trim();
 	if (!content) {
 		exitUsage("Content is required. Usage: dev3 note add \"your note text\"");
 	}
@@ -52,10 +53,11 @@ async function addNote(args: ParsedArgs, socketPath: string, context: CliContext
 }
 
 async function listNotes(args: ParsedArgs, socketPath: string, context: CliContext | null): Promise<void> {
-	const taskId = args.flags.task || args.positional[0] || context?.taskId;
-	if (!taskId) {
+	const rawTaskId = args.flags.task || args.positional[0] || context?.taskId;
+	if (!rawTaskId) {
 		exitUsage("Usage: dev3 note list (or run from inside a worktree)");
 	}
+	const taskId = expandShortId(rawTaskId, context);
 
 	const params: Record<string, unknown> = { taskId };
 	if (args.flags.project) params.projectId = args.flags.project;
@@ -86,10 +88,11 @@ async function deleteNote(args: ParsedArgs, socketPath: string, context: CliCont
 		exitUsage("Usage: dev3 note delete <note-id>");
 	}
 
-	const taskId = args.flags.task || context?.taskId;
-	if (!taskId) {
+	const rawTaskId = args.flags.task || context?.taskId;
+	if (!rawTaskId) {
 		exitUsage("--task <id> is required (or run from inside a worktree)");
 	}
+	const taskId = expandShortId(rawTaskId, context);
 
 	const params: Record<string, unknown> = { taskId, noteId };
 	if (args.flags.project) params.projectId = args.flags.project;
