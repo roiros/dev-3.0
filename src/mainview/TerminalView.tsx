@@ -449,11 +449,16 @@ function TerminalView({ ptyUrl, taskId }: TerminalViewProps) {
 		termRef.current?.focus();
 	}
 
+	const termBg = resolvedTheme === "light"
+		? LIGHT_TERMINAL_THEME.background
+		: DARK_TERMINAL_THEME.background;
+
 	return (
 		<div
 			ref={containerRef}
 			className="w-full h-full min-h-0 overflow-hidden"
 			data-terminal="true"
+			style={{ backgroundColor: termBg }}
 			onClick={() => termRef.current?.focus()}
 			onDragOver={handleDragOver}
 			onDrop={handleDrop}
