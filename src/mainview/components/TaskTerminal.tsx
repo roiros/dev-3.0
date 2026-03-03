@@ -23,7 +23,6 @@ function TaskTerminal({ projectId, taskId, tasks, projects, navigate, dispatch, 
 	const t = useT();
 	const [ptyUrl, setPtyUrl] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
-	const [moving, setMoving] = useState(false);
 	const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	const task = tasks.find((t) => t.id === taskId);
@@ -78,18 +77,16 @@ function TaskTerminal({ projectId, taskId, tasks, projects, navigate, dispatch, 
 		};
 	}, [ptyUrl, error]);
 
-	async function handleMove(newStatus: "completed" | "cancelled") {
+	function handleMove(newStatus: "completed" | "cancelled") {
 		const fromStatus = task?.status ?? "unknown";
-		setMoving(true);
-		try {
-			const updated = await api.request.moveTask({ taskId, projectId, newStatus, force: true });
-			dispatch({ type: "updateTask", task: updated });
-			trackEvent("task_moved", { from_status: fromStatus, to_status: newStatus });
-			navigate({ screen: "project", projectId });
-		} catch (err) {
-			console.error("Failed to move task:", err);
-			setMoving(false);
+		if (task) {
+			dispatch({ type: "updateTask", task: { ...task, status: newStatus, worktreePath: null, branchName: null } });
 		}
+		trackEvent("task_moved", { from_status: fromStatus, to_status: newStatus });
+		navigate({ screen: "project", projectId });
+		api.request.moveTask({ taskId, projectId, newStatus, force: true }).catch((err) => {
+			console.error("Background moveTask failed:", err);
+		});
 	}
 
 	if (error) {
@@ -110,15 +107,13 @@ function TaskTerminal({ projectId, taskId, tasks, projects, navigate, dispatch, 
 					<div className="flex gap-3 pt-2">
 						<button
 							onClick={() => handleMove("completed")}
-							disabled={moving}
-							className="flex-1 px-4 py-2 bg-accent text-white rounded text-sm font-medium hover:bg-accent-hover disabled:opacity-50 transition-colors"
+							className="flex-1 px-4 py-2 bg-accent text-white rounded text-sm font-medium hover:bg-accent-hover transition-colors"
 						>
 							{t("terminal.complete")}
 						</button>
 						<button
 							onClick={() => handleMove("cancelled")}
-							disabled={moving}
-							className="flex-1 px-4 py-2 bg-danger/10 text-danger rounded text-sm font-medium hover:bg-danger/20 disabled:opacity-50 transition-colors"
+							className="flex-1 px-4 py-2 bg-danger/10 text-danger rounded text-sm font-medium hover:bg-danger/20 transition-colors"
 						>
 							{t("terminal.cancelTask")}
 						</button>
