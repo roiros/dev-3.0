@@ -4,6 +4,7 @@ import { api } from "./rpc";
 import { useT } from "./i18n";
 import { trackPageView } from "./analytics";
 import type { RequirementCheckResult } from "../shared/types";
+import { useGlobalShortcut } from "./hooks/useGlobalShortcut";
 import GlobalHeader from "./components/GlobalHeader";
 import GlobalSettings from "./components/GlobalSettings";
 import Dashboard from "./components/Dashboard";
@@ -13,9 +14,15 @@ import ProjectSettings from "./components/ProjectSettings";
 import RequirementsCheck from "./components/RequirementsCheck";
 import Changelog from "./components/Changelog";
 
+const SKIP_QUIT_DIALOG_KEY = "dev3-skip-quit-dialog";
+
 function App() {
 	const [state, dispatch] = useAppState();
 	const t = useT();
+
+	// Quit dialog
+	const [showQuitDialog, setShowQuitDialog] = useState(false);
+	const [dontShowAgain, setDontShowAgain] = useState(false);
 
 	// System requirements gate
 	const [reqStatus, setReqStatus] = useState<"checking" | "failed" | "passed">("checking");
@@ -45,6 +52,34 @@ function App() {
 		(route: Route) => dispatch({ type: "navigate", route }),
 		[dispatch],
 	);
+
+	// Cmd+Q / Cmd+, — capture phase so ghostty-web terminal can't swallow them
+	useGlobalShortcut(
+		(e) => {
+			if (e.metaKey && e.key === "q") {
+				e.preventDefault();
+				e.stopPropagation();
+				if (localStorage.getItem(SKIP_QUIT_DIALOG_KEY) === "true") {
+					api.request.quitApp().catch(() => {});
+				} else {
+					setShowQuitDialog(true);
+				}
+			} else if (e.metaKey && e.key === ",") {
+				e.preventDefault();
+				e.stopPropagation();
+				navigate({ screen: "settings" });
+			}
+		},
+		[navigate],
+		{ capture: true },
+	);
+
+	function handleConfirmQuit() {
+		if (dontShowAgain) {
+			localStorage.setItem(SKIP_QUIT_DIALOG_KEY, "true");
+		}
+		api.request.quitApp().catch(() => {});
+	}
 
 	// Load projects on mount — gated on requirements passing
 	useEffect(() => {
@@ -107,13 +142,17 @@ function App() {
 		trackPageView(screen);
 	}, [state.route]);
 
-	// Close settings screens / split view with Escape
-	useEffect(() => {
-		function onKeyDown(e: KeyboardEvent) {
+	// Escape: close quit dialog or navigate back from settings screens
+	// (skipped when a terminal has focus — Escape must reach the shell)
+	useGlobalShortcut(
+		(e) => {
 			if (e.key !== "Escape") return;
-			// Don't intercept Escape when a terminal has focus
 			const terminalEl = document.querySelector('[data-terminal="true"]');
 			if (terminalEl?.contains(document.activeElement)) return;
+			if (showQuitDialog) {
+				setShowQuitDialog(false);
+				return;
+			}
 			const { route } = state;
 			if (route.screen === "settings") {
 				navigate({ screen: "dashboard" });
@@ -122,10 +161,9 @@ function App() {
 			} else if (route.screen === "project" && route.activeTaskId) {
 				navigate({ screen: "project", projectId: route.projectId });
 			}
-		}
-		window.addEventListener("keydown", onKeyDown);
-		return () => window.removeEventListener("keydown", onKeyDown);
-	}, [state, navigate]);
+		},
+		[state, navigate, showQuitDialog],
+	);
 
 	if (reqStatus === "checking") {
 		return (
@@ -170,6 +208,42 @@ function App() {
 				navigate={navigate}
 			/>
 			<div className="flex-1 min-h-0 flex flex-col">{renderScreen()}</div>
+			{showQuitDialog && (
+				<div
+					className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+					onMouseDown={(e) => {
+						if (e.target === e.currentTarget) setShowQuitDialog(false);
+					}}
+				>
+					<div className="bg-overlay border border-edge rounded-2xl shadow-2xl w-[420px] p-6 space-y-4">
+						<h2 className="text-fg text-lg font-semibold">{t("quit.dialogTitle")}</h2>
+						<p className="text-fg-2 text-sm leading-relaxed">{t("quit.dialogMessage")}</p>
+						<label className="flex items-center gap-2.5 cursor-pointer select-none">
+							<input
+								type="checkbox"
+								checked={dontShowAgain}
+								onChange={(e) => setDontShowAgain(e.target.checked)}
+								className="w-4 h-4 rounded accent-accent"
+							/>
+							<span className="text-fg-2 text-sm">{t("quit.dontShowAgain")}</span>
+						</label>
+						<div className="flex justify-end gap-2 pt-1">
+							<button
+								onClick={() => setShowQuitDialog(false)}
+								className="px-4 py-2 text-sm rounded-lg text-fg-2 hover:text-fg hover:bg-elevated transition-colors"
+							>
+								{t("quit.cancel")}
+							</button>
+							<button
+								onClick={handleConfirmQuit}
+								className="px-4 py-2 text-sm rounded-lg bg-danger text-white hover:bg-danger/80 transition-colors"
+							>
+								{t("quit.confirm")}
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 
