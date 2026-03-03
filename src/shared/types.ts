@@ -383,6 +383,10 @@ export type AppRPCSchema = {
 				params: { taskId: string; projectId: string };
 				response: void;
 			};
+			showUncommittedDiff: {
+				params: { taskId: string; projectId: string };
+				response: void;
+			};
 			getTerminalPreview: {
 				params: { taskId: string };
 				response: string | null;

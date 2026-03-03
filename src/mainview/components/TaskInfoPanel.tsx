@@ -410,6 +410,17 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 		}
 	}
 
+	async function handleShowUncommittedDiff() {
+		try {
+			await api.request.showUncommittedDiff({
+				taskId: task.id,
+				projectId: project.id,
+			});
+		} catch (err) {
+			alert(t("infoPanel.uncommittedDiffFailed", { error: String(err) }));
+		}
+	}
+
 	// Listen for git operation completion — refresh branch status and handle post-merge dialog
 	useEffect(() => {
 		async function onGitOpCompleted(e: Event) {
@@ -692,6 +703,14 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 		? t("infoPanel.statusLoading")
 		: t("infoPanel.showDiffTooltip", { branch: comparisonBranch });
 
+	const hasUncommitted = branchStatus && (branchStatus.insertions > 0 || branchStatus.deletions > 0);
+	const uncommittedDiffDisabled = !branchStatus || !hasUncommitted;
+	const uncommittedDiffTooltip = !branchStatus
+		? t("infoPanel.statusLoading")
+		: !hasUncommitted
+			? t("infoPanel.uncommittedDiffDisabled")
+			: t("infoPanel.uncommittedDiffTooltip");
+
 	const disabledBtnClass = "text-fg-muted/50 cursor-not-allowed bg-raised/50";
 	const enabledBtnClass = "text-accent hover:bg-accent/20 bg-accent/10";
 
@@ -707,12 +726,17 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 				}`}
 				title={showDiffTooltip}
 			>
-				<span className="flex items-center gap-1">
-					<svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-					</svg>
-					{t("infoPanel.showDiff")}
-				</span>
+				{t("infoPanel.showDiff")}
+			</button>
+			<button
+				onClick={handleShowUncommittedDiff}
+				disabled={uncommittedDiffDisabled}
+				className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${
+					uncommittedDiffDisabled ? disabledBtnClass : enabledBtnClass
+				}`}
+				title={uncommittedDiffTooltip}
+			>
+				{t("infoPanel.uncommittedDiff")}
 			</button>
 			<button
 				onClick={handleRebase}

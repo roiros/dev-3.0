@@ -22,7 +22,6 @@ import {
 	resolveAgentCommand,
 	buildTaskEnv,
 	isClaudeCommand,
-	DEV3_SYSTEM_PROMPT,
 } from "../../bun/agents";
 import type { TemplateContext } from "../../bun/agents";
 import type { CodingAgent, AgentConfiguration, Project } from "../../shared/types";
