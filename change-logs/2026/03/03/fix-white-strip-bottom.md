@@ -1,0 +1,1 @@
+Remove spurious `padding-bottom: 16px` from `body, #root` in index.css that caused a white strip at the bottom of the window. Also move the gradient background from `#root`-only to the shared `body, #root` rule so the body background matches the app theme.
