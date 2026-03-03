@@ -410,6 +410,17 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 		}
 	}
 
+	async function handleShowUncommittedDiff() {
+		try {
+			await api.request.showUncommittedDiff({
+				taskId: task.id,
+				projectId: project.id,
+			});
+		} catch (err) {
+			alert(t("infoPanel.uncommittedDiffFailed", { error: String(err) }));
+		}
+	}
+
 	// Listen for git operation completion — refresh branch status and handle post-merge dialog
 	useEffect(() => {
 		async function onGitOpCompleted(e: Event) {
@@ -658,54 +669,104 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 				</span>
 			)}
 			<span className="text-fg-muted font-normal">vs {comparisonBranch}</span>
-			{branchStatus.behind > 0 && (
-				<button
-					onClick={handleRebase}
-					disabled={!branchStatus.canRebase || rebasing}
-					className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${
-						!branchStatus.canRebase || rebasing
-							? "text-fg-muted cursor-not-allowed bg-raised"
-							: "text-accent hover:bg-accent/20 bg-accent/10"
-					}`}
-					title={!branchStatus.canRebase ? t("infoPanel.rebaseConflicts") : t("infoPanel.rebase")}
-				>
-					{rebasing ? t("infoPanel.rebasing") : t("infoPanel.rebase")}
-				</button>
-			)}
-			{branchStatus.ahead > 0 && (
-				<button
-					onClick={handlePush}
-					disabled={pushing}
-					className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${
-						pushing
-							? "text-fg-muted cursor-not-allowed bg-raised"
-							: "text-accent hover:bg-accent/20 bg-accent/10"
-					}`}
-					title={t("infoPanel.push")}
-				>
-					{pushing ? t("infoPanel.pushing") : t("infoPanel.push")}
-				</button>
-			)}
-			{branchStatus.behind === 0 && branchStatus.ahead > 0 && (
-				<button
-					onClick={handleMerge}
-					disabled={merging}
-					className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${
-						merging
-							? "text-fg-muted cursor-not-allowed bg-raised"
-							: "text-accent hover:bg-accent/20 bg-accent/10"
-					}`}
-					title={t("infoPanel.merge")}
-				>
-					{merging ? t("infoPanel.merging") : t("infoPanel.merge")}
-				</button>
-			)}
+		</span>
+	) : null;
+
+	// -- Git action buttons: always visible when branchStatus is loaded --
+	const rebaseDisabled = !branchStatus || branchStatus.behind === 0 || !branchStatus.canRebase || rebasing;
+	const rebaseTooltip = !branchStatus
+		? t("infoPanel.statusLoading")
+		: branchStatus.behind === 0
+			? t("infoPanel.rebaseDisabled")
+			: !branchStatus.canRebase
+				? t("infoPanel.rebaseConflicts")
+				: t("infoPanel.rebase");
+
+	const pushDisabled = !branchStatus || branchStatus.ahead === 0 || pushing;
+	const pushTooltip = !branchStatus
+		? t("infoPanel.statusLoading")
+		: branchStatus.ahead === 0
+			? t("infoPanel.pushDisabled")
+			: t("infoPanel.push");
+
+	const mergeDisabled = !branchStatus || branchStatus.ahead === 0 || branchStatus.behind > 0 || merging;
+	const mergeTooltip = !branchStatus
+		? t("infoPanel.statusLoading")
+		: branchStatus.ahead === 0
+			? t("infoPanel.mergeDisabledNoCommits")
+			: branchStatus.behind > 0
+				? t("infoPanel.mergeDisabledBehind")
+				: t("infoPanel.merge");
+
+	const showDiffDisabled = !branchStatus;
+	const showDiffTooltip = !branchStatus
+		? t("infoPanel.statusLoading")
+		: t("infoPanel.showDiffTooltip", { branch: comparisonBranch });
+
+	const hasUncommitted = branchStatus && (branchStatus.insertions > 0 || branchStatus.deletions > 0);
+	const uncommittedDiffDisabled = !branchStatus || !hasUncommitted;
+	const uncommittedDiffTooltip = !branchStatus
+		? t("infoPanel.statusLoading")
+		: !hasUncommitted
+			? t("infoPanel.uncommittedDiffDisabled")
+			: t("infoPanel.uncommittedDiffTooltip");
+
+	const disabledBtnClass = "text-fg-muted/50 cursor-not-allowed bg-raised/50";
+	const enabledBtnClass = "text-accent hover:bg-accent/20 bg-accent/10";
+
+	const gitActionButtons = isTaskActive && task.worktreePath ? (
+		<span className="flex items-center gap-1 text-[11px] flex-shrink-0">
 			<button
 				onClick={handleShowDiff}
-				className="px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors text-fg-muted hover:text-fg hover:bg-elevated"
-				title={t("infoPanel.showDiff")}
+				disabled={showDiffDisabled}
+				className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-colors ${
+					showDiffDisabled
+						? disabledBtnClass
+						: "text-accent hover:bg-accent/20 bg-accent/10 border border-accent/30"
+				}`}
+				title={showDiffTooltip}
 			>
 				{t("infoPanel.showDiff")}
+			</button>
+			<button
+				onClick={handleShowUncommittedDiff}
+				disabled={uncommittedDiffDisabled}
+				className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${
+					uncommittedDiffDisabled ? disabledBtnClass : enabledBtnClass
+				}`}
+				title={uncommittedDiffTooltip}
+			>
+				{t("infoPanel.uncommittedDiff")}
+			</button>
+			<button
+				onClick={handleRebase}
+				disabled={rebaseDisabled}
+				className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${
+					rebaseDisabled ? disabledBtnClass : enabledBtnClass
+				}`}
+				title={rebaseTooltip}
+			>
+				{rebasing ? t("infoPanel.rebasing") : t("infoPanel.rebase")}
+			</button>
+			<button
+				onClick={handlePush}
+				disabled={pushDisabled}
+				className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${
+					pushDisabled ? disabledBtnClass : enabledBtnClass
+				}`}
+				title={pushTooltip}
+			>
+				{pushing ? t("infoPanel.pushing") : t("infoPanel.push")}
+			</button>
+			<button
+				onClick={handleMerge}
+				disabled={mergeDisabled}
+				className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${
+					mergeDisabled ? disabledBtnClass : enabledBtnClass
+				}`}
+				title={mergeTooltip}
+			>
+				{merging ? t("infoPanel.merging") : t("infoPanel.merge")}
 			</button>
 			<button
 				onClick={handleRefreshStatus}
@@ -732,8 +793,8 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 			disabled={devServerDisabled}
 			className={`flex items-center gap-1 px-2 py-1 rounded-lg transition-colors flex-shrink-0 ${
 				devServerDisabled
-					? "text-fg-muted cursor-not-allowed"
-					: "text-fg-3 hover:text-fg hover:bg-elevated"
+					? "text-fg-muted/50 cursor-not-allowed"
+					: "text-[#34d399] hover:text-[#6ee7b7] hover:bg-[#34d399]/10 border border-[#34d399]/30"
 			}`}
 			title={devServerDisabled ? t("header.devServerDisabled") : t("header.devServer")}
 		>
@@ -741,7 +802,7 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 				<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
 					d="M5 12h14M12 5l7 7-7 7" />
 			</svg>
-			<span className="text-[11px] font-medium">{t("header.devServer")}</span>
+			<span className="text-[11px] font-semibold">{t("header.devServer")}</span>
 		</button>
 	);
 
@@ -868,6 +929,12 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 								{uncommittedBadge}
 							</>
 						)}
+						{gitActionButtons && (
+							<>
+								<span className="text-fg-muted text-xs flex-shrink-0">|</span>
+								{gitActionButtons}
+							</>
+						)}
 					</div>
 				</div>
 			) : (
@@ -923,6 +990,12 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 								<>
 									<span className="text-fg-muted text-xs flex-shrink-0">|</span>
 									{uncommittedBadge}
+								</>
+							)}
+							{gitActionButtons && (
+								<>
+									<span className="text-fg-muted text-xs flex-shrink-0">|</span>
+									{gitActionButtons}
 								</>
 							)}
 						</div>
