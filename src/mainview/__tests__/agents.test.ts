@@ -21,6 +21,8 @@ import {
 	findConfig,
 	resolveAgentCommand,
 	buildTaskEnv,
+	isClaudeCommand,
+	DEV3_SYSTEM_PROMPT,
 } from "../../bun/agents";
 import type { TemplateContext } from "../../bun/agents";
 import type { CodingAgent, AgentConfiguration, Project } from "../../shared/types";
@@ -349,7 +351,8 @@ describe("resolveAgentCommand", () => {
 
 	it("builds basic command with no config", () => {
 		const cmd = resolveAgentCommand(agent, undefined, ctx);
-		expect(cmd).toBe("claude 'Fix the login bug'");
+		expect(cmd).toContain("claude");
+		expect(cmd).toContain("'Fix the login bug'");
 	});
 
 	it("adds --model flag from config", () => {
@@ -466,6 +469,53 @@ describe("resolveAgentCommand", () => {
 		const emptyCtx = makeCtx({ taskDescription: "" });
 		const cmd = resolveAgentCommand(agent, config, emptyCtx);
 		expect(cmd).toContain("Do work on my-project");
+	});
+
+	it("injects --append-system-prompt for claude base command", () => {
+		const cmd = resolveAgentCommand(agent, undefined, ctx);
+		expect(cmd).toContain("--append-system-prompt");
+		expect(cmd).toContain("dev-3.0");
+	});
+
+	it("does not inject --append-system-prompt for non-claude agents", () => {
+		const nonClaude: CodingAgent = {
+			id: "a2",
+			name: "Codex",
+			baseCommand: "codex",
+			configurations: [],
+		};
+		const cmd = resolveAgentCommand(nonClaude, undefined, ctx);
+		expect(cmd).not.toContain("--append-system-prompt");
+	});
+
+	it("does not inject --append-system-prompt when baseCommandOverride is non-claude", () => {
+		const config: AgentConfiguration = {
+			id: "c1",
+			name: "Test",
+			baseCommandOverride: "my-wrapper",
+		};
+		const cmd = resolveAgentCommand(agent, config, ctx);
+		expect(cmd).not.toContain("--append-system-prompt");
+	});
+});
+
+// ---- isClaudeCommand ----
+
+describe("isClaudeCommand", () => {
+	it("returns true for 'claude'", () => {
+		expect(isClaudeCommand("claude")).toBe(true);
+	});
+
+	it("returns true for full path ending in claude", () => {
+		expect(isClaudeCommand("/usr/local/bin/claude")).toBe(true);
+	});
+
+	it("returns false for 'codex'", () => {
+		expect(isClaudeCommand("codex")).toBe(false);
+	});
+
+	it("returns false for 'my-claude-wrapper'", () => {
+		expect(isClaudeCommand("my-claude-wrapper")).toBe(false);
 	});
 });
 
