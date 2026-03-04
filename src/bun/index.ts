@@ -6,16 +6,15 @@ import Electrobun, {
 	Utils,
 } from "electrobun/bun";
 import type { AppRPCSchema } from "../shared/types";
-import { handlers, setPushMessage, handleBellAutoStatus } from "./rpc-handlers";
+import { handlers, setPushMessage, handleBellAutoStatus, isTaskInProgress } from "./rpc-handlers";
 import { startAutoCheck, checkForUpdateWithChannel, getLocalVersion, downloadUpdateForChannel, applyUpdate } from "./updater";
 import { loadSettings } from "./settings";
 import { createLogger, getLogPath } from "./logger";
 import { DEV3_HOME } from "./paths";
 import { resolveShellEnv } from "./shell-env";
-import { spawn } from "./spawn";
 import { startSocketServer, stopSocketServer } from "./cli-socket-server";
 import { installAgentSkills } from "./agent-skills";
-import { formatDateTime, makeTitle } from "./app-utils";
+import { makeTitle } from "./app-utils";
 import electrobunConfig from "../../electrobun.config";
 import { BUILD_TIME } from "../shared/build-info.generated";
 
@@ -137,7 +136,7 @@ log.info("CLI socket server ready", { path: cliSocketPath });
 installAgentSkills();
 
 // Side-effect: starts the PTY WebSocket server (dynamic import so PATH is patched first)
-const { setOnPtyDied, setOnBell } = await import("./pty-server");
+const { setOnPtyDied, setOnBell, setOnIdle } = await import("./pty-server");
 
 const DEV_SERVER_PORT = 5173;
 const DEV_SERVER_URL = `http://localhost:${DEV_SERVER_PORT}`;
@@ -209,7 +208,7 @@ ApplicationMenu.setApplicationMenu([
 	{
 		label: "View",
 		submenu: [
-			{ label: "Rebuild", action: "rebuild", accelerator: "r" },
+			{ label: "Hard Refresh", action: "hard-refresh", accelerator: "r" },
 			{ label: "Toggle Developer Tools", action: "toggle-devtools" },
 			{ type: "separator" },
 			{ label: "Soft Reset Terminal", action: "terminal-soft-reset" },
@@ -272,8 +271,10 @@ setOnBell((taskId) => {
 	try {
 		log.debug("Terminal bell, notifying renderer", { taskId: taskId.slice(0, 8) });
 		(mainWindow.webview.rpc as any).send.terminalBell?.({ taskId });
-		// Auto-move task to "user-questions" on first bell
-		handleBellAutoStatus(taskId);
+		// Auto-move task from "in-progress" to "user-questions" on bell
+		handleBellAutoStatus(taskId).catch((err) => {
+			log.error("handleBellAutoStatus unhandled error", { error: String(err) });
+		});
 	} catch (err) {
 		log.error("Failed to handle terminal bell", {
 			taskId: taskId.slice(0, 8),
@@ -281,6 +282,26 @@ setOnBell((taskId) => {
 			stack: (err as Error)?.stack ?? "no stack",
 		});
 	}
+});
+
+// Wire terminal idle notifications (red badge only, no status transition)
+// Only fires for tasks that are currently "in-progress" — idle terminals
+// in other statuses (review, todo, etc.) are expected and not noteworthy.
+setOnIdle((taskId) => {
+	isTaskInProgress(taskId).then((inProgress) => {
+		if (!inProgress) return;
+		try {
+			log.debug("Terminal idle, notifying renderer", { taskId: taskId.slice(0, 8) });
+			(mainWindow.webview.rpc as any).send.terminalBell?.({ taskId });
+		} catch (err) {
+			log.error("Failed to handle terminal idle", {
+				taskId: taskId.slice(0, 8),
+				error: String(err),
+			});
+		}
+	}).catch((err) => {
+		log.error("isTaskInProgress failed in idle handler", { error: String(err) });
+	});
 });
 
 mainWindow.on("close", () => {
@@ -314,38 +335,8 @@ mainWindow.webview.on("dom-ready", async () => {
 // --- Menu Event Handlers ---
 
 Electrobun.events.on("application-menu-clicked", async (e) => {
-	if (e.data.action === "rebuild") {
-		const { existsSync, cpSync, rmSync } = await import("fs");
-		const { dirname, join } = await import("path");
-
-		// Find project root by walking up from the bundle until we hit vite.config.ts
-		let projectRoot = import.meta.dir;
-		for (let i = 0; i < 20; i++) {
-			if (existsSync(join(projectRoot, "vite.config.ts"))) break;
-			const parent = dirname(projectRoot);
-			if (parent === projectRoot) break;
-			projectRoot = parent;
-		}
-
-		log.info("Rebuilding frontend...", { cwd: projectRoot });
-		const proc = spawn(["bunx", "vite", "build"], {
-			cwd: projectRoot,
-			stdout: "inherit",
-			stderr: "inherit",
-		});
-		await proc.exited;
-
-		// Copy dist/ into the app bundle's views/ (mirrors electrobun.config.ts copy rules)
-		const viewsDir = join(import.meta.dir, "..", "views", "mainview");
-		const distDir = join(projectRoot, "dist");
-		log.info("Copying dist to app bundle", { from: distDir, to: viewsDir });
-		cpSync(join(distDir, "index.html"), join(viewsDir, "index.html"));
-		rmSync(join(viewsDir, "assets"), { recursive: true, force: true });
-		cpSync(join(distDir, "assets"), join(viewsDir, "assets"), { recursive: true });
-
-		lastBuildTime = formatDateTime(new Date());
-		log.info(`Rebuild done, reloading [${lastBuildTime}]`);
-		mainWindow.setTitle(makeTitle(APP_VERSION, lastBuildTime));
+	if (e.data.action === "hard-refresh") {
+		log.info("Hard refresh — navigating to home page");
 		mainWindow.webview.loadURL(url);
 	} else if (e.data.action === "about") {
 		Utils.showMessageBox({
