@@ -47,9 +47,13 @@ const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 2.0;
 const ZOOM_STEP = 0.1;
 
+const BASE_FONT_SIZE = 16; // browser default in px
+
 function applyZoom(level: number) {
 	const clamped = Math.round(Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, level)) * 100) / 100;
-	(document.documentElement.style as any).zoom = String(clamped);
+	// Scale via root font-size so Tailwind's rem-based units resize the entire UI.
+	// Unlike CSS `zoom`, this re-renders text at native resolution (no blurriness).
+	document.documentElement.style.fontSize = `${BASE_FONT_SIZE * clamped}px`;
 	localStorage.setItem(ZOOM_KEY, String(clamped));
 	window.dispatchEvent(new CustomEvent("zoom-changed", { detail: clamped }));
 }
