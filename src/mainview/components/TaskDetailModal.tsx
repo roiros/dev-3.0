@@ -181,6 +181,7 @@ function TaskDetailModal({ task, project, dispatch, onClose }: TaskDetailModalPr
 	return (
 		<div
 			className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+			onClick={(e) => e.stopPropagation()}
 			onMouseDown={(e) => {
 				if (e.target === e.currentTarget && !isEditing) onClose();
 			}}
@@ -329,6 +330,7 @@ function ArchivedView({
 		<div
 			className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
 			data-testid="archived-task-modal"
+			onClick={(e) => e.stopPropagation()}
 			onMouseDown={(e) => {
 				if (e.target === e.currentTarget) onClose();
 			}}
