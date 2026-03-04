@@ -1,0 +1,1 @@
+Replace JetBrains Mono with JetBrainsMono Nerd Font Mono (Regular + Bold, woff2) as the primary terminal and monospace UI font. This adds full Nerd Font glyph support (powerline symbols, devicons, file icons) needed by tools like yazi. Updated @font-face declarations, terminal font chain, and Tailwind mono font stack.
