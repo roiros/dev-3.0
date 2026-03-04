@@ -326,6 +326,16 @@ const en = {
 	"notes.failedAdd": "Failed to add note: {error}",
 	"notes.failedDelete": "Failed to delete note: {error}",
 
+	// Images
+	"images.pasting": "Pasting image...",
+	"images.pasteFailed": "Failed to paste image",
+	"images.loading": "Loading...",
+	"images.loadFailed": "Load failed",
+	"images.openInPreview": "Open in Preview",
+	"images.close": "Close",
+	"images.remove": "Remove image",
+	"images.dropHere": "Drop file here",
+
 	// Quit dialog
 	"quit.dialogTitle": "Sessions keep running",
 	"quit.dialogMessage": "Your terminal sessions will continue running in tmux after quitting. You can reattach to them when you reopen the app.",

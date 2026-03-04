@@ -332,6 +332,16 @@ const ru: TranslationRecord & Record<string, string> = {
 	"notes.failedAdd": "Не удалось добавить заметку: {error}",
 	"notes.failedDelete": "Не удалось удалить заметку: {error}",
 
+	// Images
+	"images.pasting": "Вставка изображения...",
+	"images.pasteFailed": "Не удалось вставить изображение",
+	"images.loading": "Загрузка...",
+	"images.loadFailed": "Ошибка загрузки",
+	"images.openInPreview": "Открыть в Preview",
+	"images.close": "Закрыть",
+	"images.remove": "Удалить изображение",
+	"images.dropHere": "Перетащите файл сюда",
+
 	// Quit dialog
 	"quit.dialogTitle": "Сессии продолжают работать",
 	"quit.dialogMessage": "Ваши терминальные сессии продолжат работать в tmux после выхода. Вы сможете подключиться к ним при следующем запуске приложения.",
