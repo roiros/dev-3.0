@@ -449,26 +449,18 @@ function TerminalView({ ptyUrl, taskId }: TerminalViewProps) {
 		}
 	}, [resolvedTheme]);
 
-	// Counteract CSS zoom on <html> for the terminal canvas.
-	// CSS zoom bitmap-scales canvas elements, so we undo the zoom on the
-	// container and scale the terminal's fontSize instead, keeping text crisp.
+	// Scale terminal font size with app zoom level.
+	// Font-size scaling (not CSS zoom) is used for the app, so canvas isn't
+	// bitmap-scaled — we just adjust the terminal's own fontSize.
 	const BASE_FONT_SIZE = 14;
 	useEffect(() => {
-		const el = containerRef.current;
-		if (!el) return;
-
 		function applyTerminalZoom(zoomLevel: number) {
-			if (!el) return;
-			// Undo parent CSS zoom on the terminal container
-			(el.style as any).zoom = String(1 / zoomLevel);
-			// Scale terminal font size to match the zoom level
 			const term = termRef.current;
 			if (term) {
 				term.options.fontSize = Math.round(BASE_FONT_SIZE * zoomLevel);
 			}
 		}
 
-		// Apply current zoom
 		const zoom = getZoomApi();
 		applyTerminalZoom(zoom.getZoom());
 

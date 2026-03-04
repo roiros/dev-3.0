@@ -1,1 +1,1 @@
-Add zoom in/out support for the app UI. Users can zoom with Cmd+=/Cmd-/Cmd+0 keyboard shortcuts, via the View menu, or through the zoom control in Global Settings. Zoom level is persisted across sessions in localStorage.
+Add zoom in/out support for the app UI. Users can zoom with Cmd+=/Cmd-/Cmd+0 keyboard shortcuts, via the View menu, or through the zoom control in Global Settings. Zoom level is persisted across sessions in localStorage. Uses root font-size scaling for crisp text rendering at any zoom level — all arbitrary px values converted to rem for proportional scaling.

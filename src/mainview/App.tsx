@@ -257,7 +257,7 @@ function App() {
 						if (e.target === e.currentTarget) setShowQuitDialog(false);
 					}}
 				>
-					<div className="bg-overlay border border-edge rounded-2xl shadow-2xl w-[420px] p-6 space-y-4">
+					<div className="bg-overlay border border-edge rounded-2xl shadow-2xl w-[26.25rem] p-6 space-y-4">
 						<h2 className="text-fg text-lg font-semibold">{t("quit.dialogTitle")}</h2>
 						<p className="text-fg-2 text-sm leading-relaxed">{t("quit.dialogMessage")}</p>
 						<label className="flex items-center gap-2.5 cursor-pointer select-none">

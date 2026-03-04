@@ -7,6 +7,7 @@ import App from "./App";
 import { I18nProvider } from "./i18n";
 import { initAnalytics } from "./analytics";
 import { api } from "./rpc";
+import { bootstrapZoom } from "./zoom";
 
 // ── Global crash handlers (renderer) ──
 // Catch unhandled errors that would otherwise silently kill the page.
@@ -40,36 +41,8 @@ function applySavedTheme() {
 applySavedTheme();
 systemThemeMq.addEventListener("change", applySavedTheme);
 
-// Apply saved zoom before React mounts
-const ZOOM_KEY = "dev3-zoom";
-const DEFAULT_ZOOM = 1.0;
-const MIN_ZOOM = 0.5;
-const MAX_ZOOM = 2.0;
-const ZOOM_STEP = 0.1;
-
-function applyZoom(level: number) {
-	const clamped = Math.round(Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, level)) * 100) / 100;
-	// CSS zoom on <html> re-layouts and re-rasterizes DOM text at the zoomed
-	// resolution — no bitmap scaling, so text stays crisp.
-	// Terminal canvases handle zoom separately (see TerminalView).
-	(document.documentElement.style as any).zoom = String(clamped);
-	localStorage.setItem(ZOOM_KEY, String(clamped));
-	window.dispatchEvent(new CustomEvent("zoom-changed", { detail: clamped }));
-}
-
-function getZoom(): number {
-	return parseFloat(localStorage.getItem(ZOOM_KEY) || String(DEFAULT_ZOOM));
-}
-
-function adjustZoom(delta: number) {
-	applyZoom(getZoom() + delta);
-}
-
-// Apply on load
-applyZoom(getZoom());
-
-// Expose for use by components
-(window as any).__dev3Zoom = { applyZoom, getZoom, adjustZoom, ZOOM_STEP, DEFAULT_ZOOM, MIN_ZOOM, MAX_ZOOM };
+// Apply saved zoom before React mounts (see zoom.ts for implementation)
+bootstrapZoom();
 
 // Apply saved locale before React mounts
 const savedLocale = localStorage.getItem("dev3-locale") || "en";
