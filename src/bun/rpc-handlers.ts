@@ -28,7 +28,8 @@ export function escapeForDoubleQuotes(s: string): string {
  * The actual command is appended verbatim (already properly escaped).
  */
 export function buildEchoAndRun(tmuxCmd: string): string {
-	return `echo "Starting: ${escapeForDoubleQuotes(tmuxCmd)}" && ${tmuxCmd}`;
+	const escaped = escapeForDoubleQuotes(tmuxCmd);
+	return `echo "Starting: ${escaped}" && ${tmuxCmd}; __EC=$?; if [ $__EC -ne 0 ]; then printf '\\n\\033[1;31m✗ Process exited with code %s\\033[0m\\n' "$__EC"; exec bash; fi`;
 }
 
 /**
@@ -36,7 +37,17 @@ export function buildEchoAndRun(tmuxCmd: string): string {
  * Used when a setup script is present and the main command runs in a split pane.
  */
 export function buildCmdScript(tmuxCmd: string): string {
-	return `#!/bin/bash\necho "Starting: ${escapeForDoubleQuotes(tmuxCmd)}" && exec ${tmuxCmd}\n`;
+	const escaped = escapeForDoubleQuotes(tmuxCmd);
+	return [
+		"#!/bin/bash",
+		`echo "Starting: ${escaped}" && ${tmuxCmd}`,
+		"__EC=$?",
+		"if [ $__EC -ne 0 ]; then",
+		`  printf '\\n\\033[1;31m✗ Process exited with code %s\\033[0m\\n' "$__EC"`,
+		"  exec bash",
+		"fi",
+		"",
+	].join("\n");
 }
 
 const SYSTEM_REQUIREMENTS = [
