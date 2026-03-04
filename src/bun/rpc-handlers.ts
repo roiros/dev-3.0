@@ -300,7 +300,7 @@ export async function launchTaskPty(
 			"printf '\\033[1;32m✓ Setup done\\033[0m\\n'",
 			"printf '\\033[2mClosing in 15s — press any key to close now\\033[0m\\n'",
 			"read -t 15 -n 1 -s",
-			"exit",
+			"exit 0",
 		].join("\n");
 
 		const startupScript = [
