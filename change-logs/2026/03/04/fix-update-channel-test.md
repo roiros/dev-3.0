@@ -1,0 +1,1 @@
+Fixed GlobalSettings test "changes to canary and saves" which was failing because the update channel select is now disabled in the UI. Updated the test to assert the select is disabled and saveGlobalSettings is not called.
