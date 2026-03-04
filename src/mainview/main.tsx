@@ -49,13 +49,10 @@ const ZOOM_STEP = 0.1;
 
 function applyZoom(level: number) {
 	const clamped = Math.round(Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, level)) * 100) / 100;
-	const root = document.getElementById("root")!;
-	// Use transform: scale() for uniform scaling without blurriness.
-	// Compensate dimensions so the scaled content fills the viewport.
-	root.style.transform = clamped === 1 ? "" : `scale(${clamped})`;
-	root.style.transformOrigin = "0 0";
-	root.style.width = clamped === 1 ? "" : `${100 / clamped}%`;
-	root.style.height = clamped === 1 ? "" : `${100 / clamped}vh`;
+	// CSS zoom on <html> re-layouts and re-rasterizes DOM text at the zoomed
+	// resolution — no bitmap scaling, so text stays crisp.
+	// Terminal canvases handle zoom separately (see TerminalView).
+	(document.documentElement.style as any).zoom = String(clamped);
 	localStorage.setItem(ZOOM_KEY, String(clamped));
 	window.dispatchEvent(new CustomEvent("zoom-changed", { detail: clamped }));
 }

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Terminal, FitAddon } from "ghostty-web";
 import { api } from "./rpc";
 import { getShiftKeySequence } from "./shift-key-sequences";
+import { getZoomApi } from "./zoom";
 
 const DARK_TERMINAL_THEME = {
 	background: "#1a1b26",
@@ -447,6 +448,36 @@ function TerminalView({ ptyUrl, taskId }: TerminalViewProps) {
 				resolvedTheme === "light" ? LIGHT_TERMINAL_THEME : DARK_TERMINAL_THEME;
 		}
 	}, [resolvedTheme]);
+
+	// Counteract CSS zoom on <html> for the terminal canvas.
+	// CSS zoom bitmap-scales canvas elements, so we undo the zoom on the
+	// container and scale the terminal's fontSize instead, keeping text crisp.
+	const BASE_FONT_SIZE = 14;
+	useEffect(() => {
+		const el = containerRef.current;
+		if (!el) return;
+
+		function applyTerminalZoom(zoomLevel: number) {
+			if (!el) return;
+			// Undo parent CSS zoom on the terminal container
+			(el.style as any).zoom = String(1 / zoomLevel);
+			// Scale terminal font size to match the zoom level
+			const term = termRef.current;
+			if (term) {
+				term.options.fontSize = Math.round(BASE_FONT_SIZE * zoomLevel);
+			}
+		}
+
+		// Apply current zoom
+		const zoom = getZoomApi();
+		applyTerminalZoom(zoom.getZoom());
+
+		function onZoomChanged(e: Event) {
+			applyTerminalZoom((e as CustomEvent).detail);
+		}
+		window.addEventListener("zoom-changed", onZoomChanged);
+		return () => window.removeEventListener("zoom-changed", onZoomChanged);
+	}, []);
 
 	function handleDragOver(e: React.DragEvent<HTMLDivElement>) {
 		e.preventDefault();
