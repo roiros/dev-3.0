@@ -1045,6 +1045,10 @@ export const handlers = {
 		return pty.capturePane(params.taskId);
 	},
 
+	async checkWorktreeExists(params: { path: string }): Promise<boolean> {
+		return existsSync(params.path);
+	},
+
 	async getPtyUrl(params: { taskId: string }): Promise<string> {
 		log.info("→ getPtyUrl", {
 			taskId: params.taskId,
