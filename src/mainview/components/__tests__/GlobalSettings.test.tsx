@@ -199,18 +199,13 @@ describe("GlobalSettings", () => {
 			expect(select).toBeInTheDocument();
 		});
 
-		it("changes to canary and saves", async () => {
+		it("is disabled and does not save on change", async () => {
 			setupMocks();
-			const user = userEvent.setup();
 			renderGlobalSettings();
 			await waitForLoad();
 
 			const select = screen.getByDisplayValue("Stable");
-			await user.selectOptions(select, "canary");
-
-			expect(mockedApi.request.saveGlobalSettings).toHaveBeenCalledWith(
-				expect.objectContaining({ updateChannel: "canary" }),
-			);
+			expect(select).toBeDisabled();
 		});
 	});
 
