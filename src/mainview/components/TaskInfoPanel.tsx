@@ -18,7 +18,7 @@ interface TaskInfoPanelProps {
 	navigate: (route: Route) => void;
 }
 
-const COLLAPSED_HEIGHT = 62;
+const COLLAPSED_HEIGHT_REM = 3.875; // 62px at 1× zoom – scales with root font-size
 const DEFAULT_HEIGHT = 200;
 const MIN_HEIGHT = 80;
 const MAX_RATIO = 0.33;
@@ -544,7 +544,7 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 	// ---- Shared elements ----
 
 	const statusColor = STATUS_COLORS[task.status];
-	const height = collapsed ? COLLAPSED_HEIGHT : panelHeight;
+	const height = collapsed ? `${COLLAPSED_HEIGHT_REM}rem` : panelHeight;
 
 	const statusDropdownButton = (
 		<button
