@@ -136,7 +136,7 @@ function TerminalView({ ptyUrl, taskId }: TerminalViewProps) {
 		// Preload bundled font before creating the terminal.
 		// Canvas rendering doesn't trigger CSS @font-face loading, so the
 		// font must be ready before ghostty-web measures it for cell metrics.
-		const TERMINAL_FONT = "'JetBrains Mono', 'SF Mono', 'Menlo', monospace";
+		const TERMINAL_FONT = "'JetBrainsMono Nerd Font Mono', 'SF Mono', 'Menlo', monospace";
 		document.fonts.load(`${TERMINAL_BASE_FONT_SIZE}px ${TERMINAL_FONT}`).then(() => {
 			console.log("[TerminalView] Font preloaded, starting setup");
 			if (!disposed) setup();

@@ -447,6 +447,9 @@ function GlobalSettings() {
 															})
 														}
 														placeholder="claude"
+														autoCapitalize="off"
+														autoCorrect="off"
+														spellCheck={false}
 														className="w-full px-3 py-2 bg-elevated border border-edge rounded-lg text-fg text-sm font-mono placeholder-fg-muted outline-none focus:border-accent/40 transition-colors"
 													/>
 												</div>
@@ -708,6 +711,9 @@ function ConfigEditor({
 								onChange({ model: e.target.value || undefined })
 							}
 							placeholder="opus, sonnet, etc."
+							autoCapitalize="off"
+							autoCorrect="off"
+							spellCheck={false}
 							className="w-full px-3 py-1.5 bg-base border border-edge rounded-lg text-fg text-sm font-mono placeholder-fg-muted outline-none focus:border-accent/40 transition-colors"
 						/>
 					</div>
@@ -849,6 +855,9 @@ function ConfigEditor({
 								})
 							}
 							placeholder=""
+							autoCapitalize="off"
+							autoCorrect="off"
+							spellCheck={false}
 							className="w-full px-3 py-1.5 bg-base border border-edge rounded-lg text-fg text-sm font-mono placeholder-fg-muted outline-none focus:border-accent/40 transition-colors"
 						/>
 					</div>
@@ -894,6 +903,9 @@ function ListEditor({
 							onChange(next);
 						}}
 						placeholder={placeholder}
+						autoCapitalize="off"
+						autoCorrect="off"
+						spellCheck={false}
 						className="flex-1 px-3 py-1.5 bg-base border border-edge rounded-lg text-fg text-sm font-mono placeholder-fg-muted outline-none focus:border-accent/40 transition-colors"
 					/>
 					<button
@@ -958,6 +970,9 @@ function KeyValueEditor({
 						value={key}
 						onChange={(e) => updateKey(key, e.target.value)}
 						placeholder="KEY"
+						autoCapitalize="off"
+						autoCorrect="off"
+						spellCheck={false}
 						className="w-1/3 px-3 py-1.5 bg-base border border-edge rounded-lg text-fg text-sm font-mono placeholder-fg-muted outline-none focus:border-accent/40 transition-colors"
 					/>
 					<input
@@ -965,6 +980,9 @@ function KeyValueEditor({
 						value={value}
 						onChange={(e) => updateValue(key, e.target.value)}
 						placeholder="value"
+						autoCapitalize="off"
+						autoCorrect="off"
+						spellCheck={false}
 						className="flex-1 px-3 py-1.5 bg-base border border-edge rounded-lg text-fg text-sm font-mono placeholder-fg-muted outline-none focus:border-accent/40 transition-colors"
 					/>
 					<button
