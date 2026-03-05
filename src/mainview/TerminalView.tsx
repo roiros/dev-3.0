@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Terminal, FitAddon } from "ghostty-web";
 import { api } from "./rpc";
 import { getShiftKeySequence } from "./shift-key-sequences";
-import { getZoomApi, ZOOM_CHANGED_EVENT } from "./zoom";
+import { getZoom, ZOOM_CHANGED_EVENT } from "./zoom";
 
 const DARK_TERMINAL_THEME = {
 	background: "#1a1b26",
@@ -60,6 +60,7 @@ interface TerminalViewProps {
 function TerminalView({ ptyUrl, taskId }: TerminalViewProps) {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const termRef = useRef<Terminal | null>(null);
+	const fitAddonRef = useRef<FitAddon | null>(null);
 	const wsRef = useRef<WebSocket | null>(null);
 	const [resolvedTheme, setResolvedTheme] = useState<"dark" | "light">(
 		() => (document.documentElement.dataset.theme as "dark" | "light") || "dark",
@@ -155,7 +156,7 @@ function TerminalView({ ptyUrl, taskId }: TerminalViewProps) {
 			}
 
 			console.log("[TerminalView] Creating ghostty-web Terminal instance...");
-			const zoomLevel = getZoomApi()?.getZoom?.() ?? 1;
+			const zoomLevel = getZoom();
 			const term = new Terminal({
 				fontSize: Math.round(TERMINAL_BASE_FONT_SIZE * zoomLevel),
 				fontFamily: TERMINAL_FONT,
@@ -166,6 +167,7 @@ function TerminalView({ ptyUrl, taskId }: TerminalViewProps) {
 
 			console.log("[TerminalView] Terminal created, loading FitAddon...");
 			fitAddon = new FitAddon();
+			fitAddonRef.current = fitAddon;
 			term.loadAddon(fitAddon);
 
 			console.log("[TerminalView] Opening terminal in DOM...");
@@ -434,6 +436,7 @@ function TerminalView({ ptyUrl, taskId }: TerminalViewProps) {
 			} catch (err) {
 				console.error("[TerminalView] fitAddon.dispose() failed:", err);
 			}
+			fitAddonRef.current = null;
 			if (termRef.current) {
 				try {
 					termRef.current.dispose();
@@ -461,6 +464,7 @@ function TerminalView({ ptyUrl, taskId }: TerminalViewProps) {
 			const term = termRef.current;
 			if (term) {
 				term.options.fontSize = Math.round(TERMINAL_BASE_FONT_SIZE * (e as CustomEvent).detail);
+				fitAddonRef.current?.fit();
 			}
 		}
 		window.addEventListener(ZOOM_CHANGED_EVENT, onZoomChanged);

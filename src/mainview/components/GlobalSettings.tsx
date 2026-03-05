@@ -3,7 +3,7 @@ import { useT, useLocale, ALL_LOCALES, LOCALE_LABELS } from "../i18n";
 import type { Locale } from "../i18n";
 import type { CodingAgent, AgentConfiguration, GlobalSettings as GlobalSettingsType, PermissionMode, EffortLevel } from "../../shared/types";
 import { api } from "../rpc";
-import { getZoomApi, ZOOM_CHANGED_EVENT } from "../zoom";
+import { getZoom, adjustZoom, applyZoom, ZOOM_STEP, DEFAULT_ZOOM, MIN_ZOOM, MAX_ZOOM, ZOOM_CHANGED_EVENT } from "../zoom";
 
 type Theme = "dark" | "light" | "system";
 
@@ -15,8 +15,7 @@ function GlobalSettings() {
 		() => (localStorage.getItem("dev3-theme") as Theme) || "dark",
 	);
 
-	const zoomApi = getZoomApi();
-	const [zoomLevel, setZoomLevel] = useState(() => zoomApi.getZoom());
+	const [zoomLevel, setZoomLevel] = useState(() => getZoom());
 
 	useEffect(() => {
 		function onZoomChanged(e: Event) {
@@ -226,8 +225,8 @@ function GlobalSettings() {
 						</p>
 						<div className="flex items-center gap-3">
 							<button
-								onClick={() => zoomApi.adjustZoom(-zoomApi.ZOOM_STEP)}
-								disabled={zoomLevel <= zoomApi.MIN_ZOOM}
+								onClick={() => adjustZoom(-ZOOM_STEP)}
+								disabled={zoomLevel <= MIN_ZOOM}
 								className="w-10 h-10 flex items-center justify-center rounded-lg bg-raised border border-edge text-fg text-lg font-bold hover:border-edge-active transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
 							>
 								−
@@ -238,15 +237,15 @@ function GlobalSettings() {
 								</span>
 							</div>
 							<button
-								onClick={() => zoomApi.adjustZoom(zoomApi.ZOOM_STEP)}
-								disabled={zoomLevel >= zoomApi.MAX_ZOOM}
+								onClick={() => adjustZoom(ZOOM_STEP)}
+								disabled={zoomLevel >= MAX_ZOOM}
 								className="w-10 h-10 flex items-center justify-center rounded-lg bg-raised border border-edge text-fg text-lg font-bold hover:border-edge-active transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
 							>
 								+
 							</button>
 							<button
-								onClick={() => zoomApi.applyZoom(zoomApi.DEFAULT_ZOOM)}
-								disabled={zoomLevel === zoomApi.DEFAULT_ZOOM}
+								onClick={() => applyZoom(DEFAULT_ZOOM)}
+								disabled={zoomLevel === DEFAULT_ZOOM}
 								className="px-3 h-10 rounded-lg bg-raised border border-edge text-fg-2 text-sm hover:border-edge-active transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
 							>
 								{t("settings.zoomReset")}
@@ -254,7 +253,7 @@ function GlobalSettings() {
 						</div>
 					</div>
 
-				{/* Task Drop Position */}
+					{/* Task Drop Position */}
 					<div>
 						<label className="block text-fg text-sm font-semibold mb-2">
 							{t("settings.taskDropPosition")}
@@ -280,7 +279,7 @@ function GlobalSettings() {
 						</div>
 					</div>
 
-				{/* Update Channel */}
+					{/* Update Channel */}
 					<div>
 						<label className="block text-fg text-sm font-semibold mb-2">
 							{t("settings.updateChannel")}
@@ -330,7 +329,7 @@ function GlobalSettings() {
 						</div>
 					</div>
 
-				{/* Default Agent */}
+					{/* Default Agent */}
 					<div>
 						<label className="block text-fg text-sm font-semibold mb-2">
 							{t("settings.defaultAgent")}

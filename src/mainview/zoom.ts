@@ -34,31 +34,10 @@ export function adjustZoom(delta: number) {
 
 /** Call once before React mounts to apply saved zoom and expose the API globally. */
 export function bootstrapZoom() {
-	const saved = parseFloat(localStorage.getItem(ZOOM_KEY) || String(DEFAULT_ZOOM));
+	const parsed = parseFloat(localStorage.getItem(ZOOM_KEY) ?? "");
+	const saved = Number.isFinite(parsed) ? parsed : DEFAULT_ZOOM;
 	currentZoom = Math.round(Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, saved)) * 100) / 100;
 	// Apply without dispatching event (no listeners exist yet)
 	document.documentElement.style.fontSize = `${BASE_FONT_SIZE * currentZoom}px`;
 	localStorage.setItem(ZOOM_KEY, String(currentZoom));
-
-	// Expose on window for rpc.ts (which can't import ES modules at message-handler time)
-	(window as any).__dev3Zoom = {
-		applyZoom, getZoom, adjustZoom,
-		ZOOM_STEP, DEFAULT_ZOOM, MIN_ZOOM, MAX_ZOOM,
-	};
-}
-
-/** Type for the zoom API exposed on window.__dev3Zoom */
-export interface Dev3ZoomApi {
-	applyZoom: (level: number) => void;
-	getZoom: () => number;
-	adjustZoom: (delta: number) => void;
-	ZOOM_STEP: number;
-	DEFAULT_ZOOM: number;
-	MIN_ZOOM: number;
-	MAX_ZOOM: number;
-}
-
-/** Get the zoom API set up during bootstrap (for contexts that can't import directly) */
-export function getZoomApi(): Dev3ZoomApi {
-	return (window as any).__dev3Zoom;
 }

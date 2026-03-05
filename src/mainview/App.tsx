@@ -58,7 +58,6 @@ function App() {
 	// Cmd+Q / Cmd+, / Cmd+=/- (zoom) — capture phase so ghostty-web terminal can't swallow them
 	useGlobalShortcut(
 		(e) => {
-			const mod = e.metaKey || e.ctrlKey;
 			if (e.metaKey && e.key === "q") {
 				e.preventDefault();
 				e.stopPropagation();
@@ -71,15 +70,15 @@ function App() {
 				e.preventDefault();
 				e.stopPropagation();
 				navigate({ screen: "settings" });
-			} else if (mod && (e.key === "=" || e.key === "+")) {
+			} else if (e.metaKey && (e.key === "=" || e.key === "+")) {
 				e.preventDefault();
 				e.stopPropagation();
 				adjustZoom(ZOOM_STEP);
-			} else if (mod && e.key === "-") {
+			} else if (e.metaKey && e.key === "-") {
 				e.preventDefault();
 				e.stopPropagation();
 				adjustZoom(-ZOOM_STEP);
-			} else if (mod && e.key === "0") {
+			} else if (e.metaKey && e.key === "0") {
 				e.preventDefault();
 				e.stopPropagation();
 				applyZoom(DEFAULT_ZOOM);
