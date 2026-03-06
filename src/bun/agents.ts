@@ -143,17 +143,53 @@ export function isCursorCommand(baseCmd: string): boolean {
 	return name === "agent";
 }
 
+/** Returns true when the resolved base command is the Codex CLI. */
+export function isCodexCommand(baseCmd: string): boolean {
+	const name = baseCmd.split("/").pop() ?? "";
+	return name === "codex";
+}
+
+/** Returns true when the resolved base command is the Gemini CLI. */
+export function isGeminiCommand(baseCmd: string): boolean {
+	const name = baseCmd.split("/").pop() ?? "";
+	return name === "gemini";
+}
+
 export function shellEscape(s: string): string {
 	return "'" + s.replace(/'/g, "'\\''") + "'";
+}
+
+export interface CommandOptions {
+	/** When true, resume the previous session instead of starting a new one.
+	 *  Supported agents: Claude (--continue), Codex (resume --last),
+	 *  Gemini (--resume latest), Cursor Agent (--continue). */
+	resume?: boolean;
+}
+
+/** Returns true when the agent CLI supports session resumption. */
+export function supportsResume(baseCmd: string): boolean {
+	return isClaudeCommand(baseCmd) || isCodexCommand(baseCmd) || isGeminiCommand(baseCmd) || isCursorCommand(baseCmd);
 }
 
 export function resolveAgentCommand(
 	agent: CodingAgent,
 	config: AgentConfiguration | undefined,
 	ctx: TemplateContext,
+	options?: CommandOptions,
 ): string {
 	const baseCmd = config?.baseCommandOverride || agent.baseCommand;
 	const args: string[] = [];
+	const shouldResume = options?.resume && supportsResume(baseCmd);
+
+	// Resume flags per agent (Codex uses a subcommand, handled at the end)
+	if (shouldResume) {
+		if (isClaudeCommand(baseCmd) || isCursorCommand(baseCmd)) {
+			args.push("--continue");
+		} else if (isGeminiCommand(baseCmd)) {
+			args.push("--resume", "latest");
+		}
+		// Codex: handled below when building the final command
+	}
 
 	if (config?.model) {
 		args.push("--model", config.model);
@@ -192,26 +228,34 @@ export function resolveAgentCommand(
 		args.push(...config.additionalArgs);
 	}
 
-	// Build prompt: task description + interpolated append prompt
-	let prompt = ctx.taskDescription;
-	if (config?.appendPrompt) {
-		const interpolated = interpolateTemplate(config.appendPrompt, ctx);
-		if (interpolated.trim()) {
-			prompt = prompt ? `${prompt}\n\n${interpolated}` : interpolated;
+	// When resuming, skip the prompt — we don't want to inject a new
+	// message into the continued conversation.
+	if (!shouldResume) {
+		// Build prompt: task description + interpolated append prompt
+		let prompt = ctx.taskDescription;
+		if (config?.appendPrompt) {
+			const interpolated = interpolateTemplate(config.appendPrompt, ctx);
+			if (interpolated.trim()) {
+				prompt = prompt ? `${prompt}\n\n${interpolated}` : interpolated;
+			}
+		}
+
+		// Cursor Agent has no --append-system-prompt, so inject via prompt argument
+		if (cursorAgent) {
+			prompt = prompt ? `${prompt}\n\n${DEV3_SYSTEM_PROMPT}` : DEV3_SYSTEM_PROMPT;
+		}
+
+		if (prompt) {
+			args.push(shellEscape(prompt));
 		}
 	}
 
-	// Cursor Agent has no --append-system-prompt, so inject via prompt argument
-	if (cursorAgent) {
-		prompt = prompt ? `${prompt}\n\n${DEV3_SYSTEM_PROMPT}` : DEV3_SYSTEM_PROMPT;
+	// Codex uses a subcommand for resume: `codex resume --last [args]`
+	if (shouldResume && isCodexCommand(baseCmd)) {
+		return [baseCmd, "resume", "--last", ...args].join(" ");
 	}
 
-	const parts = [baseCmd, ...args];
-	if (prompt) {
-		parts.push(shellEscape(prompt));
-	}
-
-	return parts.join(" ");
+	return [baseCmd, ...args].join(" ");
 }
 
 export function findConfig(
@@ -249,6 +293,7 @@ export async function resolveCommandForAgent(
 	agentId: string,
 	configId: string | null,
 	ctx: TemplateContext,
+	options?: CommandOptions,
 ): Promise<{ command: string; agent: CodingAgent; config: AgentConfiguration | undefined; extraEnv: Record<string, string> }> {
 	const allAgents = await getAllAgents();
 	const agent = allAgents.find((a) => a.id === agentId);
@@ -256,7 +301,7 @@ export async function resolveCommandForAgent(
 		throw new Error(`Agent not found: ${agentId}`);
 	}
 	const config = findConfig(agent, configId);
-	const command = resolveAgentCommand(agent, config, ctx);
+	const command = resolveAgentCommand(agent, config, ctx, options);
 	// Agent-type defaults first, then config envVars override
 	const extraEnv: Record<string, string> = { ...getDefaultEnvForAgent(agent, config) };
 	if (config?.envVars) {
@@ -271,6 +316,7 @@ export async function resolveCommandForProject(
 	taskDescription: string,
 	worktreePath: string,
 	configId?: string | null,
+	options?: CommandOptions,
 ): Promise<{ command: string; agent: CodingAgent | null; config: AgentConfiguration | undefined; extraEnv: Record<string, string> }> {
 	const ctx: TemplateContext = {
 		taskTitle,
@@ -287,7 +333,7 @@ export async function resolveCommandForProject(
 	if (agent) {
 		const resolvedConfigId = configId ?? settings.defaultConfigId;
 		const config = findConfig(agent, resolvedConfigId);
-		const command = resolveAgentCommand(agent, config, ctx);
+		const command = resolveAgentCommand(agent, config, ctx, options);
 		// Agent-type defaults first, then buildTaskEnv (which includes config envVars) overrides
 		const agentDefaults = getDefaultEnvForAgent(agent, config);
 		const extraEnv = { ...agentDefaults, ...buildTaskEnv(project, taskTitle, "", worktreePath, config) };

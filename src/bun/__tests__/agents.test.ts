@@ -1,0 +1,182 @@
+import { describe, expect, it } from "vitest";
+import { resolveAgentCommand, supportsResume, type TemplateContext } from "../agents";
+import type { AgentConfiguration, CodingAgent } from "../../shared/types";
+
+const makeAgent = (overrides?: Partial<CodingAgent>): CodingAgent => ({
+	id: "test-agent",
+	name: "Test",
+	baseCommand: "claude",
+	configurations: [],
+	defaultConfigId: "default",
+	...overrides,
+});
+
+const makeConfig = (overrides?: Partial<AgentConfiguration>): AgentConfiguration => ({
+	id: "default",
+	name: "Default",
+	model: "sonnet",
+	...overrides,
+});
+
+const makeCtx = (overrides?: Partial<TemplateContext>): TemplateContext => ({
+	taskTitle: "Fix bug",
+	taskDescription: "Fix the login bug",
+	projectName: "my-project",
+	projectPath: "/path/to/project",
+	worktreePath: "/path/to/worktree",
+	...overrides,
+});
+
+describe("supportsResume", () => {
+	it.each([
+		["claude", true],
+		["codex", true],
+		["gemini", true],
+		["agent", true],
+		["/usr/local/bin/claude", true],
+		["bash", false],
+		["aider", false],
+		["my-custom-agent", false],
+	])("%s → %s", (cmd, expected) => {
+		expect(supportsResume(cmd)).toBe(expected);
+	});
+});
+
+describe("resolveAgentCommand — resume", () => {
+	// ---- Claude ----
+	it("Claude: adds --continue and skips prompt when resume=true", () => {
+		const cmd = resolveAgentCommand(
+			makeAgent({ baseCommand: "claude" }),
+			makeConfig(),
+			makeCtx({ taskDescription: "Some task description" }),
+			{ resume: true },
+		);
+
+		expect(cmd).toContain("--continue");
+		expect(cmd).not.toContain("Some task description");
+	});
+
+	it("Claude: includes prompt normally when resume is not set", () => {
+		const cmd = resolveAgentCommand(
+			makeAgent({ baseCommand: "claude" }),
+			makeConfig(),
+			makeCtx({ taskDescription: "Some task description" }),
+		);
+
+		expect(cmd).not.toContain("--continue");
+		expect(cmd).toContain("Some task description");
+	});
+
+	it("Claude: skips appendPrompt when resume=true", () => {
+		const cmd = resolveAgentCommand(
+			makeAgent({ baseCommand: "claude" }),
+			makeConfig({ appendPrompt: "Extra instructions: {{TASK_TITLE}}" }),
+			makeCtx({ taskDescription: "" }),
+			{ resume: true },
+		);
+
+		expect(cmd).toContain("--continue");
+		expect(cmd).not.toContain("Extra instructions");
+	});
+
+	it("Claude: still includes --append-system-prompt when resume=true", () => {
+		const cmd = resolveAgentCommand(
+			makeAgent({ baseCommand: "claude" }),
+			makeConfig(),
+			makeCtx(),
+			{ resume: true },
+		);
+
+		expect(cmd).toContain("--append-system-prompt");
+	});
+
+	// ---- Codex ----
+	it("Codex: uses 'codex resume --last' subcommand when resume=true", () => {
+		const cmd = resolveAgentCommand(
+			makeAgent({ baseCommand: "codex" }),
+			makeConfig({ model: undefined }),
+			makeCtx({ taskDescription: "Some task" }),
+			{ resume: true },
+		);
+
+		expect(cmd).toMatch(/^codex resume --last/);
+		expect(cmd).not.toContain("Some task");
+	});
+
+	it("Codex: normal command when resume is not set", () => {
+		const cmd = resolveAgentCommand(
+			makeAgent({ baseCommand: "codex" }),
+			makeConfig({ model: undefined }),
+			makeCtx({ taskDescription: "Some task" }),
+		);
+
+		expect(cmd).toMatch(/^codex/);
+		expect(cmd).not.toMatch(/^codex resume/);
+		expect(cmd).toContain("Some task");
+	});
+
+	// ---- Gemini ----
+	it("Gemini: adds --resume latest when resume=true", () => {
+		const cmd = resolveAgentCommand(
+			makeAgent({ baseCommand: "gemini" }),
+			makeConfig({ model: undefined }),
+			makeCtx({ taskDescription: "Some task" }),
+			{ resume: true },
+		);
+
+		expect(cmd).toContain("--resume latest");
+		expect(cmd).not.toContain("Some task");
+	});
+
+	it("Gemini: normal command when resume is not set", () => {
+		const cmd = resolveAgentCommand(
+			makeAgent({ baseCommand: "gemini" }),
+			makeConfig({ model: undefined }),
+			makeCtx({ taskDescription: "Some task" }),
+		);
+
+		expect(cmd).not.toContain("--resume");
+		expect(cmd).toContain("Some task");
+	});
+
+	// ---- Cursor Agent ----
+	it("Cursor Agent: adds --continue when resume=true", () => {
+		const cmd = resolveAgentCommand(
+			makeAgent({ baseCommand: "agent" }),
+			makeConfig({ model: undefined }),
+			makeCtx({ taskDescription: "Some task" }),
+			{ resume: true },
+		);
+
+		expect(cmd).toContain("--continue");
+		expect(cmd).not.toContain("Some task");
+	});
+
+	it("Cursor Agent: normal command when resume is not set", () => {
+		const cmd = resolveAgentCommand(
+			makeAgent({ baseCommand: "agent" }),
+			makeConfig({ model: undefined }),
+			makeCtx({ taskDescription: "Some task" }),
+		);
+
+		expect(cmd).not.toContain("--continue");
+		// Cursor injects DEV3_SYSTEM_PROMPT via prompt
+		expect(cmd).toContain("MANDATORY");
+	});
+
+	// ---- Unsupported agents ----
+	it("does not add resume flags for unsupported agents", () => {
+		const cmd = resolveAgentCommand(
+			makeAgent({ baseCommand: "aider" }),
+			makeConfig({ model: undefined }),
+			makeCtx({ taskDescription: "Some task" }),
+			{ resume: true },
+		);
+
+		expect(cmd).not.toContain("--continue");
+		expect(cmd).not.toContain("--resume");
+		expect(cmd).not.toContain("resume --last");
+		// Unsupported agent still gets the prompt (no resume behavior)
+		expect(cmd).toContain("Some task");
+	});
+});

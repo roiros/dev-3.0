@@ -1,0 +1,1 @@
+When reopening a completed or cancelled task, AI agents now resume the previous conversation instead of starting fresh. Supported agents: Claude (`--continue`), Codex (`resume --last`), Gemini (`--resume latest`), Cursor Agent (`--continue`). The worktree path is deterministic, so conversation history persists across task lifecycle transitions.
