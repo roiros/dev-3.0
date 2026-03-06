@@ -87,6 +87,9 @@ interface PtySession {
 	tmuxSocket: string | null;
 	lastOutputTime: number;
 	idleNotified: boolean;
+	/** Streaming decoder that buffers incomplete multi-byte UTF-8 sequences
+	 *  across PTY data chunks, preventing U+FFFD replacement characters. */
+	decoder: TextDecoder;
 }
 
 const sessions = new Map<string, PtySession>();
@@ -126,6 +129,7 @@ export function createSession(
 		tmuxSocket,
 		lastOutputTime: Date.now(),
 		idleNotified: false,
+		decoder: new TextDecoder("utf-8", { fatal: false }),
 	};
 	sessions.set(taskId, session);
 	// Spawn immediately in the background — don't wait for WS connection
@@ -295,10 +299,13 @@ function spawnPty(session: PtySession, cols: number, rows: number): void {
 					rows,
 					data(_terminal: unknown, data: string | Uint8Array) {
 						try {
+							// Use the session's streaming decoder so that
+							// multi-byte UTF-8 sequences split across chunks
+							// are buffered instead of replaced with U+FFFD.
 							const str =
 								typeof data === "string"
 									? data
-									: new TextDecoder().decode(data);
+									: session.decoder.decode(data, { stream: true });
 							session.lastOutputTime = Date.now();
 							session.idleNotified = false;
 							checkForBell(str, session.taskId);
@@ -506,11 +513,6 @@ const ptyServer = Bun.serve({
 					return;
 				}
 
-				// Debug: log escape sequences being written to tmux PTY
-				if (data.includes("\x1b")) {
-					const hex = Array.from(data, (c: string) => c.charCodeAt(0).toString(16).padStart(2, "0")).join(" ");
-					log.info("PTY write (has ESC)", { len: data.length, hex });
-				}
 				session.proc.terminal.write(data);
 			} catch (err) {
 				log.error("WS message handler error", {
