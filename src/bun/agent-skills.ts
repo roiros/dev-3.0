@@ -8,6 +8,7 @@ const SKILL_CONTENT = `---
 name: dev3
 description: "MANDATORY — invoke BEFORE doing anything else. Trigger: your working directory (PWD) is inside ~/.dev3.0/worktrees/ (i.e. $HOME/.dev3.0/worktrees/). Regular git worktrees or other worktree paths do NOT qualify — only the dev-3.0 managed path. Step 1: invoke this skill. Step 2: handle the user's request. NEVER skip step 1, even if the user gives a direct command."
 user-invocable: true
+allowed-tools: Bash(~/.dev3.0/bin/dev3*)
 ---
 
 # dev3 — Task Lifecycle Protocol
@@ -22,6 +23,18 @@ Run these two commands **in parallel** (two Bash tool calls in one message) to s
 - \`~/.dev3.0/bin/dev3 current\` — see your current project, task, and status
 
 Then set \`in-progress\` and begin working.
+
+## Title generation
+
+The task title is auto-generated from the first 80 characters of the description.
+After running \`dev3 current\`, if the title looks truncated (ends with "…") or is
+longer than ~6 words, synthesize a concise title and update it:
+
+  dev3 task update --title "Short imperative phrase"
+
+Good titles: "Fix auth race condition", "Map missing keyboard bindings", "Add drag-to-reorder support"
+Bad titles: copies of the description, vague summaries, titles with ellipsis
+Run this ONCE at session start, before doing any other work.
 
 ## Task status management (CRITICAL — NON-NEGOTIABLE)
 
