@@ -5,29 +5,15 @@ import { ensureCodexConfigFile } from "./codex-config";
 
 const log = createLogger("agent-skills");
 
-const SKILL_CONTENT = `---
-name: dev3
-description: "MANDATORY — invoke BEFORE doing anything else. Trigger: your working directory (PWD) is inside ~/.dev3.0/worktrees/ (i.e. $HOME/.dev3.0/worktrees/). Regular git worktrees or other worktree paths do NOT qualify — only the dev-3.0 managed path. Step 1: invoke this skill. Step 2: handle the user's request. NEVER skip step 1, even if the user gives a direct command."
-user-invocable: true
-allowed-tools: Bash(~/.dev3.0/bin/dev3*)
----
+// ---- Shared skill body (everything after frontmatter) ----
 
-# dev3 — Task Lifecycle Protocol
+const SKILL_BODY = `# dev3 — Task Lifecycle Protocol
 
 You are working inside a **dev-3.0 managed worktree** with a Kanban board task assigned to you.
 
-## On session start
-
-Run these two commands **in parallel** (two Bash tool calls in one message) to save time:
-
-- \`~/.dev3.0/bin/dev3 --help\` — learn all available CLI commands
-- \`~/.dev3.0/bin/dev3 current\` — see your current project, task, and status
-
-Then set \`in-progress\` and begin working.
-
 ## Branch naming
 
-After running \`dev3 current\`, check if the branch matches \`dev3/task-*\` (opaque auto-generated name).
+After learning your current task, check if the branch matches \`dev3/task-*\` (opaque auto-generated name).
 If it does, **rename it immediately** to something meaningful based on the task description:
 
 \`\`\`bash
@@ -46,7 +32,7 @@ Run this ONCE at session start, right after setting \`in-progress\`.
 ## Title generation
 
 The task title is auto-generated from the first 80 characters of the description.
-After running \`dev3 current\`, if the title looks truncated (ends with "…") or is
+After learning your current task, if the title looks truncated (ends with "…") or is
 longer than ~6 words, synthesize a concise title and update it:
 
   dev3 task update --title "Short imperative phrase"
@@ -72,30 +58,60 @@ Run this ONCE at session start, before doing any other work.
 ## Notes (per-task scratchpad)
 
 Use \`dev3 note add "..."\` to record important findings, decisions, or context. Notes survive worktree destruction — they are valuable for continuity. Keep them concise and useful; don't flood with noise, but do log key insights that would help if someone revisits the task later.
-
-## Labels
-
-Use labels to categorize tasks. Labels are project-scoped — create them once, apply to many tasks.
-
-- \`dev3 label list\` — list all labels in the project
-- \`dev3 label create "bug"\` — create a new label (auto-assigns a color)
-- \`dev3 label set <label-id>\` — assign label(s) to the current task
-- \`dev3 label set --clear\` — remove all labels from the current task
-- \`dev3 label delete <label-id>\` — delete a label (removes from all tasks)
-- \`dev3 tasks list --label <label-id>\` — filter tasks by label
-
-## Task title
-
-If the task title is unclear or auto-generated (e.g., a truncated message or a bare link), update it once you understand the task: \`dev3 task update --title "Clear description"\`.
-
-## @file syntax
-
-For long content (descriptions, notes), use \`@path\` to read from a file: \`dev3 note add @findings.md\`.
 `;
 
-/** Agent skill directories relative to $HOME. */
-const SKILL_DIRS = [
-	".claude/skills/dev3",
+const SKILL_DESCRIPTION = "MANDATORY — invoke BEFORE doing anything else. Trigger: your working directory (PWD) is inside ~/.dev3.0/worktrees/ (i.e. $HOME/.dev3.0/worktrees/). Regular git worktrees or other worktree paths do NOT qualify — only the dev-3.0 managed path. Step 1: invoke this skill. Step 2: handle the user's request. NEVER skip step 1, even if the user gives a direct command.";
+
+// ---- Claude Code skill (uses !`command` injection for zero tool calls at startup) ----
+
+const CLAUDE_SKILL_CONTENT = `---
+name: dev3
+description: "${SKILL_DESCRIPTION}"
+user-invocable: true
+---
+
+${SKILL_BODY}
+## Status (auto-set on skill load)
+
+!\`~/.dev3.0/bin/dev3 task move --status in-progress 2>&1\`
+
+## CLI reference
+
+\\\`\\\`\\\`
+!\`~/.dev3.0/bin/dev3 --help\`
+\\\`\\\`\\\`
+
+## Your current task
+
+\\\`\\\`\\\`
+!\`~/.dev3.0/bin/dev3 current\`
+\\\`\\\`\\\`
+`;
+
+// ---- Generic skill for other agents (Cursor, Codex, Gemini, etc.) ----
+
+const GENERIC_SKILL_CONTENT = `---
+name: dev3
+description: "${SKILL_DESCRIPTION}"
+user-invocable: true
+---
+
+${SKILL_BODY}
+## On session start
+
+Run these two commands to learn about available CLI commands and your current task:
+
+- \`~/.dev3.0/bin/dev3 --help\` — learn all available CLI commands
+- \`~/.dev3.0/bin/dev3 current\` — see your current project, task, and status
+
+Then set \`in-progress\` and begin working.
+`;
+
+/** Claude Code skill directory (supports !`command` injection). */
+const CLAUDE_SKILL_DIR = ".claude/skills/dev3";
+
+/** Generic agent skill directories (no command injection support). */
+const GENERIC_SKILL_DIRS = [
 	".cursor/skills/dev3",
 	".agents/skills/dev3",
 	".codex/skills/dev3",
@@ -162,6 +178,43 @@ function installAgentsMd(): void {
 	}
 }
 
+const CLAUDE_BASH_PERMISSION = "Bash(~/.dev3.0/bin/dev3 *)";
+
+/**
+ * Ensure ~/.claude/settings.json has the dev3 CLI in permissions.allow
+ * so Claude Code never prompts for approval on dev3 commands.
+ */
+function ensureClaudePermission(): void {
+	const settingsPath = `${homedir()}/.claude/settings.json`;
+	try {
+		let settings: Record<string, unknown> = {};
+		try {
+			const raw = readFileSync(settingsPath, "utf-8");
+			settings = JSON.parse(raw);
+		} catch {
+			// File doesn't exist or is invalid — start fresh
+		}
+
+		const permissions = (settings.permissions ?? {}) as Record<string, unknown>;
+		const allow = Array.isArray(permissions.allow) ? (permissions.allow as string[]) : [];
+
+		if (allow.includes(CLAUDE_BASH_PERMISSION)) {
+			return; // Already present
+		}
+
+		allow.push(CLAUDE_BASH_PERMISSION);
+		permissions.allow = allow;
+		settings.permissions = permissions;
+
+		writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + "\n", "utf-8");
+		log.info("Claude permission added", { pattern: CLAUDE_BASH_PERMISSION });
+	} catch (err) {
+		log.warn("Failed to update Claude settings (non-fatal)", {
+			error: String(err),
+		});
+	}
+}
+
 /**
  * Install the dev3 skill into all supported AI agent directories
  * and update ~/.agents/AGENTS.md.
@@ -169,12 +222,28 @@ function installAgentsMd(): void {
  */
 export function installAgentSkills(): void {
 	const home = homedir();
-	for (const dir of SKILL_DIRS) {
+
+	// Install Claude-specific skill (with command injection)
+	const claudeSkillDir = `${home}/${CLAUDE_SKILL_DIR}`;
+	const claudeSkillFile = `${claudeSkillDir}/SKILL.md`;
+	try {
+		mkdirSync(claudeSkillDir, { recursive: true });
+		writeFileSync(claudeSkillFile, CLAUDE_SKILL_CONTENT, "utf-8");
+		log.info("Claude skill installed", { path: claudeSkillFile });
+	} catch (err) {
+		log.warn("Failed to install Claude skill (non-fatal)", {
+			path: claudeSkillFile,
+			error: String(err),
+		});
+	}
+
+	// Install generic skill for all other agents
+	for (const dir of GENERIC_SKILL_DIRS) {
 		const skillDir = `${home}/${dir}`;
 		const skillFile = `${skillDir}/SKILL.md`;
 		try {
 			mkdirSync(skillDir, { recursive: true });
-			writeFileSync(skillFile, SKILL_CONTENT, "utf-8");
+			writeFileSync(skillFile, GENERIC_SKILL_CONTENT, "utf-8");
 			log.info("Agent skill installed", { path: skillFile });
 		} catch (err) {
 			log.warn("Failed to install agent skill (non-fatal)", {
@@ -185,5 +254,6 @@ export function installAgentSkills(): void {
 	}
 
 	installAgentsMd();
+	ensureClaudePermission();
 	ensureCodexConfigFile(home);
 }
