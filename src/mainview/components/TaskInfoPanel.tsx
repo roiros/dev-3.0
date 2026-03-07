@@ -3,7 +3,8 @@ import { createPortal } from "react-dom";
 import type { Task, Project, TaskStatus, BranchStatus } from "../../shared/types";
 import LabelChip from "./LabelChip";
 import { NoteItem, formatDate } from "./NoteItem";
-import { ACTIVE_STATUSES, STATUS_COLORS, getAllowedTransitions } from "../../shared/types";
+import { ACTIVE_STATUSES, getAllowedTransitions } from "../../shared/types";
+import { useStatusColors } from "../hooks/useStatusColors";
 import type { AppAction, Route } from "../state";
 import { api } from "../rpc";
 import { useT, statusKey } from "../i18n";
@@ -49,6 +50,7 @@ function readNumber(key: string, fallback: number): number {
 
 function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps) {
 	const t = useT();
+	const statusColors = useStatusColors();
 	const [collapsed, setCollapsed] = useState(() => readBool(LS_COLLAPSED, true));
 	const [panelHeight, setPanelHeight] = useState(() => readNumber(LS_HEIGHT, DEFAULT_HEIGHT));
 
@@ -566,7 +568,7 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 
 	// ---- Shared elements ----
 
-	const statusColor = STATUS_COLORS[task.status];
+	const statusColor = statusColors[task.status];
 	const height = collapsed ? `${COLLAPSED_HEIGHT_REM}rem` : panelHeight;
 
 	const statusDropdownButton = (
@@ -611,7 +613,7 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 				>
 					<div
 						className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-						style={{ background: STATUS_COLORS[s] }}
+						style={{ background: statusColors[s] }}
 					/>
 					{t(statusKey(s))}
 				</button>
@@ -776,7 +778,7 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 			: t("infoPanel.uncommittedDiffTooltip");
 
 	const disabledBtnClass = "text-fg-muted/50 cursor-not-allowed bg-raised/50";
-	const enabledBtnClass = "text-accent hover:bg-accent/20 bg-accent/10";
+	const enabledBtnClass = "text-accent hover:bg-accent/20 bg-accent/10 border border-accent/25";
 
 	const gitActionButtons = isTaskActive && task.worktreePath ? (
 		<span className="flex items-center gap-1 text-[0.6875rem] flex-shrink-0">
@@ -875,7 +877,7 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 			className={`flex items-center gap-1 px-2 py-1 rounded-lg transition-colors flex-shrink-0 ${
 				devServerDisabled
 					? "text-fg-muted/50 cursor-not-allowed"
-					: "text-[#34d399] hover:text-[#6ee7b7] hover:bg-[#34d399]/10 border border-[#34d399]/30"
+					: "text-[#10b981] hover:text-[#34d399] hover:bg-[#10b981]/15 border border-[#10b981]/30"
 			}`}
 			title={devServerDisabled ? t("header.devServerDisabled") : t("header.devServer")}
 		>
@@ -887,7 +889,7 @@ function TaskInfoPanel({ task, project, dispatch, navigate }: TaskInfoPanelProps
 		</button>
 	);
 
-	const tmuxBtnClass = "px-1.5 py-0.5 rounded text-[0.625rem] font-medium transition-colors text-accent hover:bg-accent/20 bg-accent/10 flex items-center gap-1";
+	const tmuxBtnClass = "px-1.5 py-0.5 rounded text-[0.625rem] font-medium transition-colors text-accent hover:bg-accent/20 bg-accent/10 border border-accent/25 flex items-center gap-1";
 
 	const handleTmuxAction = (action: "splitH" | "splitV" | "zoom") => (e: React.MouseEvent) => {
 		e.stopPropagation();
