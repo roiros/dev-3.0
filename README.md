@@ -118,3 +118,9 @@ See [AGENTS.md](AGENTS.md) for full architecture docs and coding guidelines.
 ## License
 
 [Apache 2.0](LICENSE) — © 2026 Arseny Pavlenko
+
+---
+
+<p align="center">
+  <img src="https://visitor-badge.laobi.icu/badge?page_id=h0x91b.dev-3.0" alt="visitors">
+</p>
