@@ -1272,12 +1272,21 @@ export const handlers = {
 		return existsSync(params.path);
 	},
 
-	async getPtyUrl(params: { taskId: string }): Promise<string> {
+	async getPtyUrl(params: { taskId: string; resume?: boolean }): Promise<string> {
 		log.info("→ getPtyUrl", {
 			taskId: params.taskId,
 			hasExistingSession: pty.hasSession(params.taskId),
 			ptyPort: pty.getPtyPort(),
 		});
+
+		// If resuming and the session is dead (proc exited but still in map),
+		// destroy it so launchTaskPty recreates it with the resume flag.
+		if (params.resume && pty.hasDeadSession(params.taskId)) {
+			log.info("Resume requested on dead session — destroying to force recreation", {
+				taskId: params.taskId.slice(0, 8),
+			});
+			pty.destroySession(params.taskId);
+		}
 
 		// If no PTY session in memory, try to recreate it from persisted task data
 		if (!pty.hasSession(params.taskId)) {
@@ -1322,7 +1331,7 @@ export const handlers = {
 						status: foundTask.status,
 						worktreePath: foundTask.worktreePath,
 					});
-					await launchTaskPty(foundProject, foundTask, foundTask.worktreePath);
+					await launchTaskPty(foundProject, foundTask, foundTask.worktreePath, null, null, false, params.resume ?? false);
 					log.info("Restored PTY session for active task", {
 						taskId: params.taskId.slice(0, 8),
 						worktreePath: foundTask.worktreePath,
