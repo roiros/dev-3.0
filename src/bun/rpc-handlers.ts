@@ -845,7 +845,7 @@ export const handlers = {
 					hasWorktree: !!task.worktreePath,
 				});
 				try {
-					pty.destroySession(task.id);
+					pty.destroySession(task.id, task.tmuxSocket);
 				} catch (err) {
 					log.error("destroySession failed, continuing with task move", {
 						taskId: task.id,
@@ -915,7 +915,7 @@ export const handlers = {
 		// Cleanup if active
 		if (isActive(task.status)) {
 			log.info("Task is active, cleaning up PTY + worktree");
-			pty.destroySession(task.id);
+			pty.destroySession(task.id, task.tmuxSocket);
 			await git.removeWorktree(project, task);
 		}
 
