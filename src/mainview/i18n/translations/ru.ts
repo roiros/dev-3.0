@@ -28,6 +28,11 @@ const ru: TranslationRecord & Record<string, string> = {
 	"header.globalLabel": "Общие",
 	"header.devServer": "Dev-сервер",
 	"header.devServerDisabled": "Настройте dev-скрипт в настройках проекта",
+	"header.fileBrowser": "Файлы",
+	"fileBrowser.notInstalledTitle": "yazi не установлен",
+	"fileBrowser.notInstalledDesc": "Файловый браузер требует yazi. Выполните команду для установки:",
+	"fileBrowser.linuxBrewHint": "Сначала установите Homebrew для Linux (https://brew.sh), затем выполните:",
+	"fileBrowser.clickAgainHint": "После установки нажмите Files снова — всё заработает.",
 
 	// GlobalSettings
 	"settings.theme": "Тема",
@@ -288,6 +293,7 @@ const ru: TranslationRecord & Record<string, string> = {
 	"infoPanel.mergeDisabledBehind": "Сначала сделай rebase — ветка позади",
 	"infoPanel.statusLoading": "Загрузка статуса ветки...",
 	"infoPanel.devServerFailed": "Не удалось запустить dev-сервер: {error}",
+	"infoPanel.fileBrowserFailed": "Не удалось открыть файловый браузер: {error}",
 	"infoPanel.uncommittedChanges": "+{ins} / −{del}",
 	"infoPanel.refreshStatus": "Обновить статус ветки",
 	"infoPanel.movedAt": "Перемещено",
@@ -324,6 +330,8 @@ const ru: TranslationRecord & Record<string, string> = {
 	"requirements.copied": "Скопировано!",
 	"requirements.installGit": "Установить через Xcode CLI tools:",
 	"requirements.installTmux": "Установить через Homebrew:",
+	"requirements.installYazi": "Установить через Homebrew (опционально, для файлового браузера):",
+	"requirements.optional": "опционально",
 	"requirements.customPathHint": "Или укажите полный путь к бинарнику:",
 	"requirements.pathNotFound": "Файл не найден по этому пути",
 	"requirements.setPath": "Указать путь",

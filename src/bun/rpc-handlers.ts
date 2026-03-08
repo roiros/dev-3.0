@@ -81,6 +81,8 @@ let pushMessage: ((name: string, payload: any) => void) | null = null;
 
 // Track dev server tmux pane IDs per task
 const devPaneIds = new Map<string, string>();
+// Track file browser (yazi) tmux pane IDs per task
+const fileBrowserPaneIds = new Map<string, string>();
 
 // Track git operation tmux pane IDs per task
 const gitOpPaneIds = new Map<string, string>();
@@ -906,6 +908,7 @@ export const handlers = {
 				"split-window", "-h",
 				"-t", tmuxSession,
 				"-c", task.worktreePath,
+				"-l", "30%",
 				"-P", "-F", "#{pane_id}",
 				`bash "${devScriptPath}"`,
 			), { stdout: "pipe", stderr: "pipe" });
@@ -930,6 +933,91 @@ export const handlers = {
 			}
 		} catch (err) {
 			log.error("runDevServer FAILED", {
+				taskId: params.taskId.slice(0, 8),
+				error: String(err),
+				stack: (err as Error)?.stack ?? "no stack",
+			});
+			throw err;
+		}
+	},
+
+	async openFileBrowser(params: { taskId: string; projectId: string }): Promise<{ notInstalled: true; installCommand: string; linuxHint?: boolean } | void> {
+		log.info("→ openFileBrowser", params);
+		try {
+			// Check if yazi is available
+			const yaziCheck = spawnSync(["which", "yazi"]);
+			if (yaziCheck.exitCode !== 0) {
+				const brewCmd = "brew install yazi ffmpegthumbnailer sevenzip jq poppler fd ripgrep fzf zoxide imagemagick chafa";
+				const installCommand = process.platform === "win32"
+					? "scoop install yazi ffmpeg 7zip jq poppler fd ripgrep fzf zoxide imagemagick chafa"
+					: brewCmd;
+				const linuxHint = process.platform === "linux";
+				log.info("← openFileBrowser: yazi not installed", { platform: process.platform });
+				return { notInstalled: true, installCommand, linuxHint };
+			}
+
+			const project = await data.getProject(params.projectId);
+			const task = await data.getTask(project, params.taskId);
+
+			if (!task.worktreePath) throw new Error("Task has no worktree");
+
+			const tmuxSession = `dev3-${task.id.slice(0, 8)}`;
+			const socket = task.tmuxSocket ?? null;
+
+			// Toggle: if yazi pane already exists, kill it
+			const existingPane = fileBrowserPaneIds.get(task.id);
+			if (existingPane) {
+				const kill = spawn(pty.tmuxArgs(socket, "kill-pane", "-t", existingPane));
+				await kill.exited;
+				fileBrowserPaneIds.delete(task.id);
+				log.info("← openFileBrowser: toggled off (killed pane)", { taskId: task.id.slice(0, 8), paneId: existingPane });
+				return;
+			}
+
+			// Check if any existing pane is running yazi (handles app restart losing map)
+			const listProc = spawn(pty.tmuxArgs(socket,
+				"list-panes", "-t", tmuxSession,
+				"-F", "#{pane_id} #{pane_current_command}",
+			), { stdout: "pipe", stderr: "pipe" });
+			const listOutput = await new Response(listProc.stdout).text();
+			await listProc.exited;
+			for (const line of listOutput.trim().split("\n")) {
+				if (line.includes("yazi")) {
+					const paneId = line.split(" ")[0];
+					const kill = spawn(pty.tmuxArgs(socket, "kill-pane", "-t", paneId));
+					await kill.exited;
+					log.info("← openFileBrowser: toggled off (found running yazi)", { taskId: task.id.slice(0, 8), paneId });
+					return;
+				}
+			}
+
+			// Open new horizontal split (bottom pane) with yazi
+			const proc = spawn(pty.tmuxArgs(socket,
+				"split-window", "-v",
+				"-t", tmuxSession,
+				"-c", task.worktreePath,
+				"-l", "30%",
+				"-P", "-F", "#{pane_id}",
+				"yazi",
+			), { stdout: "pipe", stderr: "pipe" });
+			const output = await new Response(proc.stdout).text();
+			const stderrOutput = await new Response(proc.stderr).text();
+			const exitCode = await proc.exited;
+
+			if (exitCode !== 0) {
+				log.error("openFileBrowser tmux failed", { taskId: task.id.slice(0, 8), exitCode, stderr: stderrOutput.trim() });
+				throw new Error(`tmux split-window failed: ${stderrOutput.trim() || "unknown error"}`);
+			}
+
+			const paneId = output.trim();
+			if (paneId) {
+				fileBrowserPaneIds.set(task.id, paneId);
+				log.info("← openFileBrowser done", { paneId });
+			} else {
+				log.info("← openFileBrowser done (no pane id captured)");
+			}
+		} catch (err) {
+			log.error("openFileBrowser FAILED", {
 				taskId: params.taskId.slice(0, 8),
 				error: String(err),
 				stack: (err as Error)?.stack ?? "no stack",
@@ -1678,6 +1766,7 @@ export const handlers = {
 				installCommand: req.installCommand,
 				brewInstallable: req.brewInstallable,
 				customPathError,
+				...((req as any).optional ? { optional: true } : {}),
 			};
 		});
 
