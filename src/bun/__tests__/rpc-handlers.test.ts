@@ -105,6 +105,20 @@ vi.mock("node:fs", () => ({
 	existsSync: vi.fn(() => true),
 }));
 
+const mockObjcGetClass = vi.fn(() => "NSApplication_ptr");
+const mockSelRegisterName = vi.fn((buf: Buffer) => `sel_${buf.toString().replace(/\0$/, "")}`);
+const mockObjcMsgSend = vi.fn(() => "NSApp_instance");
+vi.mock("bun:ffi", () => ({
+	dlopen: vi.fn(() => ({
+		symbols: {
+			objc_getClass: mockObjcGetClass,
+			sel_registerName: mockSelRegisterName,
+			objc_msgSend: mockObjcMsgSend,
+		},
+	})),
+	FFIType: { ptr: "ptr" },
+}));
+
 import * as data from "../data";
 import * as git from "../git";
 import * as pty from "../pty-server";
@@ -1823,6 +1837,34 @@ describe("handlers.quitApp", () => {
 	it("calls Utils.quit", async () => {
 		await handlers.quitApp();
 		expect(Utils.quit).toHaveBeenCalledOnce();
+	});
+});
+
+// ================================================================
+// handlers.hideApp
+// ================================================================
+
+describe("handlers.hideApp", () => {
+	beforeEach(() => vi.clearAllMocks());
+
+	it("calls [NSApp hide:nil] via Objective-C FFI", async () => {
+		await handlers.hideApp();
+
+		// Step 1: get NSApplication class
+		expect(mockObjcGetClass).toHaveBeenCalledOnce();
+
+		// Step 2: register selectors
+		expect(mockSelRegisterName).toHaveBeenCalledTimes(2);
+
+		// Step 3: objc_msgSend called twice
+		expect(mockObjcMsgSend).toHaveBeenCalledTimes(2);
+		const calls = mockObjcMsgSend.mock.calls as unknown[][];
+		// First call: [NSApplication sharedApplication]
+		expect(calls[0][0]).toBe("NSApplication_ptr");
+		expect(calls[0][1]).toBe("sel_sharedApplication");
+		// Second call: [app hide:nil] — app is return value of first call
+		expect(calls[1][0]).toBe("NSApp_instance");
+		expect(calls[1][1]).toBe("sel_hide:");
 	});
 });
 

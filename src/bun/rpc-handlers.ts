@@ -13,9 +13,50 @@ import { loadSettings, loadSettingsSync, saveSettings } from "./settings";
 import { createLogger } from "./logger";
 import { DEV3_HOME } from "./paths";
 import { spawn, spawnSync } from "./spawn";
+import { dlopen, FFIType } from "bun:ffi";
 import { clonePaths } from "./cow-clone";
 
 const log = createLogger("rpc");
+
+/**
+ * Lazy-initialized Objective-C runtime FFI handle.
+ * Opened once on first use; libobjc is always loaded in any macOS process
+ * so there's no need to close the handle.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let objcLib: any = null;
+
+function getObjcLib() {
+	if (!objcLib) {
+		objcLib = dlopen("libobjc.A.dylib", {
+			objc_getClass: { args: [FFIType.ptr], returns: FFIType.ptr },
+			sel_registerName: { args: [FFIType.ptr], returns: FFIType.ptr },
+			objc_msgSend: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.ptr },
+		});
+	}
+	return objcLib;
+}
+
+/** Encode a string as a null-terminated buffer for FFI. */
+const encodeCStr = (s: string) => Buffer.from(s + "\0");
+
+/**
+ * Hide the app by calling [NSApp hide:nil] via Objective-C runtime FFI.
+ * No permissions required — the app hides itself.
+ */
+function hideAppNative(): void {
+	try {
+		const objc = getObjcLib();
+		const NSApplication = objc.symbols.objc_getClass(encodeCStr("NSApplication"));
+		const sharedAppSel = objc.symbols.sel_registerName(encodeCStr("sharedApplication"));
+		const hideSel = objc.symbols.sel_registerName(encodeCStr("hide:"));
+
+		const app = objc.symbols.objc_msgSend(NSApplication, sharedAppSel);
+		objc.symbols.objc_msgSend(app, hideSel);
+	} catch (err) {
+		log.error("hideAppNative FFI failed", { error: String(err) });
+	}
+}
 
 /**
  * Escape a string for safe use inside a double-quoted shell context.
@@ -601,6 +642,16 @@ export const handlers = {
 	async quitApp(): Promise<void> {
 		log.info("→ quitApp (Cmd+Q from renderer)");
 		Utils.quit();
+	},
+
+	async hideApp(): Promise<void> {
+		log.info("→ hideApp (Cmd+H from renderer)");
+		// Electrobun doesn't expose a hide() API. The menu has { role: "hide" }
+		// which creates the native NSMenuItem, but WKWebView swallows the Cmd+H
+		// keystroke before it reaches the macOS menu responder chain.
+		// Workaround: call [NSApp hide:nil] directly via Objective-C runtime FFI.
+		// This requires no permissions (unlike osascript + System Events).
+		hideAppNative();
 	},
 
 	async showConfirm(params: { title: string; message: string }): Promise<boolean> {
