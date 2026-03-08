@@ -2,8 +2,8 @@ import { existsSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { PATHS, Utils } from "electrobun/bun";
-import type { ChangelogEntry, CodingAgent, CustomColumn, GlobalSettings, Label, NoteSource, Project, RequirementCheckResult, Task, TaskNote, TaskStatus, TmuxSessionInfo } from "../shared/types";
-import { ACTIVE_STATUSES, LABEL_COLORS, titleFromDescription, extractRepoName } from "../shared/types";
+import type { ChangelogEntry, CodingAgent, CustomColumn, ExternalApp, GlobalSettings, Label, NoteSource, Project, RequirementCheckResult, Task, TaskNote, TaskStatus, TmuxSessionInfo } from "../shared/types";
+import { ACTIVE_STATUSES, DEFAULT_EXTERNAL_APPS, LABEL_COLORS, titleFromDescription, extractRepoName } from "../shared/types";
 import * as data from "./data";
 import * as git from "./git";
 import * as pty from "./pty-server";
@@ -2324,6 +2324,46 @@ export const handlers = {
 			throw new Error("Invalid folder path");
 		}
 		Utils.openPath(params.path);
+	},
+
+	async openInApp(params: { appName: string; path: string }): Promise<void> {
+		log.info("→ openInApp", { appName: params.appName, path: params.path });
+		if (!params.path.startsWith("/") || params.path.includes("..")) {
+			throw new Error("Invalid path");
+		}
+		if (!params.appName || params.appName.includes("/")) {
+			throw new Error("Invalid app name");
+		}
+		// Finder: open the folder directly (not -R which reveals in parent)
+		if (params.appName === "Finder") {
+			spawn(["open", params.path], { stdout: "ignore", stderr: "ignore" });
+			return;
+		}
+		spawn(["open", "-a", params.appName, params.path], { stdout: "ignore", stderr: "ignore" });
+	},
+
+	async getAvailableApps(): Promise<ExternalApp[]> {
+		log.info("→ getAvailableApps");
+		const settings = await loadSettings();
+		const allApps = [...DEFAULT_EXTERNAL_APPS, ...(settings.externalApps ?? [])];
+
+		// Check which apps are installed — parallel async spawn
+		const checks = allApps.map(async (app): Promise<ExternalApp | null> => {
+			// Finder and Terminal are always available on macOS
+			if (app.id === "finder" || app.id === "terminal") return app;
+			// Skip apps with empty macAppName (incomplete user config)
+			if (!app.macAppName) return null;
+			try {
+				const proc = spawn(["open", "-Ra", app.macAppName], { stdout: "ignore", stderr: "ignore" });
+				const code = await proc.exited;
+				return code === 0 ? app : null;
+			} catch {
+				return null;
+			}
+		});
+		const results = (await Promise.all(checks)).filter((a): a is ExternalApp => a !== null);
+		log.info("← getAvailableApps", { count: results.length, apps: results.map((a) => a.name) });
+		return results;
 	},
 
 	async listBranches(params: { projectId: string }): Promise<Array<{ name: string; isRemote: boolean }>> {

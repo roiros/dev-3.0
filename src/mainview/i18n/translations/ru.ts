@@ -462,6 +462,18 @@ const ru: TranslationRecord & Record<string, string> = {
 	"sidebar.switchToBoard": "Показать доску",
 	"sidebar.switchToSidebar": "Показать панель",
 
+	// External Apps settings
+	"settings.externalApps": "Внешние приложения",
+	"settings.externalAppsDesc": "Кастомные приложения для меню «Открыть в...». Стандартные приложения (Finder, VS Code, Cursor и т.д.) определяются автоматически.",
+	"settings.externalAppName": "Отображаемое имя",
+	"settings.externalAppMacName": "Имя macOS-приложения (для open -a)",
+	"settings.addExternalApp": "Добавить",
+
+	// Open in...
+	"openIn.menuTitle": "Открыть в...",
+	"openIn.noAppsFound": "Не найдены внешние приложения",
+	"openIn.failedOpen": "Не удалось открыть в {app}: {error}",
+
 	// Gauge Demo
 	"gaugeDemo.title": "Компоненты-циферблаты",
 	"gaugeDemo.playground": "Песочница",

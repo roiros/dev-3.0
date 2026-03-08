@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
+import type { ExternalApp } from "../shared/types";
 import { createLogger } from "./logger";
 import { DEV3_HOME } from "./paths";
 
@@ -14,6 +15,7 @@ export interface GlobalSettings {
 	cloneBaseDirectory?: string;
 	customBinaryPaths?: Record<string, string>;
 	playSoundOnTaskComplete?: boolean;
+	externalApps?: ExternalApp[];
 }
 
 const DEFAULT_SETTINGS: GlobalSettings = {
@@ -37,7 +39,8 @@ export async function loadSettings(): Promise<GlobalSettings> {
 			updateChannel: data.updateChannel === "canary" ? "canary" : "stable",
 			cloneBaseDirectory: data.cloneBaseDirectory ?? undefined,
 			customBinaryPaths: data.customBinaryPaths ?? undefined,
-		playSoundOnTaskComplete: data.playSoundOnTaskComplete ?? true,
+			playSoundOnTaskComplete: data.playSoundOnTaskComplete ?? true,
+			externalApps: Array.isArray(data.externalApps) ? data.externalApps : undefined,
 		};
 	} catch (err) {
 		log.error("Failed to load settings", { error: String(err) });
@@ -65,6 +68,7 @@ export function loadSettingsSync(): GlobalSettings {
 			cloneBaseDirectory: data.cloneBaseDirectory ?? undefined,
 			customBinaryPaths: data.customBinaryPaths ?? undefined,
 			playSoundOnTaskComplete: data.playSoundOnTaskComplete ?? true,
+			externalApps: Array.isArray(data.externalApps) ? data.externalApps : undefined,
 		};
 	} catch (err) {
 		log.error("Failed to load settings (sync)", { error: String(err) });

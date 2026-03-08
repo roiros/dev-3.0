@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { useT, useLocale, ALL_LOCALES, LOCALE_LABELS } from "../i18n";
 import type { Locale } from "../i18n";
-import type { CodingAgent, AgentConfiguration, GlobalSettings as GlobalSettingsType, PermissionMode, EffortLevel, TerminalKeymapPreset } from "../../shared/types";
+import type { CodingAgent, AgentConfiguration, ExternalApp, GlobalSettings as GlobalSettingsType, PermissionMode, EffortLevel, TerminalKeymapPreset } from "../../shared/types";
+import { invalidateAvailableApps } from "../hooks/useAvailableApps";
+import { useDebouncedCallback } from "../hooks/useDebouncedCallback";
 import { api } from "../rpc";
 import { getZoom, adjustZoom, applyZoom, ZOOM_STEP, DEFAULT_ZOOM, MIN_ZOOM, MAX_ZOOM, ZOOM_CHANGED_EVENT } from "../zoom";
 import { getKeymapPreset, setKeymapPreset } from "../terminal-keymaps";
@@ -96,6 +98,42 @@ function GlobalSettings() {
 		const updated = { ...globalSettings, playSoundOnTaskComplete: enabled };
 		setGlobalSettings(updated);
 		api.request.saveGlobalSettings(updated);
+	}
+
+	/** Filter out apps with empty fields before persisting to disk. */
+	function saveExternalApps(apps: ExternalApp[]) {
+		const valid = apps.filter((a) => a.name.trim() && a.macAppName.trim());
+		const updated = { ...globalSettings, externalApps: valid.length > 0 ? valid : undefined };
+		api.request.saveGlobalSettings(updated);
+		invalidateAvailableApps();
+	}
+
+	const debouncedSaveExternalApps = useDebouncedCallback(saveExternalApps, 500);
+
+	function handleAddExternalApp() {
+		const newApp: ExternalApp = {
+			id: crypto.randomUUID(),
+			name: "",
+			macAppName: "",
+		};
+		const apps = [...(globalSettings.externalApps ?? []), newApp];
+		setGlobalSettings({ ...globalSettings, externalApps: apps });
+		// Don't persist yet — fields are empty, save will happen on input
+	}
+
+	function handleUpdateExternalApp(appId: string, patch: Partial<ExternalApp>) {
+		const apps = (globalSettings.externalApps ?? []).map((a) =>
+			a.id === appId ? { ...a, ...patch } : a,
+		);
+		setGlobalSettings({ ...globalSettings, externalApps: apps });
+		debouncedSaveExternalApps(apps);
+	}
+
+	function handleDeleteExternalApp(appId: string) {
+		const apps = (globalSettings.externalApps ?? []).filter((a) => a.id !== appId);
+		const updated = { ...globalSettings, externalApps: apps.length > 0 ? apps : undefined };
+		setGlobalSettings(updated);
+		saveExternalApps(apps);
 	}
 
 	function handleDefaultAgentChange(agentId: string) {
@@ -412,6 +450,56 @@ function GlobalSettings() {
 								{t("settings.browse")}
 							</button>
 						</div>
+					</div>
+
+					{/* External Apps ("Open in...") */}
+					<div>
+						<label className="block text-fg text-sm font-semibold mb-2">
+							{t("settings.externalApps")}
+						</label>
+						<p className="text-fg-3 text-sm mb-3">
+							{t("settings.externalAppsDesc")}
+						</p>
+						<div className="space-y-2 mb-3">
+							{(globalSettings.externalApps ?? []).map((app) => (
+								<div
+									key={app.id}
+									className="flex items-center gap-2 bg-raised border border-edge rounded-xl px-4 py-3"
+								>
+									<div className="flex-1 space-y-2">
+										<input
+											type="text"
+											value={app.name}
+											onChange={(e) => handleUpdateExternalApp(app.id, { name: e.target.value })}
+											placeholder={t("settings.externalAppName")}
+											className="w-full px-3 py-1.5 bg-elevated border border-edge rounded-lg text-fg text-sm outline-none focus:border-accent/40 transition-colors"
+										/>
+										<input
+											type="text"
+											value={app.macAppName}
+											onChange={(e) => handleUpdateExternalApp(app.id, { macAppName: e.target.value })}
+											placeholder={t("settings.externalAppMacName")}
+											autoCapitalize="off"
+											autoCorrect="off"
+											spellCheck={false}
+											className="w-full px-3 py-1.5 bg-elevated border border-edge rounded-lg text-fg text-sm font-mono placeholder-fg-muted outline-none focus:border-accent/40 transition-colors"
+										/>
+									</div>
+									<button
+										onClick={() => handleDeleteExternalApp(app.id)}
+										className="text-danger text-xs hover:underline shrink-0 px-2"
+									>
+										×
+									</button>
+								</div>
+							))}
+						</div>
+						<button
+							onClick={handleAddExternalApp}
+							className="px-4 py-2 text-accent text-sm font-semibold hover:bg-accent/10 rounded-lg transition-colors"
+						>
+							+ {t("settings.addExternalApp")}
+						</button>
 					</div>
 
 					{/* Default Agent */}

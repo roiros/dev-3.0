@@ -10,6 +10,7 @@ import { trackEvent } from "../analytics";
 import LabelChip from "./LabelChip";
 import LabelPicker from "./LabelPicker";
 import SiblingPopover from "./SiblingPopover";
+import OpenInMenu from "./OpenInMenu";
 import { confirmTaskCompletion } from "../utils/confirmTaskCompletion";
 import { useStatusColors } from "../hooks/useStatusColors";
 import TaskDetailModal from "./TaskDetailModal";
@@ -62,6 +63,10 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 	const previewCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const previewIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 	const cardRef = useRef<HTMLDivElement>(null);
+
+	// Context menu ("Open in...") state
+	const [ctxMenuOpen, setCtxMenuOpen] = useState(false);
+	const [ctxMenuPos, setCtxMenuPos] = useState({ top: 0, left: 0 });
 
 	const isDisabled = moving || isMovingProp;
 	const isTodo = task.status === "todo";
@@ -250,6 +255,14 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 		}
 	}
 
+	function handleContextMenu(e: React.MouseEvent) {
+		if (!task.worktreePath) return;
+		e.preventDefault();
+		e.stopPropagation();
+		setCtxMenuPos({ top: e.clientY, left: e.clientX });
+		setCtxMenuOpen(true);
+	}
+
 	function handleDragStart(e: React.DragEvent) {
 		closePreview();
 		e.dataTransfer.setData("text/plain", task.id);
@@ -392,6 +405,7 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 			ref={cardRef}
 			draggable={!isDisabled && !detailOpen}
 			onDragStart={handleDragStart}
+			onContextMenu={handleContextMenu}
 			onMouseEnter={handleCardMouseEnter}
 			onMouseLeave={handleCardMouseLeave}
 			className={`group relative p-3.5 glass-card rounded-xl transition-all border border-l-[3px] ${isActiveInSplit ? "border-accent/50 ring-2 ring-accent/30" : "border-transparent"} ${
@@ -605,6 +619,22 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 					</button>
 				)}
 
+				{/* "Open in..." button for active tasks */}
+				{isActive && task.worktreePath && (
+					<button
+						onClick={(e) => {
+							e.stopPropagation();
+							const rect = (e.target as HTMLElement).getBoundingClientRect();
+							setCtxMenuPos({ top: rect.bottom + 4, left: rect.left });
+							setCtxMenuOpen(true);
+						}}
+						className="opacity-0 group-hover:opacity-100 flex items-center gap-1 px-1.5 py-1 rounded-lg text-accent hover:bg-accent/15 transition-all flex-shrink-0"
+						title={t("openIn.menuTitle")}
+					>
+						<span className="text-[0.75rem] leading-none" style={{ fontFamily: "'JetBrainsMono Nerd Font Mono'" }}>{"\u{F0379}"}</span>
+					</button>
+				)}
+
 				{/* Right side actions */}
 				{isTodo ? (
 					/* Run button for TODO cards */
@@ -678,6 +708,15 @@ function TaskCard({ task, project, dispatch, navigate, agents, onLaunchVariants,
 					)}
 				</div>,
 				document.body
+			)}
+
+			{/* Context menu — "Open in..." */}
+			{ctxMenuOpen && task.worktreePath && (
+				<OpenInMenu
+					position={ctxMenuPos}
+					path={task.worktreePath}
+					onClose={() => setCtxMenuOpen(false)}
+				/>
 			)}
 
 			{/* Terminal preview popover */}
