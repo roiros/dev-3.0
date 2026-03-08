@@ -6,6 +6,10 @@ import { useT } from "../i18n";
 import { useStatusColors } from "../hooks/useStatusColors";
 import TaskCard from "./TaskCard";
 
+// Module-level variable: set synchronously on dragstart, cleared on dragend.
+// Avoids relying on dataTransfer.types which may not include custom MIME types in WKWebView.
+let _activeDragColumnId: string | null = null;
+
 interface KanbanColumnProps {
 	status: TaskStatus;
 	label: string;
@@ -17,8 +21,10 @@ interface KanbanColumnProps {
 	agents: CodingAgent[];
 	onLaunchVariants: (task: Task, targetStatus: TaskStatus) => void;
 	onTaskDrop: (taskId: string, targetStatus: TaskStatus) => void;
+	onTaskDropToCustomColumn?: (taskId: string, customColumnId: string) => void;
 	onReorderTask: (taskId: string, targetIndex: number) => void;
 	dragFromStatus: TaskStatus | null;
+	dragFromCustomColumnId?: string | null;
 	onDragStart: (taskId: string) => void;
 	onTaskMoved: (taskId: string) => void;
 	bellCounts: Map<string, number>;
@@ -27,6 +33,15 @@ interface KanbanColumnProps {
 	movingTaskIds: Set<string>;
 	onSetMoving: (taskId: string, isMoving: boolean) => void;
 	siblingMap: Map<string, Task[]>;
+	// Custom column support
+	isCustomColumn?: boolean;
+	customColumnId?: string;
+	colorOverride?: string;
+	isDraggedColumn?: boolean;
+	onColumnDragStart?: () => void;
+	onColumnDragEnd?: () => void;
+	// Column reorder drop target (left half = "before", right half = "after")
+	onColumnDrop?: (side: "before" | "after") => void;
 }
 
 function KanbanColumn({
@@ -40,8 +55,10 @@ function KanbanColumn({
 	agents,
 	onLaunchVariants,
 	onTaskDrop,
+	onTaskDropToCustomColumn,
 	onReorderTask,
 	dragFromStatus,
+	dragFromCustomColumnId,
 	onDragStart,
 	onTaskMoved,
 	bellCounts,
@@ -50,39 +67,65 @@ function KanbanColumn({
 	movingTaskIds,
 	onSetMoving,
 	siblingMap,
+	isCustomColumn,
+	customColumnId,
+	colorOverride,
+	isDraggedColumn,
+	onColumnDragStart,
+	onColumnDragEnd,
+	onColumnDrop,
 }: KanbanColumnProps) {
 	const t = useT();
 	const statusColors = useStatusColors();
-	const color = statusColors[status];
+	const color = colorOverride ?? statusColors[status];
 	const [dragOver, setDragOver] = useState(false);
 	const [dropIndex, setDropIndex] = useState<number | null>(null);
+	const [columnDragSide, setColumnDragSide] = useState<"before" | "after" | null>(null);
 	const taskListRef = useRef<HTMLDivElement>(null);
 
 	// Is this a same-column reorder drag?
-	const isSameColumnDrag = dragFromStatus === status;
+	const isSameColumnDrag = isCustomColumn
+		? customColumnId !== undefined && dragFromCustomColumnId === customColumnId
+		: dragFromStatus === status && (dragFromCustomColumnId === null || dragFromCustomColumnId === undefined);
 
 	// Can this column accept a cross-column drop?
-	const isCrossColumnTarget =
-		dragFromStatus !== null &&
-		dragFromStatus !== status &&
-		getAllowedTransitions(dragFromStatus).includes(status);
+	const isCrossColumnTarget = isCustomColumn
+		// Custom columns accept drops from any column except themselves
+		? (dragFromStatus !== null || dragFromCustomColumnId !== null) && dragFromCustomColumnId !== customColumnId
+		// Built-in columns use transition logic; also accept from custom columns (underlying status governs)
+		: dragFromStatus !== null && getAllowedTransitions(dragFromStatus).includes(status);
 
 	// Clear dropIndex when drag ends globally
 	useEffect(() => {
 		function handleDragEnd() {
 			setDropIndex(null);
+			setColumnDragSide(null);
 		}
 		window.addEventListener("dragend", handleDragEnd);
 		return () => window.removeEventListener("dragend", handleDragEnd);
 	}, []);
 
 	function handleDragOver(e: React.DragEvent) {
+		// Self-ID for drag: custom columns use customColumnId, built-in columns use status
+		const myDragId = customColumnId ?? status;
+		// Column reorder: use module-level variable set synchronously on dragstart.
+		// dataTransfer.types is NOT used because WKWebView may reject custom MIME types.
+		// Any column (built-in or custom) with onColumnDrop accepts a column reorder drop.
+		if (onColumnDrop && _activeDragColumnId !== null && _activeDragColumnId !== myDragId) {
+			e.preventDefault();
+			e.dataTransfer.dropEffect = "move";
+			const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+			const side = e.clientX < rect.left + rect.width / 2 ? "before" : "after";
+			setColumnDragSide(side);
+			return;
+		}
+		// Task drag
 		if (!isCrossColumnTarget && !isSameColumnDrag) return;
 		e.preventDefault();
 		e.dataTransfer.dropEffect = "move";
 
-		// Calculate drop index for same-column reorder
-		if (isSameColumnDrag && taskListRef.current) {
+		// Calculate drop index for same-column reorder (built-in columns only)
+		if (isSameColumnDrag && !isCustomColumn && taskListRef.current) {
 			const taskElements = taskListRef.current.querySelectorAll("[data-task-id]");
 			let newDropIndex = tasks.length;
 			for (let i = 0; i < taskElements.length; i++) {
@@ -98,6 +141,12 @@ function KanbanColumn({
 	}
 
 	function handleDragEnter(e: React.DragEvent) {
+		const myDragId = customColumnId ?? status;
+		// Column reorder: must also preventDefault on dragenter for drop to fire
+		if (onColumnDrop && _activeDragColumnId !== null && _activeDragColumnId !== myDragId) {
+			e.preventDefault();
+			return;
+		}
 		if (!isCrossColumnTarget && !isSameColumnDrag) return;
 		e.preventDefault();
 		if (isCrossColumnTarget) setDragOver(true);
@@ -107,19 +156,34 @@ function KanbanColumn({
 		if (e.currentTarget.contains(e.relatedTarget as Node)) return;
 		setDragOver(false);
 		setDropIndex(null);
+		setColumnDragSide(null);
 	}
 
 	function handleDrop(e: React.DragEvent) {
 		e.preventDefault();
 		setDragOver(false);
+
+		// Column reorder drop (use module var; dataTransfer.getData won't have "dev3/column" in WKWebView)
+		const myDragId = customColumnId ?? status;
+		if (_activeDragColumnId && _activeDragColumnId !== myDragId && onColumnDrop && columnDragSide) {
+			setColumnDragSide(null);
+			onColumnDrop(columnDragSide);
+			return;
+		}
+		setColumnDragSide(null);
+
 		const taskId = e.dataTransfer.getData("text/plain");
-		if (!taskId) {
+		// Ignore col: prefixed data (column drags that fell through without a side set)
+		if (!taskId || taskId.startsWith("col:")) {
 			setDropIndex(null);
 			return;
 		}
 
-		if (isSameColumnDrag && dropIndex !== null) {
-			// Same-column reorder — adjust index if dragging down
+		if (isCustomColumn && customColumnId) {
+			// Drop into a custom column
+			onTaskDropToCustomColumn?.(taskId, customColumnId);
+		} else if (isSameColumnDrag && dropIndex !== null) {
+			// Same-column reorder
 			const currentIndex = tasks.findIndex((t) => t.id === taskId);
 			const adjustedIndex = currentIndex !== -1 && currentIndex < dropIndex
 				? dropIndex - 1
@@ -137,14 +201,20 @@ function KanbanColumn({
 
 	return (
 		<div
-			className={`flex flex-col flex-shrink-0 w-[17.5rem] glass-column column-glow rounded-2xl border transition-colors ${
+			className={`relative flex flex-col flex-shrink-0 w-[17.5rem] glass-column column-glow rounded-2xl border transition-colors ${
 				showDropHighlight
 					? "border-accent bg-accent/5 shadow-lg shadow-accent/10"
-					: isCrossColumnTarget && dragFromStatus
+					: isCrossColumnTarget && (dragFromStatus || dragFromCustomColumnId)
 						? "border-edge-active"
 						: "border-transparent"
-			}`}
-			style={{ "--col-rgb": hexToRgb(color) } as React.CSSProperties}
+			} ${isDraggedColumn ? "opacity-40" : ""}`}
+			style={{
+				"--col-rgb": hexToRgb(color),
+				// Column reorder indicator via box-shadow avoids dragleave false-fires
+				// from pointer-events:none children extending outside element bounds.
+				...(columnDragSide === "before" && { boxShadow: "-4px 0 0 0 rgb(var(--accent))" }),
+				...(columnDragSide === "after" && { boxShadow: "4px 0 0 0 rgb(var(--accent))" }),
+			} as React.CSSProperties}
 			onDragOver={handleDragOver}
 			onDragEnter={handleDragEnter}
 			onDragLeave={handleDragLeave}
@@ -157,6 +227,34 @@ function KanbanColumn({
 			>
 				<div className="flex items-center justify-between">
 					<div className="flex items-center gap-2.5">
+						{isCustomColumn && (
+							<div
+								className="cursor-grab active:cursor-grabbing text-fg-muted hover:text-fg-3 flex-shrink-0 select-none"
+								draggable
+								onDragStart={(e) => {
+									e.stopPropagation();
+									_activeDragColumnId = customColumnId ?? null;
+									e.dataTransfer.setData("text/plain", `col:${customColumnId ?? ""}`);
+									e.dataTransfer.effectAllowed = "move";
+									onColumnDragStart?.();
+								}}
+								onDragEnd={(e) => {
+									e.stopPropagation();
+									_activeDragColumnId = null;
+									onColumnDragEnd?.();
+								}}
+								title="Drag to reorder"
+							>
+								<svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+									<circle cx="4" cy="3" r="1.2" />
+									<circle cx="8" cy="3" r="1.2" />
+									<circle cx="4" cy="6" r="1.2" />
+									<circle cx="8" cy="6" r="1.2" />
+									<circle cx="4" cy="9" r="1.2" />
+									<circle cx="8" cy="9" r="1.2" />
+								</svg>
+							</div>
+						)}
 						<div
 							className="w-3 h-3 rounded-full flex-shrink-0"
 							style={{ background: color }}
@@ -214,8 +312,8 @@ function KanbanColumn({
 				)}
 			</div>
 
-			{/* Add task button (only in To Do column) */}
-			{status === "todo" && (
+			{/* Add task button (only in To Do column, not custom columns) */}
+			{!isCustomColumn && status === "todo" && (
 				<div className="px-3 pb-3 flex-shrink-0">
 					<button
 						onClick={onAddTask}

@@ -1086,7 +1086,7 @@ describe("handlers.moveTask", () => {
 		expect(result.status).toBe("review-by-user");
 		expect(git.createWorktree).not.toHaveBeenCalled();
 		expect(pty.destroySession).not.toHaveBeenCalled();
-		expect(data.updateTask).toHaveBeenCalledWith(project, "task-1", { status: "review-by-user" }, { dropPosition: "top" });
+		expect(data.updateTask).toHaveBeenCalledWith(project, "task-1", { status: "review-by-user", customColumnId: null }, { dropPosition: "top" });
 	});
 
 	it("should NOT throw when worktree directory is missing (completed)", async () => {
@@ -1160,6 +1160,7 @@ describe("handlers.moveTask", () => {
 			status: "completed",
 			worktreePath: null,
 			branchName: null,
+			customColumnId: null,
 		}, { dropPosition: "top" });
 	});
 
@@ -2430,5 +2431,142 @@ describe("handlers.tmuxAction", () => {
 		await expect(
 			handlers.tmuxAction({ taskId: "abcd1234-full-id", action: "zoom" }),
 		).rejects.toThrow("tmux zoom failed");
+	});
+});
+
+describe("reorderColumns", () => {
+	const colA = { id: "col-aaa", name: "Alpha", color: "#ff0000", llmInstruction: "" };
+	const colB = { id: "col-bbb", name: "Beta", color: "#00ff00", llmInstruction: "" };
+	const colC = { id: "col-ccc", name: "Gamma", color: "#0000ff", llmInstruction: "" };
+
+	beforeEach(() => {
+		vi.clearAllMocks();
+		mockSpawn.mockReturnValue({ stderr: new Response(""), stdout: new Response(""), exited: Promise.resolve(0) });
+	});
+
+	it("reorders custom columns and stores full columnOrder", async () => {
+		const project = makeProject({ customColumns: [colA, colB, colC] });
+		const newOrder = ["todo", "in-progress", "col-ccc", "col-aaa", "col-bbb", "completed"];
+		const updatedProject = { ...project, customColumns: [colC, colA, colB], columnOrder: newOrder };
+		vi.mocked(data.getProject).mockResolvedValue(project);
+		vi.mocked(data.updateProject).mockResolvedValue(updatedProject);
+
+		const result = await handlers.reorderColumns({
+			projectId: "proj-1",
+			columnOrder: newOrder,
+		});
+
+		expect(data.updateProject).toHaveBeenCalledWith("proj-1", {
+			customColumns: [colC, colA, colB],
+			columnOrder: newOrder,
+		});
+		expect(result.customColumns).toEqual([colC, colA, colB]);
+	});
+
+	it("ignores unknown IDs in columnOrder for custom column extraction", async () => {
+		const project = makeProject({ customColumns: [colA, colB] });
+		const newOrder = ["todo", "col-bbb", "col-aaa", "col-unknown", "completed"];
+		const updatedProject = { ...project, customColumns: [colB, colA], columnOrder: newOrder };
+		vi.mocked(data.getProject).mockResolvedValue(project);
+		vi.mocked(data.updateProject).mockResolvedValue(updatedProject);
+
+		await handlers.reorderColumns({
+			projectId: "proj-1",
+			columnOrder: newOrder,
+		});
+
+		expect(data.updateProject).toHaveBeenCalledWith("proj-1", {
+			customColumns: [colB, colA],
+			columnOrder: newOrder,
+		});
+	});
+});
+
+describe("moveTaskToCustomColumn — resume logic", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		mockSpawn.mockReturnValue({ stderr: new Response(""), stdout: new Response(""), exited: Promise.resolve(0) });
+		vi.mocked(git.createWorktree).mockResolvedValue({ worktreePath: "/tmp/new-wt", branchName: "dev3/resumed" } as any);
+	});
+
+	it("moves active task to custom column without worktree changes", async () => {
+		const col = { id: "col-aaa", name: "Alpha", color: "#ff0000", llmInstruction: "" };
+		const project = makeProject({ customColumns: [col] });
+		const task = makeTask({ status: "in-progress", customColumnId: null });
+		const updated = { ...task, customColumnId: "col-aaa" };
+		vi.mocked(data.getProject).mockResolvedValue(project);
+		vi.mocked(data.getTask).mockResolvedValue(task);
+		vi.mocked(data.updateTask).mockResolvedValue(updated);
+
+		const result = await handlers.moveTaskToCustomColumn({ taskId: "task-1", projectId: "proj-1", customColumnId: "col-aaa" });
+
+		expect(git.createWorktree).not.toHaveBeenCalled();
+		expect(data.updateTask).toHaveBeenCalledWith(project, "task-1", { customColumnId: "col-aaa" });
+		expect(result.customColumnId).toBe("col-aaa");
+	});
+
+	it("resumes completed task when moved to custom column", async () => {
+		const col = { id: "col-aaa", name: "Alpha", color: "#ff0000", llmInstruction: "" };
+		const project = makeProject({ customColumns: [col] });
+		const task = makeTask({ status: "completed", worktreePath: null, branchName: null, customColumnId: null });
+		const updated = makeTask({ status: "in-progress", worktreePath: "/tmp/new-wt", branchName: "dev3/resumed", customColumnId: "col-aaa" });
+		vi.mocked(data.getProject).mockResolvedValue(project);
+		vi.mocked(data.getTask).mockResolvedValue(task);
+		vi.mocked(data.updateTask).mockResolvedValue(updated);
+
+		const result = await handlers.moveTaskToCustomColumn({ taskId: "task-1", projectId: "proj-1", customColumnId: "col-aaa" });
+
+		expect(git.createWorktree).toHaveBeenCalledWith(project, task, undefined);
+		expect(data.updateTask).toHaveBeenCalledWith(project, "task-1", {
+			status: "in-progress",
+			worktreePath: "/tmp/new-wt",
+			branchName: "dev3/resumed",
+			customColumnId: "col-aaa",
+		});
+		expect(result.status).toBe("in-progress");
+		expect(result.customColumnId).toBe("col-aaa");
+	});
+
+	it("resumes cancelled task when moved to custom column", async () => {
+		const col = { id: "col-aaa", name: "Alpha", color: "#ff0000", llmInstruction: "" };
+		const project = makeProject({ customColumns: [col] });
+		const task = makeTask({ status: "cancelled", worktreePath: null, branchName: null, customColumnId: null });
+		const updated = makeTask({ status: "in-progress", customColumnId: "col-aaa" });
+		vi.mocked(data.getProject).mockResolvedValue(project);
+		vi.mocked(data.getTask).mockResolvedValue(task);
+		vi.mocked(data.updateTask).mockResolvedValue(updated);
+
+		await handlers.moveTaskToCustomColumn({ taskId: "task-1", projectId: "proj-1", customColumnId: "col-aaa" });
+
+		expect(git.createWorktree).toHaveBeenCalled();
+		expect(data.updateTask).toHaveBeenCalledWith(project, "task-1", expect.objectContaining({
+			status: "in-progress",
+			customColumnId: "col-aaa",
+		}));
+	});
+
+	it("throws when custom column not found", async () => {
+		const project = makeProject({ customColumns: [] });
+		const task = makeTask({ status: "in-progress" });
+		vi.mocked(data.getProject).mockResolvedValue(project);
+		vi.mocked(data.getTask).mockResolvedValue(task);
+
+		await expect(
+			handlers.moveTaskToCustomColumn({ taskId: "task-1", projectId: "proj-1", customColumnId: "col-unknown" }),
+		).rejects.toThrow("Custom column not found");
+	});
+
+	it("clears customColumnId when passing null", async () => {
+		const project = makeProject({ customColumns: [] });
+		const task = makeTask({ status: "in-progress", customColumnId: "col-old" });
+		const updated = { ...task, customColumnId: null };
+		vi.mocked(data.getProject).mockResolvedValue(project);
+		vi.mocked(data.getTask).mockResolvedValue(task);
+		vi.mocked(data.updateTask).mockResolvedValue(updated);
+
+		const result = await handlers.moveTaskToCustomColumn({ taskId: "task-1", projectId: "proj-1", customColumnId: null });
+
+		expect(data.updateTask).toHaveBeenCalledWith(project, "task-1", { customColumnId: null });
+		expect(result.customColumnId).toBeNull();
 	});
 });
