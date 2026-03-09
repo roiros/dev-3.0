@@ -3,15 +3,15 @@ import type { CodingAgent, CustomColumn, GlobalSettings, Project, Task, TaskStat
 import { ALL_STATUSES, ACTIVE_STATUSES } from "../../shared/types";
 
 // Default built-in column order (custom columns can be freely interspersed)
-const DEFAULT_BEFORE_CUSTOM: TaskStatus[] = ["todo", "in-progress", "user-questions", "review-by-user"];
-const DEFAULT_AFTER_CUSTOM: TaskStatus[] = ["review-by-colleague", "completed", "cancelled", "review-by-ai"];
+const DEFAULT_BEFORE_CUSTOM: TaskStatus[] = ["todo", "in-progress", "user-questions", "review-by-ai", "review-by-user"];
+const DEFAULT_AFTER_CUSTOM: TaskStatus[] = ["review-by-colleague", "completed", "cancelled"];
 const ALL_BUILTIN: TaskStatus[] = [...DEFAULT_BEFORE_CUSTOM, ...DEFAULT_AFTER_CUSTOM];
 
 type ColumnSlot =
 	| { type: "builtin"; status: TaskStatus }
 	| { type: "custom"; col: CustomColumn };
 import type { AppAction, Route } from "../state";
-import { useT, statusKey } from "../i18n";
+import { useT, statusKey, statusDescKey } from "../i18n";
 import { api } from "../rpc";
 import { trackEvent } from "../analytics";
 import KanbanColumn from "./KanbanColumn";
@@ -268,8 +268,13 @@ function KanbanBoard({ project, tasks, dispatch, navigate, bellCounts, activeTas
 	function getOrderedColumns(): ColumnSlot[] {
 		const cols = customColumns;
 		const peerReviewEnabled = project.peerReviewEnabled !== false;
+		// Hide AI Review column unless it has tasks (feature not yet implemented)
+		const aiReviewHasItems = tasks.some((t) => t.status === "review-by-ai" && !t.customColumnId);
+		const shouldHide = (s: TaskStatus) =>
+			(s === "review-by-colleague" && !peerReviewEnabled) ||
+			(s === "review-by-ai" && !aiReviewHasItems);
 		const filterBuiltin = (statuses: TaskStatus[]) =>
-			statuses.filter((s) => s !== "review-by-colleague" || peerReviewEnabled);
+			statuses.filter((s) => !shouldHide(s));
 		if (!project.columnOrder || project.columnOrder.length === 0) {
 			return [
 				...filterBuiltin(DEFAULT_BEFORE_CUSTOM).map((s) => ({ type: "builtin" as const, status: s })),
@@ -280,7 +285,7 @@ function KanbanBoard({ project, tasks, dispatch, navigate, bellCounts, activeTas
 		const result: ColumnSlot[] = [];
 		const used = new Set<string>();
 		for (const id of project.columnOrder) {
-			if (id === "review-by-colleague" && !peerReviewEnabled) { used.add(id); continue; }
+			if ((ALL_BUILTIN as string[]).includes(id) && shouldHide(id as TaskStatus)) { used.add(id); continue; }
 			if ((ALL_BUILTIN as string[]).includes(id)) {
 				result.push({ type: "builtin", status: id as TaskStatus });
 				used.add(id);
@@ -291,7 +296,7 @@ function KanbanBoard({ project, tasks, dispatch, navigate, bellCounts, activeTas
 		}
 		// review-by-colleague: if missing from stored order, insert right before "completed"
 		// (not at the tail) so it stays in a logical position for existing users.
-		if (!used.has("review-by-colleague") && peerReviewEnabled) {
+		if (!used.has("review-by-colleague") && !shouldHide("review-by-colleague")) {
 			const completedIdx = result.findIndex((c) => c.type === "builtin" && c.status === "completed");
 			const slot = { type: "builtin" as const, status: "review-by-colleague" as TaskStatus };
 			if (completedIdx !== -1) {
@@ -303,7 +308,7 @@ function KanbanBoard({ project, tasks, dispatch, navigate, bellCounts, activeTas
 		}
 		// Append anything else missing (new built-ins, or new custom cols)
 		for (const s of ALL_BUILTIN) {
-			if (!used.has(s) && (s !== "review-by-colleague" || peerReviewEnabled)) {
+			if (!used.has(s) && !shouldHide(s)) {
 				result.push({ type: "builtin", status: s });
 			}
 		}
@@ -413,6 +418,7 @@ function KanbanBoard({ project, tasks, dispatch, navigate, bellCounts, activeTas
 								key={slot.status}
 								status={slot.status}
 								label={t(statusKey(slot.status))}
+								description={t(statusDescKey(slot.status))}
 								tasks={tasksByStatus.get(slot.status) || []}
 								onColumnDrop={(side) => handleColumnDrop(slot.status, side)}
 								{...commonProps}
