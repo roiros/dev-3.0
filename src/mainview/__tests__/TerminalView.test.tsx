@@ -374,3 +374,61 @@ describe("TerminalView – keymap shortcuts", () => {
 		expect(mockedTmuxAction).not.toHaveBeenCalled();
 	});
 });
+
+// ── CMD+F find shortcut ───────────────────────────────────────────────────────
+
+describe("TerminalView – CMD+F search", () => {
+	beforeEach(() => {
+		localStorage.clear();
+		mockedTmuxAction.mockClear();
+		mockedTmuxAction.mockResolvedValue(undefined as any);
+	});
+
+	it("calls tmuxAction with search when CMD+F is pressed inside terminal", async () => {
+		await renderAndSetup();
+		const target = focusInsideTerminal();
+
+		await act(async () => {
+			window.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyF", metaKey: true, bubbles: true }));
+		});
+
+		expect(mockedTmuxAction).toHaveBeenCalledWith({ taskId: "t1", action: "search" });
+		target.remove();
+	});
+
+	it("works in default keymap mode (not only iterm2)", async () => {
+		// No localStorage entry → default mode
+		await renderAndSetup();
+		const target = focusInsideTerminal();
+
+		await act(async () => {
+			window.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyF", metaKey: true, bubbles: true }));
+		});
+
+		expect(mockedTmuxAction).toHaveBeenCalledWith({ taskId: "t1", action: "search" });
+		target.remove();
+	});
+
+	it("does NOT call tmuxAction when terminal does not have focus", async () => {
+		await renderAndSetup();
+		// Do NOT focus inside the container — activeElement remains document.body
+
+		await act(async () => {
+			window.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyF", metaKey: true, bubbles: true }));
+		});
+
+		expect(mockedTmuxAction).not.toHaveBeenCalled();
+	});
+
+	it("does NOT trigger search for Cmd+G (different key)", async () => {
+		await renderAndSetup();
+		const target = focusInsideTerminal();
+
+		await act(async () => {
+			window.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyG", metaKey: true, bubbles: true }));
+		});
+
+		expect(mockedTmuxAction).not.toHaveBeenCalledWith(expect.objectContaining({ action: "search" }));
+		target.remove();
+	});
+});

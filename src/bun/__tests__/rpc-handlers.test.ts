@@ -2482,6 +2482,37 @@ describe("handlers.tmuxAction", () => {
 			handlers.tmuxAction({ taskId: "abcd1234-full-id", action: "zoom" }),
 		).rejects.toThrow("tmux zoom failed");
 	});
+
+	it("search: enters copy-mode then sends '/' key", async () => {
+		// First spawn: copy-mode; second spawn: send-keys /
+		mockSpawn
+			.mockReturnValueOnce({ stderr: new Response(""), stdout: new Response(""), exited: Promise.resolve(0) })
+			.mockReturnValueOnce({ stderr: new Response(""), stdout: new Response(""), exited: Promise.resolve(0) });
+
+		await handlers.tmuxAction({ taskId: "abcd1234-full-id", action: "search" });
+
+		expect(mockSpawn).toHaveBeenCalledTimes(2);
+		expect(mockSpawn).toHaveBeenNthCalledWith(
+			1,
+			["tmux", "copy-mode", "-t", "dev3-abcd1234"],
+			expect.any(Object),
+		);
+		expect(mockSpawn).toHaveBeenNthCalledWith(
+			2,
+			["tmux", "send-keys", "-t", "dev3-abcd1234", "/"],
+			expect.any(Object),
+		);
+	});
+
+	it("search: throws when send-keys fails", async () => {
+		mockSpawn
+			.mockReturnValueOnce({ stderr: new Response(""), stdout: new Response(""), exited: Promise.resolve(0) })
+			.mockReturnValueOnce({ stderr: new Response("no session"), stdout: new Response(""), exited: Promise.resolve(1) });
+
+		await expect(
+			handlers.tmuxAction({ taskId: "abcd1234-full-id", action: "search" }),
+		).rejects.toThrow("tmux search failed");
+	});
 });
 
 describe("reorderColumns", () => {
