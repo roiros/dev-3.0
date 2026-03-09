@@ -773,6 +773,7 @@ export type AppRPCSchema = {
 			navigateToViewportLab: {};
 			terminalSoftReset: {};
 			terminalHardReset: {};
+			showRemoteAccessQR: { qrDataUrl: string; accessUrl: string };
 		};
 	}>;
 };
