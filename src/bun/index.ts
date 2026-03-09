@@ -221,6 +221,7 @@ ApplicationMenu.setApplicationMenu([
 			{ label: "Hard Reset Terminal", action: "terminal-hard-reset" },
 			{ type: "separator" },
 			{ label: "Gauge Demo", action: "gauge-demo" },
+			{ label: "Viewport Lab", action: "viewport-lab" },
 			{ type: "separator" },
 			{ label: "Zoom In", action: "zoom-in", accelerator: "=" },
 			{ label: "Zoom Out", action: "zoom-out", accelerator: "-" },
@@ -266,6 +267,21 @@ const mainWindow = new BrowserWindow({
 });
 
 log.info("Main window created");
+
+// Workaround: Electrobun/WKWebView clips the bottom ~16px of the viewport
+// after a window resize. Trigger a resize nudge at startup so the app always
+// starts in the "post-resize" state, making the pb-8 CSS padding reliable.
+setTimeout(() => {
+	try {
+		const { width: w, height: h } = mainWindow.getSize();
+		mainWindow.setSize(w, h - 1);
+		setTimeout(() => {
+			try { mainWindow.setSize(w, h); } catch { /* ignore */ }
+		}, 50);
+	} catch (err) {
+		log.warn("Resize nudge failed", { error: String(err) });
+	}
+}, 200);
 
 // Wire push messages to renderer
 setPushMessage((name, payload) => {
@@ -377,6 +393,8 @@ Electrobun.events.on("application-menu-clicked", async (e) => {
 		(mainWindow.webview.rpc as any).send.navigateToSettings?.({});
 	} else if (e.data.action === "gauge-demo") {
 		(mainWindow.webview.rpc as any).send.navigateToGaugeDemo?.({});
+	} else if (e.data.action === "viewport-lab") {
+		(mainWindow.webview.rpc as any).send.navigateToViewportLab?.({});
 	} else if (e.data.action === "check-for-updates") {
 		try {
 			const settings = await loadSettings();

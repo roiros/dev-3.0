@@ -15,6 +15,7 @@ import ProjectSettings from "./components/ProjectSettings";
 import RequirementsCheck from "./components/RequirementsCheck";
 import Changelog from "./components/Changelog";
 import GaugeDemo from "./components/gauges/GaugeDemo";
+import ViewportLab from "./components/ViewportLab";
 
 const SKIP_QUIT_DIALOG_KEY = "dev3-skip-quit-dialog";
 
@@ -250,6 +251,15 @@ function App() {
 		return () => window.removeEventListener("rpc:navigateToGaugeDemo", onNavigateToGaugeDemo);
 	}, [navigate]);
 
+	// Listen for View > Viewport Lab menu item
+	useEffect(() => {
+		function onNavigateToViewportLab() {
+			navigate({ screen: "viewport-lab" });
+		}
+		window.addEventListener("rpc:navigateToViewportLab", onNavigateToViewportLab);
+		return () => window.removeEventListener("rpc:navigateToViewportLab", onNavigateToViewportLab);
+	}, [navigate]);
+
 	// Track page views on route changes
 	useEffect(() => {
 		const { screen } = state.route;
@@ -325,7 +335,7 @@ function App() {
 				navigate={navigate}
 				updateVersion={updateVersion}
 			/>
-			<div className="flex-1 min-h-0 flex flex-col overflow-hidden">{renderScreen()}</div>
+			<div className="flex-1 min-h-0 flex flex-col overflow-hidden pb-7">{renderScreen()}</div>
 			{showQuitDialog && (
 				<div
 					className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
@@ -413,6 +423,8 @@ function App() {
 				return <Changelog navigate={navigate} previousRoute={state.previousRoute} />;
 			case "gauge-demo":
 				return <GaugeDemo navigate={navigate} />;
+			case "viewport-lab":
+				return <ViewportLab navigate={navigate} />;
 			default:
 				return null;
 		}
