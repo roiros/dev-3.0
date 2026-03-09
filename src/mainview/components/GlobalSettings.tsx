@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useT, useLocale, ALL_LOCALES, LOCALE_LABELS } from "../i18n";
 import type { Locale } from "../i18n";
+import { randomUUID } from "../uuid";
 import type { CodingAgent, AgentConfiguration, ExternalApp, GlobalSettings as GlobalSettingsType, PermissionMode, EffortLevel, TerminalKeymapPreset } from "../../shared/types";
 import { invalidateAvailableApps } from "../hooks/useAvailableApps";
 import { useDebouncedCallback } from "../hooks/useDebouncedCallback";
@@ -145,7 +146,7 @@ function GlobalSettings() {
 
 	function handleAddExternalApp() {
 		const newApp: ExternalApp = {
-			id: crypto.randomUUID(),
+			id: randomUUID(),
 			name: "",
 			macAppName: "",
 		};
@@ -218,7 +219,7 @@ function GlobalSettings() {
 
 	function addConfig(agentId: string) {
 		const newConfig: AgentConfiguration = {
-			id: crypto.randomUUID(),
+			id: randomUUID(),
 			name: "New Config",
 		};
 		const updated = agents.map((a) => {
@@ -244,8 +245,8 @@ function GlobalSettings() {
 	}
 
 	function addAgent() {
-		const id = crypto.randomUUID();
-		const configId = crypto.randomUUID();
+		const id = randomUUID();
+		const configId = randomUUID();
 		const agent: CodingAgent = {
 			id,
 			name: "New Agent",
