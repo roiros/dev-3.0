@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, type Dispatch } from "react";
-import type { CustomColumn, Label, Project } from "../../shared/types";
+import type { AIReviewConfig, CodingAgent, CustomColumn, Label, Project } from "../../shared/types";
 import { CUSTOM_COLUMN_INSTRUCTION_MAX_CHARS, LABEL_COLORS } from "../../shared/types";
 import type { AppAction, Route } from "../state";
 import { api } from "../rpc";
@@ -212,6 +212,13 @@ function ProjectSettings({
 	const [detectFeedback, setDetectFeedback] = useState<string | null>(null);
 	const autoDetectRan = useRef(false);
 
+	// AI Review state
+	const [aiReviewEnabled, setAiReviewEnabled] = useState(project?.aiReview?.enabled !== false);
+	const [aiReviewAgentId, setAiReviewAgentId] = useState(project?.aiReview?.agentId ?? "builtin-claude");
+	const [aiReviewConfigId, setAiReviewConfigId] = useState(project?.aiReview?.configId ?? "claude-review");
+	const [aiReviewPrompt, setAiReviewPrompt] = useState(project?.aiReview?.reviewPrompt ?? "");
+	const [availableAgents, setAvailableAgents] = useState<CodingAgent[]>([]);
+
 	async function runAutoDetect() {
 		if (!project) return;
 		setDetecting(true);
@@ -232,6 +239,11 @@ function ProjectSettings({
 		}
 		setDetecting(false);
 	}
+
+	// Load available agents for AI Review dropdowns
+	useEffect(() => {
+		api.request.getAgents().then(setAvailableAgents).catch(() => {});
+	}, []);
 
 	// Auto-run detect when clone paths are empty (e.g. project added before this feature)
 	useEffect(() => {
@@ -342,6 +354,12 @@ function ProjectSettings({
 	async function handleSave() {
 		setSaving(true);
 		try {
+			const aiReview: AIReviewConfig = {
+				enabled: aiReviewEnabled,
+				agentId: aiReviewAgentId,
+				configId: aiReviewConfigId,
+				reviewPrompt: aiReviewPrompt.trim() || undefined,
+			};
 			const updated = await api.request.updateProjectSettings({
 				projectId,
 				setupScript,
@@ -350,6 +368,7 @@ function ProjectSettings({
 				defaultBaseBranch,
 				clonePaths: clonePaths.filter((p) => p.trim() !== ""),
 				peerReviewEnabled,
+				aiReview,
 			});
 			dispatch({ type: "updateProject", project: updated });
 			navigate({ screen: "project", projectId });
@@ -503,6 +522,86 @@ function ProjectSettings({
 								/>
 							</button>
 						</div>
+					</div>
+
+				{/* AI Review */}
+					<div className="space-y-4">
+						<div className="flex items-center justify-between">
+							<div>
+								<label className="block text-fg text-sm font-semibold mb-1">
+									{t("projectSettings.aiReview")}
+								</label>
+								<p className="text-fg-3 text-sm">
+									{t("projectSettings.aiReviewDesc")}
+								</p>
+							</div>
+							<button
+								type="button"
+								role="switch"
+								aria-checked={aiReviewEnabled}
+								aria-label={t("projectSettings.aiReviewEnabled")}
+								onClick={() => setAiReviewEnabled((v) => !v)}
+								className={`relative flex-shrink-0 ml-4 w-10 h-6 rounded-full transition-colors focus:outline-none ${
+									aiReviewEnabled ? "bg-accent" : "bg-edge-active"
+								}`}
+							>
+								<span
+									className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+										aiReviewEnabled ? "translate-x-4" : "translate-x-0"
+									}`}
+								/>
+							</button>
+						</div>
+						{aiReviewEnabled && (
+							<div className="space-y-3 pl-1">
+								{/* Agent selector */}
+								<div className="flex items-center gap-3">
+									<label className="text-fg-2 text-sm w-28 flex-shrink-0">{t("projectSettings.aiReviewAgent")}</label>
+									<select
+										value={aiReviewAgentId}
+										onChange={(e) => {
+											setAiReviewAgentId(e.target.value);
+											const agent = availableAgents.find((a) => a.id === e.target.value);
+											if (agent?.configurations?.length) {
+												setAiReviewConfigId(agent.configurations[0].id);
+											}
+										}}
+										className="flex-1 px-3 py-2 bg-raised border border-edge rounded-lg text-fg text-sm outline-none focus:border-accent/40 transition-colors"
+									>
+										{availableAgents.map((a) => (
+											<option key={a.id} value={a.id}>{a.name}</option>
+										))}
+									</select>
+								</div>
+								{/* Config selector */}
+								<div className="flex items-center gap-3">
+									<label className="text-fg-2 text-sm w-28 flex-shrink-0">{t("projectSettings.aiReviewConfig")}</label>
+									<select
+										value={aiReviewConfigId}
+										onChange={(e) => setAiReviewConfigId(e.target.value)}
+										className="flex-1 px-3 py-2 bg-raised border border-edge rounded-lg text-fg text-sm outline-none focus:border-accent/40 transition-colors"
+									>
+										{(availableAgents.find((a) => a.id === aiReviewAgentId)?.configurations ?? []).map((c) => (
+											<option key={c.id} value={c.id}>{c.name || c.id}</option>
+										))}
+									</select>
+								</div>
+								{/* Review prompt */}
+								<div>
+									<label className="block text-fg-2 text-sm mb-2">{t("projectSettings.aiReviewPrompt")}</label>
+									<textarea
+										value={aiReviewPrompt}
+										onChange={(e) => setAiReviewPrompt(e.target.value)}
+										rows={5}
+										placeholder={t("projectSettings.aiReviewPromptPlaceholder")}
+										autoCapitalize="off"
+										autoCorrect="off"
+										spellCheck={false}
+										className="w-full px-4 py-3 bg-raised border border-edge rounded-xl text-fg text-sm font-mono placeholder-fg-muted outline-none focus:border-accent/40 transition-colors resize-y"
+									/>
+								</div>
+							</div>
+						)}
 					</div>
 
 				{/* Custom Columns */}
