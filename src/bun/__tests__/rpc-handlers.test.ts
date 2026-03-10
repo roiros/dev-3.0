@@ -62,12 +62,13 @@ vi.mock("../pty-server", () => ({
 	hasDeadSession: vi.fn(),
 	getPtyPort: vi.fn(() => 9999),
 	getSessionProjectId: vi.fn(() => null),
-	getSessionSocket: vi.fn(() => null),
+	getSessionSocket: vi.fn(() => "dev3"),
 	capturePane: vi.fn(),
-	tmuxArgs: vi.fn((_socket: string | null, ...args: string[]) => ["tmux", ...args]),
+	tmuxArgs: vi.fn((_socket: string, ...args: string[]) => ["tmux", "-L", _socket, ...args]),
 	setTmuxBinary: vi.fn(),
 	getTmuxBinary: vi.fn(() => "tmux"),
 	TMUX_CONF_PATH: "/tmp/dev3-tmux.conf",
+	DEFAULT_TMUX_SOCKET: "dev3",
 }));
 
 vi.mock("../agents", () => ({
@@ -2277,7 +2278,7 @@ describe("handlers.killTmuxSession", () => {
 
 		await handlers.killTmuxSession({ sessionName: "dev3-abc12345" });
 		expect(mockSpawn).toHaveBeenCalledWith(
-			["tmux", "kill-session", "-t", "dev3-abc12345"],
+			["tmux", "-L", "dev3", "kill-session", "-t", "dev3-abc12345"],
 			expect.any(Object),
 		);
 	});
@@ -2456,7 +2457,7 @@ describe("handlers.tmuxAction", () => {
 
 		await handlers.tmuxAction({ taskId: "abcd1234-full-id", action: "splitH" });
 		expect(mockSpawn).toHaveBeenCalledWith(
-			["tmux", "split-window", "-v", "-c", "#{pane_current_path}", "-t", "dev3-abcd1234"],
+			["tmux", "-L", "dev3", "split-window", "-v", "-c", "#{pane_current_path}", "-t", "dev3-abcd1234"],
 			expect.any(Object),
 		);
 	});
@@ -2470,7 +2471,7 @@ describe("handlers.tmuxAction", () => {
 
 		await handlers.tmuxAction({ taskId: "abcd1234-full-id", action: "splitV" });
 		expect(mockSpawn).toHaveBeenCalledWith(
-			["tmux", "split-window", "-h", "-c", "#{pane_current_path}", "-t", "dev3-abcd1234"],
+			["tmux", "-L", "dev3", "split-window", "-h", "-c", "#{pane_current_path}", "-t", "dev3-abcd1234"],
 			expect.any(Object),
 		);
 	});
@@ -2484,7 +2485,7 @@ describe("handlers.tmuxAction", () => {
 
 		await handlers.tmuxAction({ taskId: "abcd1234-full-id", action: "zoom" });
 		expect(mockSpawn).toHaveBeenCalledWith(
-			["tmux", "resize-pane", "-Z", "-t", "dev3-abcd1234"],
+			["tmux", "-L", "dev3", "resize-pane", "-Z", "-t", "dev3-abcd1234"],
 			expect.any(Object),
 		);
 	});
