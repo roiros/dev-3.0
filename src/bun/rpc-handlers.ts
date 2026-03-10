@@ -3,7 +3,7 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { PATHS, Utils } from "electrobun/bun";
 import type { ChangelogEntry, CodingAgent, CustomColumn, ExternalApp, GlobalSettings, Label, NoteSource, PortInfo, Project, RequirementCheckResult, Task, TaskNote, TaskStatus, TipState, TmuxSessionInfo } from "../shared/types";
-import { ACTIVE_STATUSES, DEFAULT_EXTERNAL_APPS, LABEL_COLORS, titleFromDescription, extractRepoName } from "../shared/types";
+import { ACTIVE_STATUSES, DEFAULT_AI_REVIEW_PROMPT, DEFAULT_EXTERNAL_APPS, LABEL_COLORS, titleFromDescription, extractRepoName } from "../shared/types";
 import * as data from "./data";
 import * as git from "./git";
 import * as pty from "./pty-server";
@@ -92,11 +92,15 @@ export function buildEnvExports(env: Record<string, string>): string[] {
  * so the process sees config-level environment variables even when the tmux
  * server was started by a different task.
  */
-export function buildCmdScript(tmuxCmd: string, env?: Record<string, string>): string {
+export function buildCmdScript(tmuxCmd: string, env?: Record<string, string>, options?: { paneTitle?: string }): string {
 	const escaped = escapeForDoubleQuotes(tmuxCmd);
 	const exportLines = env && Object.keys(env).length > 0 ? buildEnvExports(env) : [];
+	// Strip single quotes to prevent shell injection — paneTitle is embedded inside single-quoted printf.
+	const safePaneTitle = options?.paneTitle?.replace(/'/g, "") ?? "";
+	const titleLine = safePaneTitle ? `printf '\\033]2;${safePaneTitle}\\033\\\\'` : "";
 	return [
 		"#!/bin/bash",
+		...(titleLine ? [titleLine] : []),
 		...exportLines,
 		`echo "Starting: ${escaped}" && ${tmuxCmd}`,
 		"__EC=$?",
@@ -141,6 +145,14 @@ const branchStatusInFlight = new Map<string, Promise<{
 	insertions: number; deletions: number; unpushed: number; mergedByContent: boolean;
 	diffFiles: number; diffInsertions: number; diffDeletions: number; diffFileNames: string[];
 }>>();
+
+/** Build the env object for a task's wrapper script, ensuring dev3 binary is on PATH. */
+function buildAgentEnv(extraEnv: Record<string, string>, taskId: string): Record<string, string> {
+	const dev3Bin = `${DEV3_HOME}/bin`;
+	const currentPath = process.env.PATH || "";
+	const pathWithDev3 = currentPath.includes(dev3Bin) ? currentPath : `${dev3Bin}:${currentPath}`;
+	return { ...extraEnv, DEV3_TASK_ID: taskId, PATH: pathWithDev3 };
+}
 
 async function killExistingGitPane(taskId: string, tmuxSession: string, socket: string): Promise<void> {
 	const existingPane = gitOpPaneIds.get(taskId);
@@ -614,8 +626,11 @@ export async function launchTaskPty(
 	}
 
 	// Install agent-native hooks (e.g., Claude Code PermissionRequest/Stop)
+	// When AI Review is enabled, the primary agent's Stop hook targets review-by-ai
+	// instead of review-by-user, so the task enters the AI review stage first.
+	const stopTarget = project.aiReview?.enabled !== false ? "review-by-ai" : "review-by-user";
 	try {
-		setupAgentHooks(worktreePath, task.id, resolvedBaseCmd);
+		setupAgentHooks(worktreePath, task.id, resolvedBaseCmd, { stopTarget });
 	} catch (err) {
 		log.warn("setupAgentHooks failed (non-fatal)", {
 			worktreePath,
@@ -625,10 +640,7 @@ export async function launchTaskPty(
 
 	// Build env early so both setup and normal paths can embed exports
 	// in their wrapper scripts (tmux server doesn't propagate client env).
-	const dev3Bin = `${DEV3_HOME}/bin`;
-	const currentPath = process.env.PATH || "";
-	const pathWithDev3 = currentPath.includes(dev3Bin) ? currentPath : `${dev3Bin}:${currentPath}`;
-	const env = { ...extraEnv, DEV3_TASK_ID: task.id, PATH: pathWithDev3 };
+	const env = buildAgentEnv(extraEnv, task.id);
 
 	if (runSetup && project.setupScript.trim()) {
 		const prefix = `/tmp/dev3-${task.id}`;
@@ -693,6 +705,145 @@ export async function launchTaskPty(
 			stack: (err as Error)?.stack ?? "no stack",
 		});
 		throw err;
+	}
+}
+
+/**
+ * Launch the AI Review agent in a new named tmux window within the task's existing session.
+ * Kills any previous "review" window first to ensure a fresh start.
+ */
+export async function launchReviewAgent(project: Project, task: Task): Promise<void> {
+	const worktreePath = task.worktreePath;
+	if (!worktreePath) {
+		log.warn("launchReviewAgent: no worktreePath, skipping", { taskId: task.id.slice(0, 8) });
+		return;
+	}
+
+	const aiReview = project.aiReview ?? { enabled: true };
+	const agentId = aiReview.agentId ?? "builtin-claude";
+	const configId = aiReview.configId ?? "claude-review";
+	const rawPrompt = aiReview.reviewPrompt?.trim() || DEFAULT_AI_REVIEW_PROMPT;
+	const baseBranch = task.baseBranch || "main";
+	const reviewPrompt = rawPrompt.replace(/\{baseBranch\}/g, `origin/${baseBranch}`);
+
+	log.info("launchReviewAgent START", {
+		taskId: task.id.slice(0, 8),
+		agentId,
+		configId,
+	});
+
+	const socket = pty.getSessionSocket(task.id);
+	const tmuxSession = `dev3-${task.id.slice(0, 8)}`;
+
+	// Resolve the review agent command
+	const ctx: agents.TemplateContext = {
+		taskTitle: `AI Review: ${task.title}`,
+		taskDescription: reviewPrompt,
+		projectName: project.name,
+		projectPath: project.path,
+		worktreePath,
+	};
+
+	let tmuxCmd: string;
+	let extraEnv: Record<string, string>;
+
+	try {
+		const resolved = await agents.resolveCommandForAgent(agentId, configId, ctx, { skipSystemPrompt: true });
+		tmuxCmd = resolved.command;
+		extraEnv = resolved.extraEnv;
+	} catch (err) {
+		log.error("launchReviewAgent: failed to resolve command", { error: String(err) });
+		throw err;
+	}
+
+	// No need to rewrite hooks — unified hooks handle both primary and review
+	// agents via --if-status / --if-status-not guards.
+
+	// Build wrapper script for the review agent
+	const env = buildAgentEnv(extraEnv, task.id);
+
+	const reviewScriptPath = `/tmp/dev3-${task.id}-review.sh`;
+	await Bun.write(reviewScriptPath, buildCmdScript(tmuxCmd, env, { paneTitle: "dev3-review" }));
+
+	// Kill previous review pane by saved pane ID
+	const reviewPaneFile = `/tmp/dev3-${task.id}-review-pane`;
+	try {
+		const oldPaneId = (await Bun.file(reviewPaneFile).text()).trim();
+		if (oldPaneId) {
+			log.info("launchReviewAgent: killing old review pane", { paneId: oldPaneId });
+			const killArgs = pty.tmuxArgs(socket, "kill-pane", "-t", oldPaneId);
+			spawnSync(killArgs, { stdout: "pipe", stderr: "pipe" });
+		}
+	} catch {
+		// No previous pane — fine
+	}
+
+	// Create review pane as a horizontal split (30% width on the right)
+	// -P -F captures the new pane ID from stdout
+	const splitArgs = pty.tmuxArgs(
+		socket, "split-window",
+		"-h", "-l", "30%",
+		"-P", "-F", "#{pane_id}",
+		"-t", tmuxSession,
+		"-c", worktreePath,
+		`bash "${reviewScriptPath}"`,
+	);
+	const proc = spawn(splitArgs, { stdout: "pipe", stderr: "pipe" });
+	const stdout = await new Response(proc.stdout).text();
+	const stderr = await new Response(proc.stderr).text();
+	const exitCode = await proc.exited;
+
+	if (exitCode !== 0) {
+		log.error("launchReviewAgent: tmux split-window failed", { exitCode, stderr: stderr.trim() });
+		throw new Error(`tmux split-window failed: ${stderr.trim() || "unknown error"}`);
+	}
+
+	// Save pane ID for cleanup on next run
+	const newPaneId = stdout.trim();
+	if (newPaneId) {
+		await Bun.write(reviewPaneFile, newPaneId);
+		log.info("launchReviewAgent: review pane created", { paneId: newPaneId });
+	}
+
+	// Switch focus back to the main pane (left)
+	try {
+		const focusArgs = pty.tmuxArgs(socket, "select-pane", "-t", `${tmuxSession}:.0`);
+		spawnSync(focusArgs, { stdout: "pipe", stderr: "pipe" });
+	} catch {
+		// Non-fatal
+	}
+
+	log.info("launchReviewAgent DONE", { taskId: task.id.slice(0, 8) });
+}
+
+/**
+ * Trigger the AI review agent if the task just entered review-by-ai.
+ * Shared between CLI socket and RPC moveTask handlers.
+ */
+export async function triggerReviewIfNeeded(newStatus: TaskStatus, project: Project, task: Task, manualMove?: boolean): Promise<void> {
+	if (newStatus !== "review-by-ai" || !task.worktreePath) return;
+	// Respect the project-level AI Review toggle — don't launch if explicitly disabled.
+	if (project.aiReview?.enabled === false) return;
+	// Skip if review already completed (prevent duplicate auto-reviews).
+	// Manual moves (from kanban UI) reset the flag and always trigger.
+	if (task.reviewCompleted && !manualMove) {
+		log.info("Skipping AI review — already completed for this task", { taskId: task.id.slice(0, 8) });
+		return;
+	}
+	try {
+		await launchReviewAgent(project, task);
+	} catch (err) {
+		log.error("launchReviewAgent failed — falling back to review-by-user", {
+			taskId: task.id,
+			error: String(err),
+		});
+		// Fall back to user review so the task doesn't get stuck in review-by-ai
+		try {
+			const fallback = await data.updateTask(project, task.id, { status: "review-by-user" });
+			pushMessage?.("taskUpdated", { projectId: project.id, task: fallback });
+		} catch (fallbackErr) {
+			log.error("Failed to fall back to review-by-user", { taskId: task.id, error: String(fallbackErr) });
+		}
 	}
 }
 
@@ -883,8 +1034,8 @@ export const handlers = {
 		defaultBaseBranch: string;
 		clonePaths: string[];
 		peerReviewEnabled: boolean;
+		aiReview?: { enabled: boolean; agentId?: string; configId?: string; reviewPrompt?: string };
 	}): Promise<Project> {
-		console.log("[updateProjectSettings] params received:", JSON.stringify(params));
 		log.info("→ updateProjectSettings", { projectId: params.projectId });
 		const project = await data.updateProject(params.projectId, {
 			setupScript: params.setupScript,
@@ -893,8 +1044,8 @@ export const handlers = {
 			defaultBaseBranch: params.defaultBaseBranch,
 			clonePaths: params.clonePaths,
 			peerReviewEnabled: params.peerReviewEnabled,
+			aiReview: params.aiReview,
 		});
-		console.log("[updateProjectSettings] saved project:", JSON.stringify(project));
 		log.info("← updateProjectSettings done");
 		return project;
 	},
@@ -1067,11 +1218,28 @@ export const handlers = {
 		}
 
 		// active → active or todo → todo/completed/cancelled (no worktree changes)
+		// Manage reviewCompleted flag:
+		// - Reset when returning to in-progress (primary agent resumes work)
+		// - Reset when manually moved to review-by-ai (user wants re-review)
+		// - Set when review finishes (review-by-ai → review-by-user)
+		const reviewUpdates: Partial<Task> = {};
+		const isManualReview = newStatus === "review-by-ai";
+		if (newStatus === "in-progress" || isManualReview) {
+			reviewUpdates.reviewCompleted = false;
+		} else if (newStatus === "review-by-user" && task.status === "review-by-ai") {
+			reviewUpdates.reviewCompleted = true;
+		}
+
 		const updated = await data.updateTask(project, task.id, {
 			status: newStatus,
 			customColumnId: null,
+			...reviewUpdates,
 		}, dropOpts);
 		pushMessage?.("taskUpdated", { projectId: project.id, task: updated });
+
+		// RPC moveTask is called from the UI (manual), so always trigger review
+		await triggerReviewIfNeeded(newStatus, project, updated, isManualReview);
+
 		log.info("← moveTask done (status only)", { taskId: task.id });
 		return updated;
 	},

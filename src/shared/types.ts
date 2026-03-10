@@ -92,6 +92,23 @@ export function getAllowedTransitions(current: TaskStatus): TaskStatus[] {
 	return ALL_STATUSES.filter((s) => s !== current);
 }
 
+// ---- AI Review ----
+
+export interface AIReviewConfig {
+	enabled: boolean;
+	agentId?: string; // default: "builtin-claude"
+	configId?: string; // default: "claude-review"
+	reviewPrompt?: string; // custom prompt; undefined = use built-in default
+}
+
+export const DEFAULT_AI_REVIEW_PROMPT = `/review current branch against {baseBranch}. Focus on:
+1. Bugs, logic errors, and potential runtime failures
+2. Code reuse — duplicated logic that should be extracted
+3. Security issues (injection, XSS, etc.)
+
+For medium/high severity issues: fix them directly and commit.
+For minor/cosmetic issues (formatting, naming nitpicks): leave them alone.`;
+
 // ---- Coding Agents ----
 
 export type PermissionMode = "default" | "acceptEdits" | "bypassPermissions" | "dontAsk" | "plan";
@@ -132,6 +149,7 @@ export const DEFAULT_AGENTS: CodingAgent[] = [
 			{ id: "claude-approvals-sonnet", name: "Approvals (Sonnet)", model: "sonnet", permissionMode: "acceptEdits" },
 			{ id: "claude-bypass-opus", name: "Bypass (Opus)", model: "opus", permissionMode: "bypassPermissions" },
 			{ id: "claude-bypass-sonnet", name: "Bypass (Sonnet)", model: "sonnet", permissionMode: "bypassPermissions" },
+			{ id: "claude-review", name: "Review (Sonnet)", model: "sonnet", permissionMode: "bypassPermissions" },
 		],
 		defaultConfigId: "claude-default",
 	},
@@ -313,6 +331,8 @@ export interface Project {
 	columnOrder?: string[];
 	// When false, the "PR Review" column is hidden (default: true)
 	peerReviewEnabled?: boolean;
+	// AI Review configuration; undefined = enabled with defaults
+	aiReview?: AIReviewConfig;
 }
 
 export interface Task {
@@ -339,6 +359,9 @@ export interface Task {
 	existingBranch?: string | null;
 	notes?: TaskNote[];
 	customColumnId?: string | null;
+	/** Set to true after AI review completes. Prevents duplicate auto-reviews.
+	 *  Reset when user manually moves task to review-by-ai or when task returns to in-progress. */
+	reviewCompleted?: boolean;
 }
 
 /** Returns the display title: custom override if set, otherwise auto-generated. */
@@ -491,6 +514,7 @@ export type AppRPCSchema = {
 					defaultBaseBranch: string;
 					clonePaths: string[];
 					peerReviewEnabled: boolean;
+					aiReview?: AIReviewConfig;
 				};
 				response: Project;
 			};
