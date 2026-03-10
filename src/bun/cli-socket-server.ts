@@ -4,7 +4,7 @@ import { ALL_STATUSES, LABEL_COLORS, getAllowedTransitions, titleFromDescription
 import * as data from "./data";
 import * as git from "./git";
 import * as pty from "./pty-server";
-import { isActive, activateTask, runCleanupScript, playTaskCompleteSound, getPushMessage } from "./rpc-handlers";
+import { isActive, activateTask, runCleanupScript, playTaskCompleteSound, getPushMessage, triggerReviewIfNeeded } from "./rpc-handlers";
 import { loadSettings } from "./settings";
 import { createLogger } from "./logger";
 import { DEV3_HOME } from "./paths";
@@ -450,8 +450,19 @@ const handlers: Record<string, Handler> = {
 		}
 
 		// active → active or status-only change
-		const updated = await data.updateTask(project, task.id, { status: builtinStatus, customColumnId: null }, dropOpts);
+		// Manage reviewCompleted flag (same logic as rpc-handlers moveTask)
+		const reviewUpdates: Partial<Task> = {};
+		if (builtinStatus === "in-progress") {
+			reviewUpdates.reviewCompleted = false;
+		} else if (builtinStatus === "review-by-user" && task.status === "review-by-ai") {
+			reviewUpdates.reviewCompleted = true;
+		}
+
+		const updated = await data.updateTask(project, task.id, { status: builtinStatus, customColumnId: null, ...reviewUpdates }, dropOpts);
 		getPushMessage()?.("taskUpdated", { projectId: project.id, task: updated });
+
+		await triggerReviewIfNeeded(builtinStatus, project, updated);
+
 		return updated;
 	},
 };
