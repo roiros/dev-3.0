@@ -1034,25 +1034,26 @@ function TaskInfoPanel({ task, project, dispatch, navigate, taskPorts, isFullPag
 
 	const hasPR = branchStatus && branchStatus.prNumber !== null;
 	const needsPushBeforePR = branchStatus && branchStatus.ahead > 0 && branchStatus.unpushed !== 0;
-	const createPRDisabled = hasPR ? (!branchStatus || creatingPR) : (!branchStatus || branchStatus.ahead === 0 || creatingPR || pushing);
-	const prButtonLabel = creatingPR
-		? t("infoPanel.creatingPR")
-		: pushing && pushThenCreatePRRef.current
-			? t("infoPanel.pushingAndCreatingPR")
-			: hasPR
-				? t("infoPanel.openPR")
-				: needsPushBeforePR
-					? t("infoPanel.pushAndCreatePR")
-					: t("infoPanel.createPR");
-	const createPRTooltip = !branchStatus
-		? t("infoPanel.statusLoading")
-		: hasPR
-			? t("infoPanel.openPRTooltip", { number: String(branchStatus.prNumber) })
-			: branchStatus.ahead === 0
-				? t("infoPanel.createPRDisabledNoCommits")
-				: needsPushBeforePR
-					? t("infoPanel.pushAndCreatePR")
-					: t("infoPanel.createPR");
+	const createPRDisabled = hasPR ? (!branchStatus || creatingPR || pushing) : (!branchStatus || branchStatus.ahead === 0 || creatingPR || pushing);
+
+	function getPRButtonLabel(): string {
+		if (creatingPR) return t("infoPanel.creatingPR");
+		if (pushing && pushThenCreatePRRef.current) return t("infoPanel.pushingAndCreatingPR");
+		if (hasPR) return t("infoPanel.openPR");
+		if (needsPushBeforePR) return t("infoPanel.pushAndCreatePR");
+		return t("infoPanel.createPR");
+	}
+
+	function getPRTooltip(): string {
+		if (!branchStatus) return t("infoPanel.statusLoading");
+		if (hasPR) return t("infoPanel.openPRTooltip", { number: String(branchStatus.prNumber) });
+		if (branchStatus.ahead === 0) return t("infoPanel.createPRDisabledNoCommits");
+		if (needsPushBeforePR) return t("infoPanel.pushAndCreatePR");
+		return t("infoPanel.createPR");
+	}
+
+	const prButtonLabel = getPRButtonLabel();
+	const createPRTooltip = getPRTooltip();
 
 	const mergeDisabled = !branchStatus || branchStatus.ahead === 0 || branchStatus.behind > 0 || merging;
 	const mergeTooltip = !branchStatus

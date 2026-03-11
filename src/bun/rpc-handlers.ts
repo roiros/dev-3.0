@@ -771,18 +771,16 @@ async function getBranchStatusImpl(params: { taskId: string; projectId: string; 
 	await git.fetchOrigin(project.path);
 	// compareRef lets the UI choose: origin/<baseBranch> (default) or local baseBranch
 	const ref = params.compareRef || `origin/${baseBranch}`;
-	// Detect open PR in parallel with other git operations (graceful degradation)
+	// Detect open non-draft PR in parallel with other git operations (graceful degradation)
 	const prDetection: Promise<number | null> = (async () => {
 		try {
-			// getUnpushedCount runs in parallel; we need its result to know if branch was pushed.
-			// Instead, optimistically try — gh will return empty if branch doesn't exist on remote.
 			const ghResult = await git.run(
-				["gh", "pr", "list", "--head", branchForPush, "--state", "open", "--json", "number", "--limit", "1"],
+				["gh", "pr", "list", "--head", branchForPush, "--state", "open", "--json", "number,isDraft", "--limit", "1"],
 				task.worktreePath!,
 			);
 			if (ghResult.ok && ghResult.stdout) {
 				const prs = JSON.parse(ghResult.stdout);
-				if (Array.isArray(prs) && prs.length > 0 && typeof prs[0].number === "number") {
+				if (Array.isArray(prs) && prs.length > 0 && typeof prs[0].number === "number" && !prs[0].isDraft) {
 					return prs[0].number;
 				}
 			}
