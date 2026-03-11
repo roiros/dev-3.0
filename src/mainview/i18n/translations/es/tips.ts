@@ -114,6 +114,8 @@ const tips = {
 	"tip.modalQuickDismiss.body": "Pulsa ESC o haz clic fuera del diálogo para cerrarlo. Si tienes texto sin guardar, verás una confirmación primero.",
 	"tip.autoFillBranch.title": "La rama se completa sola",
 	"tip.autoFillBranch.body": "Cambia a una rama de feature antes de crear la tarea — el selector de rama se auto-completará para que no tengas que buscarla.",
+	"tip.taskOpenMode.title": "Modo terminal de pantalla completa",
+	"tip.taskOpenMode.body": "Activa «Pantalla completa» en Modo de apertura de tarea (Ajustes globales) para abrir tareas sin vista dividida.",
 };
 
 export default tips;
