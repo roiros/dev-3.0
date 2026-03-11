@@ -1,0 +1,1 @@
+Remove the full worktree path from the tmux status bar to reduce clutter. The bar now shows only the process info, git branch name, and keyboard shortcuts — dropping the redundant and lengthy worktree filesystem path.
