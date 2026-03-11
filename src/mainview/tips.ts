@@ -358,6 +358,13 @@ const ALL_TIPS: Tip[] = [
 		bodyKey: "tip.taskOpenMode.body",
 		icon: "\u{F0124}", // nf-md-fullscreen
 	},
+	// Batch 14: task drop position
+	{
+		id: "task-drop-position",
+		titleKey: "tip.taskDropPosition.title",
+		bodyKey: "tip.taskDropPosition.body",
+		icon: "\u{F0140}", // nf-md-arrow_up_down
+	},
 ];
 
 const COOLDOWN_MS = 3 * 24 * 60 * 60 * 1000; // 3 days
