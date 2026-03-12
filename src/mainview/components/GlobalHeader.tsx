@@ -5,6 +5,7 @@ import type { Route } from "../state";
 import { useT } from "../i18n";
 import { api } from "../rpc";
 import TmuxSessionManager from "./TmuxSessionManager";
+import InlineRename from "./InlineRename";
 
 interface GlobalHeaderProps {
 	route: Route;
@@ -20,6 +21,7 @@ interface BreadcrumbSegment {
 	badge?: string;
 	onClick?: () => void;
 	isProjectDropdown?: boolean;
+	task?: Task;
 }
 
 /** Cache TTL for project task counts (30 seconds) */
@@ -148,7 +150,7 @@ function GlobalHeader({ route, projects, tasks, navigate, updateVersion, updateD
 		const task = tasks.find((t) => t.id === route.activeTaskId);
 		if (task) {
 			const badge = task.variantIndex != null ? `#${task.seq}-${task.variantIndex}` : `#${task.seq}`;
-			segments.push({ badge, label: getTaskTitle(task) });
+			segments.push({ badge, label: getTaskTitle(task), task });
 		}
 	}
 
@@ -157,7 +159,7 @@ function GlobalHeader({ route, projects, tasks, navigate, updateVersion, updateD
 		const task = tasks.find((t) => t.id === route.taskId);
 		if (task) {
 			const badge = task.variantIndex != null ? `#${task.seq}-${task.variantIndex}` : `#${task.seq}`;
-			segments.push({ badge, label: getTaskTitle(task) });
+			segments.push({ badge, label: getTaskTitle(task), task });
 		} else {
 			segments.push({ label: t("header.task") });
 		}
@@ -282,7 +284,16 @@ function GlobalHeader({ route, projects, tasks, navigate, updateVersion, updateD
 								{seg.badge && (
 									<span className="font-mono text-[0.6875rem] text-accent/70 flex-shrink-0 tracking-wide">{seg.badge}</span>
 								)}
-								<span className="text-fg font-semibold truncate">{seg.label}</span>
+								{seg.task ? (
+									<InlineRename
+										taskId={seg.task.id}
+										projectId={seg.task.projectId}
+										currentTitle={seg.label}
+										hasCustomTitle={!!seg.task.customTitle}
+									/>
+								) : (
+									<span className="text-fg font-semibold truncate">{seg.label}</span>
+								)}
 							</span>
 						)}
 					</Fragment>

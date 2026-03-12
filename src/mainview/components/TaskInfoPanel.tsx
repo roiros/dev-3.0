@@ -3,7 +3,8 @@ import { createPortal } from "react-dom";
 import type { Task, Project, TaskStatus, BranchStatus, PortInfo } from "../../shared/types";
 import LabelChip from "./LabelChip";
 import { NoteItem, formatDate } from "./NoteItem";
-import { ACTIVE_STATUSES } from "../../shared/types";
+import { ACTIVE_STATUSES, getTaskTitle } from "../../shared/types";
+import InlineRename from "./InlineRename";
 import type { AppAction, Route } from "../state";
 import { api } from "../rpc";
 import { useT, statusKey } from "../i18n";
@@ -1527,6 +1528,18 @@ function TaskInfoPanel({ task, project, dispatch, navigate, taskPorts, isFullPag
 					{/* Metadata grid */}
 					<div className="flex-1 overflow-auto px-4 pb-2">
 						<div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-xs">
+							<span className="text-fg-3">{t("infoPanel.title")}</span>
+							<InlineRename
+								taskId={task.id}
+								projectId={project.id}
+								currentTitle={getTaskTitle(task)}
+								hasCustomTitle={!!task.customTitle}
+								dispatch={dispatch}
+								className="text-fg-2 font-semibold truncate"
+								inputClassName="w-full bg-base border border-edge-active rounded px-1.5 py-0.5 text-xs text-fg focus:outline-none focus:border-accent"
+								showReset
+							/>
+
 							<span className="text-fg-3">{t("infoPanel.taskNumber")}</span>
 							<span className="text-fg-2 font-mono font-semibold">#{task.seq}</span>
 
